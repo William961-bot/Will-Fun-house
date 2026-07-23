@@ -1,0 +1,15 @@
+# Build output
+simple_test
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+out_simple.png
+
+# IDE / system files
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store

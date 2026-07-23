@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+driver/
+wd/
+
+# Secrets and personal files
+config.json
+resume.pdf
+cover_letter.txt
+*.docx
+*.pdf
+
+# OS junk
+.DS_Store
+Thumbs.db

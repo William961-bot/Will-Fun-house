@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<!--
+  ============================================================
+  My First Instagram Clone
+  ============================================================
+
+  How to run this:
+    Just double-click this file. It opens in your browser.
+    No install, no server, nothing else needed.
+
+  What you'll learn from this file:
+    - HTML: how to lay out a page (the <body> below)
+    - CSS:  how to make it look nice (the <style> below)
+    - JS:   how to make it interactive (the <script> at bottom)
+
+  Try changing things! The page updates as soon as you save
+  and refresh the browser. That's the fastest way to learn.
+  ============================================================
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Instagrim</title>
+
+  <style>
+    /* ---------- CSS: makes things look nice ----------
+       Each block: "find this thing { make it look like this }" */
+
+    /* The whole page */
+    body {
+      font-family: -apple-system, system-ui, sans-serif;
+      background: #fafafa;
+      margin: 0;
+      padding: 20px;
+    }
+
+    /* The top bar with the logo */
+    header {
+      max-width: 600px;
+      margin: 0 auto 20px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 10px;
+    }
+    header h1 {
+      font-family: 'Brush Script MT', cursive;
+      font-size: 36px;
+      margin: 0;
+    }
+
+    /* The feed (the column of posts) */
+    #feed {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* One post card */
+    .post {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    /* The little row at the top of a post (username) */
+    .post-header {
+      padding: 12px;
+      font-weight: bold;
+    }
+
+    /* The big image in the middle */
+    .post-image {
+      width: 100%;
+      display: block;
+    }
+
+    /* The row of buttons below the image */
+    .post-actions {
+      padding: 8px 12px;
+    }
+    .like-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    /* The like count and caption */
+    .post-likes {
+      padding: 0 12px;
+      font-weight: bold;
+    }
+    .post-caption {
+      padding: 4px 12px 12px;
+    }
+    .post-caption .username {
+      font-weight: bold;
+      margin-right: 6px;
+    }
+
+    /* The "new post" form at the top */
+    #new-post-form {
+      max-width: 600px;
+      margin: 0 auto 20px;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    #new-post-form input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    #new-post-form button {
+      background: #0095f6;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+
+<body>
+
+  <!-- ---------- HTML: the structure of the page ---------- -->
+
+  <header>
+    <h1>Instagrim</h1>
+  </header>
+
+  <!-- A form to add a new post.
+       The script at the bottom listens for the button click. -->
+  <form id="new-post-form">
+    <input type="text" id="input-username" placeholder="Your username" value="me">
+    <input type="text" id="input-image" placeholder="Image URL (try: https://picsum.photos/600/600)">
+    <input type="text" id="input-caption" placeholder="Write a caption...">
+    <button type="submit">Post</button>
+  </form>
+
+  <!-- This empty div is where posts will appear.
+       The JavaScript fills it in. -->
+  <div id="feed"></div>
+
+
+  <!-- ---------- JavaScript: makes the page interactive ---------- -->
+  <script>
+
+    // STEP 1: Our "data" - just a list of posts.
+    // In a real app this would come from a server.
+    // Each post is an object with { username, image, caption, likes }.
+    let posts = [
+      {
+        username: "cat_lover_42",
+        image: "https://picsum.photos/seed/cat/600/600",
+        caption: "look at this cat I found",
+        likes: 12
+      },
+      {
+        username: "sunset_pics",
+        image: "https://picsum.photos/seed/sunset/600/600",
+        caption: "sky was wild tonight",
+        likes: 87
+      },
+      {
+        username: "coffee_dude",
+        image: "https://picsum.photos/seed/coffee/600/600",
+        caption: "fourth one today, send help",
+        likes: 3
+      }
+    ];
+
+
+    // STEP 2: A function that draws ALL posts on the page.
+    // We call this every time something changes (like a new
+    // post or a like) so the screen stays in sync with our data.
+    function drawFeed() {
+      // Find the empty <div id="feed"> from the HTML above.
+      const feed = document.getElementById("feed");
+
+      // Clear it out (in case we're redrawing).
+      feed.innerHTML = "";
+
+      // Loop through each post and build its HTML.
+      // We go BACKWARDS so newest posts show on top.
+      for (let i = posts.length - 1; i >= 0; i--) {
+        const post = posts[i];
+
+        // Build the HTML for this one post.
+        // The `${...}` parts insert values from our data.
+        const html = `
+          <div class="post">
+            <div class="post-header">${post.username}</div>
+            <img class="post-image" src="${post.image}" alt="">
+            <div class="post-actions">
+              <button class="like-btn" onclick="likePost(${i})">♥</button>
+            </div>
+            <div class="post-likes">${post.likes} likes</div>
+            <div class="post-caption">
+              <span class="username">${post.username}</span>${post.caption}
+            </div>
+          </div>
+        `;
+
+        // Add this post's HTML to the feed.
+        feed.innerHTML += html;
+      }
+    }
+
+
+    // STEP 3: What happens when you click the heart button.
+    // We add 1 to the post's like count, then redraw the feed.
+    function likePost(index) {
+      posts[index].likes = posts[index].likes + 1;
+      drawFeed();
+    }
+
+
+    // STEP 4: What happens when you submit the new-post form.
+    // We grab the typed-in values, add a new post to our list,
+    // clear the form, and redraw.
+    const form = document.getElementById("new-post-form");
+    form.addEventListener("submit", function(event) {
+      event.preventDefault();  // stop the page from reloading
+
+      // Read what the user typed.
+      const username = document.getElementById("input-username").value;
+      const image    = document.getElementById("input-image").value;
+      const caption  = document.getElementById("input-caption").value;
+
+      // Don't add empty posts.
+      if (image === "" || caption === "") {
+        alert("Please add an image URL and a caption!");
+        return;
+      }
+
+      // Add the new post to our list.
+      posts.push({
+        username: username,
+        image: image,
+        caption: caption,
+        likes: 0
+      });
+
+      // Clear the caption box so it's ready for the next post.
+      document.getElementById("input-image").value = "";
+      document.getElementById("input-caption").value = "";
+
+      // Redraw to show the new post.
+      drawFeed();
+    });
+
+
+    // STEP 5: Draw everything for the first time.
+    drawFeed();
+
+
+    /* ============================================================
+       What to try next (in order of difficulty):
+
+       EASY
+       - Change the app name from "Instagrim" to your own name
+       - Change the colors (find #0095f6 and try a different color)
+       - Add more starter posts to the `posts` list above
+
+       MEDIUM
+       - Make the heart turn red after you click it
+       - Add a "comments" array to each post and show them
+       - Stop the like count from going up forever (one like per click)
+
+       HARDER
+       - Save posts to localStorage so they survive page refresh
+         (hint: localStorage.setItem and localStorage.getItem)
+       - Add a delete button to each post
+       - Add a profile page that shows only one user's posts
+       ============================================================ */
+
+  </script>
+</body>
+</html>

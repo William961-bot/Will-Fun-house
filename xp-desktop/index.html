@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Windows XP</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="desktop">
+    <!-- Icons -->
+    <div class="icon" style="left:20px; top:20px;" data-title="My Documents">
+      <div class="icon-img">📁</div>
+      <div class="icon-label">My Documents</div>
+    </div>
+    <div class="icon" style="left:20px; top:100px;" data-title="My Computer">
+      <div class="icon-img">💻</div>
+      <div class="icon-label">My Computer</div>
+    </div>
+    <div class="icon" style="left:20px; top:180px;" data-title="Recycle Bin">
+      <div class="icon-img">🗑️</div>
+      <div class="icon-label">Recycle Bin</div>
+    </div>
+    <div class="icon" style="left:20px; top:260px;" data-title="Internet Explorer">
+      <div class="icon-img">🌐</div>
+      <div class="icon-label">Internet Explorer</div>
+    </div>
+  </div>
+
+  <!-- A blank window template -->
+  <div class="window" style="display:none;" id="window-tpl">
+    <div class="title-bar">
+      <div class="title-text">Window</div>
+      <div class="win-controls">
+        <button class="win-btn minimize">_</button>
+        <button class="win-btn maximize">□</button>
+        <button class="win-btn close">✕</button>
+      </div>
+    </div>
+    <div class="window-body">Content here</div>
+  </div>
+
+  <div id="taskbar">
+    <button id="start-btn">Start</button>
+    <!-- TODO: start-menu popup -->
+    <div id="task-items"></div>
+    <div id="clock">12:00 PM</div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

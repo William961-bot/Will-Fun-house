@@ -1,0 +1,53 @@
+{
+  "profile": {
+    "name": "Your Name",
+    "email": "you@example.com",
+    "phone": "555-0123",
+    "address": "123 Main St",
+    "city": "Anytown",
+    "state": "CA",
+    "zip": "90210",
+    "linkedin": "https://linkedin.com/in/yourprofile",
+    "github": "https://github.com/yourusername",
+    "portfolio": "https://yourportfolio.com",
+    "resume_path": "C:\\Users\\You\\Documents\\resume.pdf",
+    "cover_letter_path": "C:\\Users\\You\\Documents\\cover_letter.txt"
+  },
+  "keywords": ["software engineer", "python", "c++"],
+  "sites": {
+    "indeed": {
+      "base_url": "https://www.indeed.com",
+      "login_url": "https://secure.indeed.com/account/login",
+      "search_url": "https://www.indeed.com/jobs?q={query}&l={location}",
+      "selectors": {
+        "login_email": "#email",
+        "login_password": "#password",
+        "login_button": "button[type='submit']",
+        "job_link": "a[jslot='0']",
+        "apply_button": "#indeedApplyButton",
+        "name": "input[name='applicant.legacyName.firstName']",
+        "email": "input[name='applicant.email']",
+        "phone": "input[name='applicant.phoneNumber']",
+        "resume_upload": "input[type='file']",
+        "submit": "button[type='submit']"
+      }
+    },
+    "linkedin": {
+      "base_url": "https://www.linkedin.com",
+      "login_url": "https://www.linkedin.com/login",
+      "search_url": "https://www.linkedin.com/jobs/search/?keywords={query}&location={location}",
+      "selectors": {
+        "login_email": "#username",
+        "login_password": "#password",
+        "login_button": "button[type='submit']",
+        "job_link": ".jobs-search-results__list-item",
+        "apply_button": ".jobs-s-apply button",
+        "name": "#single-line-text-form-component-formElement-3",
+        "email": "#single-line-text-form-component-formElement-4",
+        "phone": "#single-line-text-form-component-formElement-5",
+        "resume_upload": "input[type='file']",
+        "submit": ".artdeco-button--primary"
+      }
+    }
+  }
+}
