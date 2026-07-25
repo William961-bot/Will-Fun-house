@@ -1,17 +1,17 @@
-package com.pornblocker
+package com.pornblocker;
 
-import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.webkit.WebView
-import android.webkit.WebViewClient
-import androidx.fragment.app.Fragment
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import androidx.fragment.app.Fragment;
 
 public class SimpleBrowser extends Fragment {
 
     public static SimpleBrowser newInstance() {
-        return new SimpleBrowser()
+        return new SimpleBrowser();
     }
 
     private WebView webView;

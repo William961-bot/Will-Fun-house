@@ -1,272 +1,275 @@
-package com.pornblocker
+package com.pornblocker;
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
-import android.app.Service
-import android.content.Intent
-import android.net.VpnService
-import android.os.Build
-import android.os.ParcelFileDescriptor
-import android.util.Log
-import androidx.core.app.NotificationCompat
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.net.InetSocketAddress
-import java.nio.ByteBuffer
-import java.nio.channels.DatagramChannel
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.app.Service;
+import android.content.Intent;
+import android.net.VpnService;
+import android.os.Build;
+import android.os.IBinder;
+import android.os.ParcelFileDescriptor;
+import android.util.Log;
+import androidx.core.app.NotificationCompat;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import com.pornblocker.MainActivity;
 
-class BlockerVpnService : Service() {
+public class BlockerVpnService extends VpnService {
 
-    companion object {
-        const val ACTION_START = "com.pornblocker.ACTION_START"
-        const val ACTION_STOP = "com.pornblocker.ACTION_STOP"
+    public static final String ACTION_START = "com.pornblocker.ACTION_START";
+    public static final String ACTION_STOP = "com.pornblocker.ACTION_STOP";
 
-        const val TAG = "PornBlockerVPN"
-        const val CHANNEL_ID = "porn-blocker-channel"
-        const val NOTIF_ID = 1
+    public static final String TAG = "PornBlockerVPN";
+    public static final String CHANNEL_ID = "porn-blocker-channel";
+    public static final int NOTIF_ID = 1;
 
-        val isRunning = AtomicBoolean(false)
-        val blockedCount = AtomicInteger(0)
+    public static final AtomicBoolean isRunning = new AtomicBoolean(false);
+    public static final AtomicInteger blockedCount = new AtomicInteger(0);
 
-        private var vpnThread: Thread? = null
-        private var vpnInterface: ParcelFileDescriptor? = null
+    private static Thread vpnThread;
+    private static ParcelFileDescriptor vpnInterface;
+
+    private BlocklistManager blocklist;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        this.blocklist = new BlocklistManager(this);
+        createNotificationChannel();
     }
 
-    private val blocklist by lazy { BlocklistManager(this) }
-
-    override fun onCreate() {
-        super.onCreate()
-        createNotificationChannel()
-    }
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.action) {
-            ACTION_START -> startVpn()
-            ACTION_STOP -> stopVpn()
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        String action = intent != null ? intent.getAction() : null;
+        if (ACTION_START.equals(action)) {
+            startVpn();
+        } else if (ACTION_STOP.equals(action)) {
+            stopVpn();
         }
-        return START_STICKY
+        return START_STICKY;
     }
 
-    override fun onDestroy() {
-        stopVpn()
-        super.onDestroy()
+    @Override
+    public void onDestroy() {
+        stopVpn();
+        super.onDestroy();
     }
 
-    override fun onBind(intent: Intent?) = null
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
 
-    private fun createNotificationChannel() {
+    private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val chan = NotificationChannel(
+            NotificationChannel chan = new NotificationChannel(
                 CHANNEL_ID,
                 "Protection",
                 NotificationManager.IMPORTANCE_LOW
-            )
-            val mgr = getSystemService(NotificationManager::class.java)
-            mgr.createNotificationChannel(chan)
+            );
+            NotificationManager mgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            mgr.createNotificationChannel(chan);
         }
     }
 
-    private fun buildNotification(): Notification {
-        val activityIntent = Intent(this, MainActivity::class.java)
-        val pending = PendingIntent.getActivity(
+    private Notification buildNotification() {
+        Intent activityIntent = new Intent(this, MainActivity.class);
+        PendingIntent pending = PendingIntent.getActivity(
             this, 0, activityIntent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+            PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
+        );
+        return new NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Protection enabled")
             .setContentText("Blocking unwanted domains")
             .setSmallIcon(android.R.drawable.ic_lock_lock)
             .setOngoing(true)
             .setContentIntent(pending)
-            .build()
+            .build();
     }
 
-    private fun startVpn() {
-        if (isRunning.get()) return
-
+    private void startVpn() {
+        if (isRunning.get()) return;
         try {
-            vpnInterface = buildVpnInterface()
-            isRunning.set(true)
-            startForeground(NOTIF_ID, buildNotification())
+            vpnInterface = buildVpnInterface();
+            isRunning.set(true);
+            startForeground(NOTIF_ID, buildNotification());
+            vpnThread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        runVpnLoop();
+                    } catch (Exception e) {
+                        Log.w(TAG, "VPN loop stopped", e);
+                    } finally {
+                        cleanup();
+                    }
+                }
+            });
+            vpnThread.start();
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to start VPN", e);
+        }
+    }
 
-            vpnThread = Thread {
+    private void stopVpn() {
+        cleanup();
+        stopForeground(true);
+        stopSelf();
+    }
+
+    private void cleanup() {
+        try { if (vpnInterface != null) vpnInterface.close(); } catch (Exception ignored) {}
+        vpnInterface = null;
+        isRunning.set(false);
+        vpnThread = null;
+    }
+
+    private ParcelFileDescriptor buildVpnInterface() {
+        VpnService.Builder builder = new VpnService.Builder();
+        builder.setSession("PornBlocker");
+        builder.addAddress("10.0.0.2", 32);
+        builder.addDnsServer("1.1.1.1");
+        builder.addRoute("0.0.0.0", 0);
+        builder.addRoute("::", 0);
+        builder.setBlocking(true);
+        return builder.establish();
+    }
+
+    private void runVpnLoop() {
+        try {
+            FileInputStream vpnInput = new FileInputStream(vpnInterface.getFileDescriptor());
+            FileOutputStream vpnOutput = new FileOutputStream(vpnInterface.getFileDescriptor());
+            byte[] packetBytes = new byte[32767];
+            ByteBuffer packet = ByteBuffer.wrap(packetBytes);
+
+            while (isRunning.get()) {
                 try {
-                    runVpnLoop()
-                } catch (e: Exception) {
-                    Log.w(TAG, "VPN loop stopped", e)
-                } finally {
-                    cleanup()
+                    packet.clear();
+                    int length = vpnInput.read(packet.array());
+                    if (length <= 0) continue;
+                    packet.limit(length);
+
+                    byte versionByte = packet.get(0);
+                    int version = (versionByte & 0xFF) >> 4;
+                    if (version != 4) continue;
+                    if (length <= 20) continue;
+
+                    int protocol = packet.get(9) & 0xFF;
+                    if (protocol != 6 && protocol != 17) continue;
+
+                    String dstIp = String.format(
+                        "%d.%d.%d.%d",
+                        packet.get(16) & 0xFF,
+                        packet.get(17) & 0xFF,
+                        packet.get(18) & 0xFF,
+                        packet.get(19) & 0xFF
+                    );
+
+                    int headerOffset = 20;
+                    int srcPort = ((packet.get(headerOffset) & 0xFF) << 8) | (packet.get(headerOffset + 1) & 0xFF);
+                    int dstPort = ((packet.get(headerOffset + 2) & 0xFF) << 8) | (packet.get(headerOffset + 3) & 0xFF);
+
+                    if (blocklist.isBlocked(dstIp) || blocklist.isBlockedPort(dstPort)) {
+                        blockedCount.incrementAndGet();
+                        sendTcpReset(vpnOutput, packetBytes, length, srcPort, dstPort, dstIp);
+                    } else if (protocol == 17) {
+                        forwardUdp(vpnInput, vpnOutput, packetBytes, length, dstIp, dstPort);
+                    } else {
+                        vpnOutput.write(packetBytes, 0, length);
+                    }
+                } catch (Exception e) {
+                    Log.w(TAG, "Packet error", e);
                 }
             }
-            vpnThread?.start()
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to start VPN", e)
+        } catch (Exception e) {
+            Log.w(TAG, "VPN stream failed", e);
         }
     }
 
-    private fun stopVpn() {
-        cleanup()
-        stopForeground(true)
-        stopSelf()
-    }
-
-    private fun cleanup() {
-        try { vpnInterface?.close() } catch (ignored: Exception) {}
-        vpnInterface = null
-        isRunning.set(false)
-        vpnThread = null
-    }
-
-    private fun buildVpnInterface(): ParcelFileDescriptor {
-        val builder = VpnService.Builder().apply {
-            setSession("PornBlocker")
-            addAddress("10.0.0.2", 32)
-            addDnsServer("1.1.1.1")
-            addRoute("0.0.0.0", 0)
-            addRoute("::", 0)
-            setBlocking(true)
-        }
-        return builder.establish()
-    }
-
-    private fun runVpnLoop() {
-        val vpnInput = FileInputStream(vpnInterface?.fileDescriptor)
-        val vpnOutput = FileOutputStream(vpnInterface?.fileDescriptor)
-        val packet = ByteBuffer.allocate(32767)
-
-        while (isRunning.get()) {
-            try {
-                packet.clear()
-                val length = vpnInput.read(packet.array())
-                if (length <= 0) continue
-                packet.limit(length)
-
-                val version = packet.get(0).toInt() ushr 4
-                if (version != 4) continue
-
-                if (length <= 20) continue
-                val protocol = packet.get(9).toInt() and 0xFF
-                if (protocol != 6 && protocol != 17) continue
-
-                val dstIp = String.format(
-                    "%d.%d.%d.%d",
-                    packet.get(16).toInt() and 0xFF,
-                    packet.get(17).toInt() and 0xFF,
-                    packet.get(18).toInt() and 0xFF,
-                    packet.get(19).toInt() and 0xFF
-                )
-
-                val srcPort = ((packet.get(offset(version)) .toInt() and 0xFF) shl 8) or (packet.get(offset(version) + 1).toInt() and 0xFF)
-                val dstPort = ((packet.get(offset(version) + 2).toInt() and 0xFF) shl 8) or (packet.get(offset(version) + 3).toInt() and 0xFF)
-
-                if (blocklist.isBlocked(dstIp) || blocklist.isBlockedPort(dstPort)) {
-                    blockedCount.incrementAndGet()
-                    sendTcpReset(vpnInput, vpnOutput, packet, length, srcPort, dstPort, dstIp, protocol)
-                } else if (protocol == 17) {
-                    forwardUdp(vpnInput, vpnOutput, packet, length, dstIp, dstPort)
-                } else {
-                    packet.position(0)
-                    packet.limit(length)
-                    vpnOutput.write(packet.array(), 0, packet.remaining())
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "Packet error", e)
-            }
-        }
-    }
-
-    private fun offset(version: Int): Int = if (version == 4) 20 else 40
-
-    private fun sendTcpReset(
-        inStream: FileInputStream,
-        outStream: FileOutputStream,
-        packet: ByteBuffer,
-        length: Int,
-        srcPort: Int,
-        dstPort: Int,
-        dstIp: String,
-        protocol: Int
-    ) {
+    private void sendTcpReset(FileOutputStream outStream, byte[] original, int length, int srcPort, int dstPort, String dstIp) {
         try {
-            val response = ByteBuffer.allocate(40)
-            response.put((4 shl 4 or 5).toByte())
-            response.put(0.toByte())
-            response.put(0.toByte())
-            response.put(0.toByte())
-            response.put(0.toByte())
-            response.put(0x40.toByte())
-            response.put(0.toByte())
-            response.put(0.toByte())
-            response.put(0.toByte())
-            response.put(0xFF.toByte())
-            response.put(CALC.tcp.toByte())
-            response.putShort(0)
-            response.putInt(0)
-            for (i in 20..25) response.put(packet[i])
-            response.putShort((srcPort and 0xFFFF).toShort())
-            response.putShort((dstPort and 0xFFFF).toShort())
-            response.putInt(0)
-            response.put(0x50.toByte())
-            response.put(0x04.toByte())
-            response.putShort(0)
-            response.putInt(0)
-            response.putInt(0)
+            byte[] response = new byte[40];
+            response[0] = (byte) 0x45;
+            response[1] = 0;
+            response[2] = 0;
+            response[3] = 0;
+            response[4] = 0;
+            response[5] = 0x40;
+            response[6] = 0;
+            response[7] = 0;
+            response[8] = 0;
+            response[9] = 0x06;
+            response[10] = 0;
+            response[11] = 0;
+            response[12] = 0;
+            response[13] = 0;
+            response[14] = 0;
+            response[15] = 0;
+            for (int i = 16; i < 20; i++) response[i] = original[i];
+            response[20] = (byte) ((srcPort >> 8) & 0xFF);
+            response[21] = (byte) (srcPort & 0xFF);
+            response[22] = (byte) ((dstPort >> 8) & 0xFF);
+            response[23] = (byte) (dstPort & 0xFF);
+            response[24] = 0;
+            response[25] = 0;
+            response[26] = 0x50;
+            response[27] = 0x04;
+            response[28] = 0;
+            response[29] = 0;
+            response[30] = 0;
+            response[31] = 0;
+            response[32] = 0;
+            response[33] = 0;
+            response[34] = 0;
+            response[35] = 0;
+            response[36] = 0;
+            response[37] = 0;
+            response[38] = 0;
+            response[39] = 0;
 
-            response.position(10)
-            var sum = 0
-            for (i in 0 until 10) {
-                sum += ((response[i].toInt() and 0xFF) shl 8) or (response[i + 10].toInt() and 0xFF)
+            int sum = 0;
+            for (int i = 0; i < 20; i += 2) {
+                sum += ((response[i] & 0xFF) << 8) | (response[i + 1] & 0xFF);
             }
-            val checksum = (sum ushr 16) + (sum and 0xFFFF)
-            response.putShort(20, (checksum and 0xFFFF).toShort())
+            int checksum = (sum >> 16) + (sum & 0xFFFF);
+            response[24] = (byte) ((checksum >> 8) & 0xFF);
+            response[25] = (byte) (checksum & 0xFF);
 
-            response.position(0)
-            outStream.write(response.array(), 0, response.remaining())
-        } catch (e: Exception) {
-            Log.w(TAG, "TCP reset failed for $dstIp:$dstPort", e)
+            outStream.write(response);
+        } catch (Exception e) {
+            Log.w(TAG, "TCP reset failed for " + dstIp + ":" + dstPort, e);
         }
     }
 
-    private fun forwardUdp(
-        input: FileInputStream,
-        output: FileOutputStream,
-        packet: ByteBuffer,
-        length: Int,
-        dstIp: String,
-        dstPort: Int
-    ) {
+    private void forwardUdp(FileInputStream input, FileOutputStream output, byte[] packetBytes, int length, String dstIp, int dstPort) {
         try {
-            val socketChannel = DatagramChannel.open()
-            socketChannel.socket().connect(InetSocketAddress(dstIp, dstPort))
+            DatagramChannel socketChannel = DatagramChannel.open();
+            socketChannel.socket().connect(new InetSocketAddress(dstIp, dstPort));
 
-            val payloadSize = length - offset(4) - 8
+            int headerOffset = 20;
+            int payloadSize = length - headerOffset - 8;
             if (payloadSize > 0) {
-                val payload = ByteArray(payloadSize)
-                System.arraycopy(packet.array(), offset(4) + 8, payload, 0, payloadSize)
-                socketChannel.send(ByteBuffer.wrap(payload), InetSocketAddress(dstIp, dstPort))
+                byte[] payload = new byte[payloadSize];
+                System.arraycopy(packetBytes, headerOffset + 8, payload, 0, payloadSize);
+                socketChannel.send(ByteBuffer.wrap(payload), new InetSocketAddress(dstIp, dstPort));
             }
 
-            val reply = ByteArray(32767)
-            val buffer = ByteBuffer.wrap(reply)
-            socketChannel.receive(buffer)
-            socketChannel.close()
+            ByteBuffer reply = ByteBuffer.allocate(32767);
+            socketChannel.receive(reply);
+            socketChannel.close();
 
-            if (buffer.position() > 0) {
-                packet.position(0)
-                packet.limit(length)
-                output.write(packet.array(), 0, packet.remaining())
+            if (reply.position() > 0) {
+                output.write(packetBytes, 0, length);
             }
-        } catch (ignored: Exception) {
+        } catch (Exception ignored) {
             // drop blocked or failed UDP traffic silently
         }
-    }
-
-    private object CALC {
-        const val tcp: Short = 6
-        const val udp: Short = 17
     }
 }

@@ -1,13 +1,16 @@
-package com.pornblocker
+package com.pornblocker;
 
-import android.content.Context
-import java.io.BufferedReader
-import java.io.InputStreamReader
+import android.content.Context;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.util.HashSet;
+import java.util.Set;
 
-class BlocklistManager(private val context: Context) {
+public class BlocklistManager {
 
-    private final blockedHosts = new java.util.HashSet<String>()
-    private final blockedPorts = new java.util.HashSet<Integer>()
+    private final Set<String> blockedHosts = new HashSet<String>();
+    private final Set<Integer> blockedPorts = new HashSet<Integer>();
+    private final Context context;
 
     public BlocklistManager(Context context) {
         this.context = context;
@@ -15,44 +18,44 @@ class BlocklistManager(private val context: Context) {
     }
 
     public void loadDefaults() {
-        blockedHosts.addAll(assetsOrRawHosts())
-        blockedHosts.addAll(hardcodedSeed())
+        blockedHosts.addAll(assetsOrRawHosts());
+        blockedHosts.addAll(hardcodedSeed());
     }
 
     public boolean isBlocked(String host) {
         String h = host.toLowerCase().trim();
-        if (h.isEmpty()) return false
+        if (h.isEmpty()) return false;
         for (String entry : blockedHosts) {
-            if (h.equals(entry) || h.endsWith("." + entry)) return true
+            if (h.equals(entry) || h.endsWith("." + entry)) return true;
         }
-        return false
+        return false;
     }
 
     public boolean isBlockedPort(int port) {
-        return blockedPorts.contains(port)
+        return blockedPorts.contains(port);
     }
 
-    private java.util.Set<String> assetsOrRawHosts() {
+    private Set<String> assetsOrRawHosts() {
         try {
-            InputStream raw = context.getResources().openRawResource(R.raw.blocklist)
-            BufferedReader reader = new BufferedReader(new InputStreamReader(raw))
-            java.util.Set<String> linesSet = new java.util.HashSet<String>()
+            java.io.InputStream raw = context.getResources().openRawResource(R.raw.blocklist);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(raw));
+            Set<String> linesSet = new HashSet<String>();
             String line;
             while ((line = reader.readLine()) != null) {
-                line = line.trim().toLowerCase()
+                line = line.trim().toLowerCase();
                 if (!line.isEmpty() && !line.startsWith("#")) {
-                    linesSet.add(line)
+                    linesSet.add(line);
                 }
             }
-            reader.close()
-            return linesSet
+            reader.close();
+            return linesSet;
         } catch (Exception e) {
-            return new java.util.HashSet<String>()
+            return new HashSet<String>();
         }
     }
 
-    private java.util.Set<String> hardcodedSeed() {
-        java.util.Set<String> set = new java.util.HashSet<String>()
+    private Set<String> hardcodedSeed() {
+        Set<String> set = new HashSet<String>();
         String[] hosts = new String[]{
             "pornhub.com",
             "xvideos.com",
@@ -70,7 +73,7 @@ class BlocklistManager(private val context: Context) {
             "livejasmin.com",
             "myfreecams.com"
         };
-        for (String h : hosts) set.add(h)
-        return set
+        for (String h : hosts) set.add(h);
+        return set;
     }
 }
