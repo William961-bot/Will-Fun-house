@@ -11,50 +11,35 @@
         android:text="Porn Blocker"
         android:textSize="28sp"
         android:textStyle="bold"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="16dp"
         android:layout_marginBottom="16dp"/>
-
-    <Button
-        android:id="@+id/btnStartVpn"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Start Protection"
-        android:layout_marginBottom="12dp"/>
-
-    <Button
-        android:id="@+id/btnStopVpn"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Stop Protection"
-        android:enabled="false"
-        android:layout_marginBottom="12dp"/>
 
     <TextView
         android:id="@+id/tvStatus"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Status: inactive"
+        android:text="Status: active"
         android:textSize="18sp"
-        android:layout_marginTop="12dp"/>
+        android:layout_marginBottom="8dp"/>
 
     <TextView
         android:id="@+id/tvBlocked"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Blocked: 0"
+        android:text="Blocked domains: 15"
         android:textSize="18sp"
-        android:layout_marginTop="8dp"/>
+        android:layout_marginBottom="16dp"/>
 
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="16dp"
         android:layout_marginBottom="16dp"/>
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Browser filter"
+        android:text="App Browser"
         android:textSize="20sp"
         android:textStyle="bold"
         android:layout_marginBottom="8dp"/>
@@ -62,14 +47,16 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Blocked domains are enforced inside the app browser only."
-        android:layout_marginBottom="8dp"/>
+        android:text="Blocked domains are enforced in the in-app browser only."
+        android:textSize="14sp"
+        android:textColor="?android:textColorSecondary"
+        android:layout_marginBottom="12dp"/>
 
     <EditText
         android:id="@+id/etQuery"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Open a URL"
+        android:hint="Enter URL (e.g., example.com)"
         android:inputType="textUri"
         android:layout_marginBottom="8dp"/>
 
@@ -77,13 +64,14 @@
         android:id="@+id/btnOpenBrowser"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Open in blocker browser"/>
+        android:text="Open in Blocker Browser"/>
 
     <fragment
         android:id="@+id/browserFragment"
         android:name="com.pornblocker.SimpleBrowser"
         android:layout_width="match_parent"
         android:layout_weight="1"
-        android:layout_height="0dp"/>
+        android:layout_height="0dp"
+        android:layout_marginTop="12dp"/>
 
 </LinearLayout>

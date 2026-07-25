@@ -9,8 +9,6 @@ color teal_700
 color white
 id browserFragment
 id btnOpenBrowser
-id btnStartVpn
-id btnStopVpn
 id etQuery
 id tvBlocked
 id tvStatus

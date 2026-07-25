@@ -25,12 +25,6 @@ public final class ActivityMainBinding implements ViewBinding {
   public final Button btnOpenBrowser;
 
   @NonNull
-  public final Button btnStartVpn;
-
-  @NonNull
-  public final Button btnStopVpn;
-
-  @NonNull
   public final EditText etQuery;
 
   @NonNull
@@ -40,12 +34,9 @@ public final class ActivityMainBinding implements ViewBinding {
   public final TextView tvStatus;
 
   private ActivityMainBinding(@NonNull LinearLayout rootView, @NonNull Button btnOpenBrowser,
-      @NonNull Button btnStartVpn, @NonNull Button btnStopVpn, @NonNull EditText etQuery,
-      @NonNull TextView tvBlocked, @NonNull TextView tvStatus) {
+      @NonNull EditText etQuery, @NonNull TextView tvBlocked, @NonNull TextView tvStatus) {
     this.rootView = rootView;
     this.btnOpenBrowser = btnOpenBrowser;
-    this.btnStartVpn = btnStartVpn;
-    this.btnStopVpn = btnStopVpn;
     this.etQuery = etQuery;
     this.tvBlocked = tvBlocked;
     this.tvStatus = tvStatus;
@@ -84,18 +75,6 @@ public final class ActivityMainBinding implements ViewBinding {
         break missingId;
       }
 
-      id = R.id.btnStartVpn;
-      Button btnStartVpn = ViewBindings.findChildViewById(rootView, id);
-      if (btnStartVpn == null) {
-        break missingId;
-      }
-
-      id = R.id.btnStopVpn;
-      Button btnStopVpn = ViewBindings.findChildViewById(rootView, id);
-      if (btnStopVpn == null) {
-        break missingId;
-      }
-
       id = R.id.etQuery;
       EditText etQuery = ViewBindings.findChildViewById(rootView, id);
       if (etQuery == null) {
@@ -114,8 +93,8 @@ public final class ActivityMainBinding implements ViewBinding {
         break missingId;
       }
 
-      return new ActivityMainBinding((LinearLayout) rootView, btnOpenBrowser, btnStartVpn,
-          btnStopVpn, etQuery, tvBlocked, tvStatus);
+      return new ActivityMainBinding((LinearLayout) rootView, btnOpenBrowser, etQuery, tvBlocked,
+          tvStatus);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

@@ -35,6 +35,10 @@ public class BlocklistManager {
         return blockedPorts.contains(port);
     }
 
+    public int getHostCount() {
+        return blockedHosts.size();
+    }
+
     private Set<String> assetsOrRawHosts() {
         try {
             java.io.InputStream raw = context.getResources().openRawResource(R.raw.blocklist);
