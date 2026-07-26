@@ -18,7 +18,6 @@ import androidx.core.app.NotificationCompat;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
@@ -42,7 +41,6 @@ public class BlockerVpnService extends VpnService {
     private FileOutputStream out;
     private ParcelFileDescriptor pfd;
     private final Set<String> blockedDomains = new HashSet<>();
-    private final Set<String> blockedIps = new HashSet<>();
 
     @Override
     public void onCreate() {
@@ -93,28 +91,8 @@ public class BlockerVpnService extends VpnService {
                 blockedDomains.clear();
                 blockedDomains.addAll(hosts);
             }
-            blockedIps.clear();
-            for (String host : hosts) {
-                if (isIpAddress(host)) {
-                    blockedIps.add(host);
-                }
-            }
-            Log.i(TAG, "Loaded " + blockedDomains.size() + " items, " + blockedIps.size() + " IPs");
+            Log.i(TAG, "Loaded " + blockedDomains.size() + " blocked items");
         } catch (Throwable ignored) {}
-    }
-    
-    private boolean isIpAddress(String address) {
-        String[] parts = address.split("\\.");
-        if (parts.length != 4) return false;
-        for (String part : parts) {
-            try {
-                int i = Integer.parseInt(part);
-                if (i < 0 || i > 255) return false;
-            } catch (NumberFormatException e) {
-                return false;
-            }
-        }
-        return true;
     }
 
     public int getBlockedCount() {
@@ -129,14 +107,9 @@ public class BlockerVpnService extends VpnService {
             builder.setMtu(1500);
             builder.addAddress("10.0.0.2", 32);
             builder.addRoute("0.0.0.0", 0);
-            
             // Use CleanBrowsing Family DNS which blocks porn domains
             builder.addDnsServer("185.228.168.9");
             builder.addDnsServer("185.228.169.9");
-            
-            // Also allow DNS traffic to be routed through VPN
-            builder.addRoute("185.228.168.9", 32);
-            builder.addRoute("185.228.169.9", 32);
 
             pfd = builder.establish();
             if (pfd == null) {
@@ -167,7 +140,7 @@ public class BlockerVpnService extends VpnService {
                             try {
                                 handlePacket(packet, length);
                             } catch (Throwable t) {
-                                Log.e(TAG, "Packet handling error", t);
+                                Log.e(TAG, "Packet error", t);
                             }
                         }
                         packet.clear();
@@ -178,7 +151,7 @@ public class BlockerVpnService extends VpnService {
             }, "PornBlock");
             worker.start();
 
-            Log.i(TAG, "VPN started successfully");
+            Log.i(TAG, "VPN started with CleanBrowsing DNS");
         } catch (Exception e) {
             Log.e(TAG, "Failed to start VPN", e);
             stopSelf();
@@ -202,40 +175,8 @@ public class BlockerVpnService extends VpnService {
     }
 
     private void handlePacket(ByteBuffer packet, int length) {
-        if (length < 20) return;
-        byte version = (byte) ((packet.get(0) >> 4) & 0x0F);
-        if (version != 4) return;
-
-        // Read destination IP from bytes 16-19
-        int dstIp = packet.getInt(16);
-        byte[] dstBytes = new byte[4];
-        dstBytes[0] = (byte) ((dstIp >>> 24) & 0xFF);
-        dstBytes[1] = (byte) ((dstIp >>> 16) & 0xFF);
-        dstBytes[2] = (byte) ((dstIp >>> 8) & 0xFF);
-        dstBytes[3] = (byte) (dstIp & 0xFF);
-
-        String dstStr;
-        try {
-            dstStr = InetAddress.getByAddress(dstBytes).getHostAddress();
-        } catch (Exception e) {
-            return;
-        }
-
-        // Check if destination IP is in blocklist
-        if (blockedIps.contains(dstStr)) {
-            blockedCount.incrementAndGet();
-            Log.d(TAG, "Blocked IP: " + dstStr);
-            return;
-        }
-
-        // Check if destination is a porn domain IP (185.228.168.x or 185.228.169.x)
-        if (dstStr.startsWith("185.228.168.") || dstStr.startsWith("185.228.169.")) {
-            blockedCount.incrementAndGet();
-            Log.d(TAG, "Blocked CleanBrowsing domain: " + dstStr);
-            return;
-        }
-
-        // Pass all other traffic
+        // Just pass all traffic through
+        // CleanBrowsing DNS will block porn domains at the DNS level
         try {
             out.write(packet.array(), 0, length);
         } catch (IOException ignored) {}
@@ -246,7 +187,7 @@ public class BlockerVpnService extends VpnService {
             NotificationChannel ch = new NotificationChannel(
                     CHANNEL_ID, "Porn Blocker", NotificationManager.IMPORTANCE_LOW
             );
-            ch.setDescription("Keeps the blocker VPN active");
+            ch.setDescription("Routes DNS through CleanBrowsing Family Protection");
             ch.setShowBadge(false);
             NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
             if (nm != null) nm.createNotificationChannel(ch);
@@ -260,7 +201,7 @@ public class BlockerVpnService extends VpnService {
         );
         return new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("Porn Blocker Active")
-                .setContentText("System-wide blocking is running")
+                .setContentText("Using CleanBrowsing Family DNS")
                 .setSmallIcon(android.R.drawable.ic_lock_lock)
                 .setContentIntent(pi)
                 .setOngoing(true)
