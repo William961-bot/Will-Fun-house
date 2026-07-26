@@ -20,11 +20,13 @@ public class DashboardFragment extends Fragment {
     private Switch switchProtection;
     private Button btnViewActivity;
     private DataManager dataManager;
+    private ProtectionManager protectionManager;
 
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
         dataManager = DataManager.getInstance(context);
+        protectionManager = ProtectionManager.getInstance(context);
     }
 
     @Override
@@ -48,34 +50,32 @@ public class DashboardFragment extends Fragment {
             tvRole.setText("Role: " + user.role.name());
         }
 
-        boolean isProtected = ProtectionManager.isProtectionActive(requireContext());
+        boolean isProtected = protectionManager.isProtectionActive();
         switchProtection.setChecked(isProtected);
 
         updateStatus();
 
         switchProtection.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
-                ProtectionManager.setProtectionActive(requireContext(), true);
+                protectionManager.setProtectionActive(true);
                 Toast.makeText(getContext(), "Protection enabled", Toast.LENGTH_SHORT).show();
             } else {
-                ProtectionManager.setProtectionActive(requireContext(), false);
+                protectionManager.setProtectionActive(false);
                 Toast.makeText(getContext(), "Protection disabled", Toast.LENGTH_SHORT).show();
             }
             updateStatus();
         });
 
         btnViewActivity.setOnClickListener(v -> {
-            // Navigate to activity log
-            getParentFragmentManager()
-                .beginTransaction()
-                .replace(R.id.fragment_container, new ActivityLogFragment())
-                .addToBackStack(null)
-                .commit();
+            // Navigate to activity tab (position 2)
+            if (getActivity() instanceof MainActivity) {
+                ((MainActivity) getActivity()).getViewPager2().setCurrentItem(2, false);
+            }
         });
     }
 
     private void updateStatus() {
-        boolean active = ProtectionManager.isProtectionActive(requireContext());
+        boolean active = protectionManager.isProtectionActive();
         tvStatus.setText(active ? "Status: Active" : "Status: Inactive");
         tvStatus.setTextColor(active ? 0xFF4CAF50 : 0xFFFF9800);
     }

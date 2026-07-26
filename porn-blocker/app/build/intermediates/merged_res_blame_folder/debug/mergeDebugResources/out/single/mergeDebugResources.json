@@ -4,8 +4,8 @@
         "source": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-main-34:/mipmap-xxxhdpi/ic_launcher.png"
     },
     {
-        "merged": "com.pornblocker.app-debug-32:/layout_activity_main.xml.flat",
-        "source": "com.pornblocker.app-main-34:/layout/activity_main.xml"
+        "merged": "com.pornblocker.app-debug-32:/layout_fragment_profile.xml.flat",
+        "source": "com.pornblocker.app-main-34:/layout/fragment_profile.xml"
     },
     {
         "merged": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-debug-32:/mipmap-xxhdpi_ic_launcher.png.flat",
@@ -24,12 +24,28 @@
         "source": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-main-34:/layout/activity_main.xml"
     },
     {
+        "merged": "com.pornblocker.app-debug-32:/drawable_edit_text_background.xml.flat",
+        "source": "com.pornblocker.app-main-34:/drawable/edit_text_background.xml"
+    },
+    {
         "merged": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-debug-32:/raw_blocklist.txt.flat",
         "source": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-main-34:/raw/blocklist.txt"
     },
     {
+        "merged": "com.pornblocker.app-debug-32:/layout_activity_login.xml.flat",
+        "source": "com.pornblocker.app-main-34:/layout/activity_login.xml"
+    },
+    {
+        "merged": "com.pornblocker.app-debug-32:/layout_fragment_dashboard.xml.flat",
+        "source": "com.pornblocker.app-main-34:/layout/fragment_dashboard.xml"
+    },
+    {
         "merged": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-debug-32:/mipmap-hdpi_ic_launcher.png.flat",
         "source": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-main-34:/mipmap-hdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.pornblocker.app-debug-32:/layout_item_blocked_request.xml.flat",
+        "source": "com.pornblocker.app-main-34:/layout/item_blocked_request.xml"
     },
     {
         "merged": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-debug-32:/mipmap-mdpi_ic_launcher.png.flat",
@@ -50,5 +66,9 @@
     {
         "merged": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-debug-32:/layout_fragment_home.xml.flat",
         "source": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-main-34:/layout/fragment_home.xml"
+    },
+    {
+        "merged": "com.pornblocker.app-debug-32:/layout_fragment_activity_log.xml.flat",
+        "source": "com.pornblocker.app-main-34:/layout/fragment_activity_log.xml"
     }
 ]

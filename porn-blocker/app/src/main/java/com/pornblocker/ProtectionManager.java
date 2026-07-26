@@ -2,75 +2,187 @@ package com.pornblocker;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
- * Manager for protection state and settings
+ * Central manager for all protection settings and state
  */
 public class ProtectionManager {
 
     private static final String PREFS = "porn_blocker_prefs";
     private static final String KEY_PROTECTION_ACTIVE = "protection_active";
     private static final String KEY_PIN = "protection_pin";
-    private static final String KEY_SCHEDULE_ENABLED = "schedule_enabled";
-    private static final String KEY_SCHEDULE_START = "schedule_start";
-    private static final String KEY_SCHEDULE_END = "schedule_end";
+    private static final String KEY_PIN_CREATED = "pin_created";
+    private static final String KEY_ALLOWLIST = "allowlist";
+    private static final String KEY_BLOCKLIST = "blocklist";
+    private static final String KEY_CATEGORIES = "categories";
+    private static final String KEY_KEYWORDS = "keywords";
+    private static final String KEY_SCHEDULE = "schedule";
+    private static final String KEY_ACTIVITY_LOG = "activity_log";
+    private static final String KEY_TEMPORARY_ACCESS = "temp_access";
 
-    public static void setProtectionActive(Context context, boolean active) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .edit()
-                .putBoolean(KEY_PROTECTION_ACTIVE, active)
-                .apply();
+    private static ProtectionManager instance;
+    private SharedPreferences prefs;
+    private Gson gson;
+
+    private ProtectionManager(Context context) {
+        prefs = context.getApplicationContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        gson = new Gson();
     }
 
-    public static boolean isProtectionActive(Context context) {
-        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .getBoolean(KEY_PROTECTION_ACTIVE, false);
+    public static synchronized ProtectionManager getInstance(Context context) {
+        if (instance == null) {
+            instance = new ProtectionManager(context);
+        }
+        return instance;
     }
 
-    public static void setPin(Context context, String pin) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .edit()
-                .putString(KEY_PIN, pin)
-                .apply();
+    // Protection state
+    public void setProtectionActive(boolean active) {
+        prefs.edit().putBoolean(KEY_PROTECTION_ACTIVE, active).apply();
     }
 
-    public static String getPin(Context context) {
-        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .getString(KEY_PIN, null);
+    public boolean isProtectionActive() {
+        return prefs.getBoolean(KEY_PROTECTION_ACTIVE, false);
     }
 
-    public static boolean verifyPin(Context context, String pin) {
-        String savedPin = getPin(context);
+    // PIN management
+    public void setPin(String pin) {
+        prefs.edit().putString(KEY_PIN, pin).putBoolean(KEY_PIN_CREATED, true).apply();
+    }
+
+    public boolean verifyPin(String pin) {
+        String savedPin = prefs.getString(KEY_PIN, null);
         return savedPin != null && savedPin.equals(pin);
     }
 
-    public static void setScheduleEnabled(Context context, boolean enabled) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .edit()
-                .putBoolean(KEY_SCHEDULE_ENABLED, enabled)
-                .apply();
+    public boolean isPinCreated() {
+        return prefs.getBoolean(KEY_PIN_CREATED, false);
     }
 
-    public static boolean isScheduleEnabled(Context context) {
-        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .getBoolean(KEY_SCHEDULE_ENABLED, false);
+    // Allowlist/Blocklist
+    public void addToAllowlist(String domain) {
+        Set<String> list = getAllowlist();
+        list.add(domain.toLowerCase());
+        prefs.edit().putStringSet(KEY_ALLOWLIST, list).apply();
     }
 
-    public static void setSchedule(Context context, String start, String end) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .edit()
-                .putString(KEY_SCHEDULE_START, start)
-                .putString(KEY_SCHEDULE_END, end)
-                .apply();
+    public void removeFromAllowlist(String domain) {
+        Set<String> list = getAllowlist();
+        list.remove(domain.toLowerCase());
+        prefs.edit().putStringSet(KEY_ALLOWLIST, list).apply();
     }
 
-    public static String getScheduleStart(Context context) {
-        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .getString(KEY_SCHEDULE_START, "00:00");
+    public Set<String> getAllowlist() {
+        return prefs.getStringSet(KEY_ALLOWLIST, new HashSet<>());
     }
 
-    public static String getScheduleEnd(Context context) {
-        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .getString(KEY_SCHEDULE_END, "23:59");
+    public void addToBlocklist(String domain) {
+        Set<String> list = getBlocklist();
+        list.add(domain.toLowerCase());
+        prefs.edit().putStringSet(KEY_BLOCKLIST, list).apply();
+    }
+
+    public void removeFromBlocklist(String domain) {
+        Set<String> list = getBlocklist();
+        list.remove(domain.toLowerCase());
+        prefs.edit().putStringSet(KEY_BLOCKLIST, list).apply();
+    }
+
+    public Set<String> getBlocklist() {
+        return prefs.getStringSet(KEY_BLOCKLIST, new HashSet<>());
+    }
+
+    // Categories
+    public void setCategoriesEnabled(Set<String> categories) {
+        prefs.edit().putStringSet(KEY_CATEGORIES, categories).apply();
+    }
+
+    public Set<String> getEnabledCategories() {
+        return prefs.getStringSet(KEY_CATEGORIES, getDefaultCategories());
+    }
+
+    private Set<String> getDefaultCategories() {
+        Set<String> defaults = new HashSet<>();
+        defaults.add(ContentCategory.ADULT.name());
+        return defaults;
+    }
+
+    // Keywords
+    public void setKeywords(List<String> keywords) {
+        prefs.edit().putString(KEY_KEYWORDS, gson.toJson(keywords)).apply();
+    }
+
+    public List<String> getKeywords() {
+        String json = prefs.getString(KEY_KEYWORDS, "[]");
+        Type type = new TypeToken<ArrayList<String>>(){}.getType();
+        return gson.fromJson(json, type);
+    }
+
+    // Schedule
+    public void setSchedule(Schedule schedule) {
+        prefs.edit().putString(KEY_SCHEDULE, gson.toJson(schedule)).apply();
+    }
+
+    public Schedule getSchedule() {
+        String json = prefs.getString(KEY_SCHEDULE, "");
+        if (json.isEmpty()) return new Schedule();
+        return gson.fromJson(json, Schedule.class);
+    }
+
+    // Activity log
+    public void addBlockedRequest(BlockedRequest request) {
+        List<BlockedRequest> log = getActivityLog();
+        log.add(0, request); // Add to top
+        if (log.size() > 100) {
+            log = log.subList(0, 100); // Keep only last 100
+        }
+        prefs.edit().putString(KEY_ACTIVITY_LOG, gson.toJson(log)).apply();
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<BlockedRequest> getActivityLog() {
+        String json = prefs.getString(KEY_ACTIVITY_LOG, "[]");
+        Type type = new TypeToken<ArrayList<BlockedRequest>>(){}.getType();
+        return gson.fromJson(json, type);
+    }
+
+    public void clearActivityLog() {
+        prefs.edit().remove(KEY_ACTIVITY_LOG).apply();
+    }
+
+    // Temporary access
+    public void grantTemporaryAccess(String domain, long durationMinutes) {
+        Set<String> tempAccess = prefs.getStringSet(KEY_TEMPORARY_ACCESS, new HashSet<>());
+        tempAccess.add(domain + ":" + (System.currentTimeMillis() + durationMinutes * 60 * 1000));
+        prefs.edit().putStringSet(KEY_TEMPORARY_ACCESS, tempAccess).apply();
+    }
+
+    public boolean hasTemporaryAccess(String domain) {
+        Set<String> tempAccess = prefs.getStringSet(KEY_TEMPORARY_ACCESS, new HashSet<>());
+        long now = System.currentTimeMillis();
+        Set<String> valid = new HashSet<>();
+        for (String entry : tempAccess) {
+            String[] parts = entry.split(":");
+            if (parts.length == 2) {
+                long expiry = Long.parseLong(parts[1]);
+                if (expiry > now) {
+                    valid.add(domain);
+                }
+            }
+        }
+        prefs.edit().putStringSet(KEY_TEMPORARY_ACCESS, valid).apply();
+        return valid.contains(domain);
+    }
+
+    // Reset all settings
+    public void resetAll() {
+        prefs.edit().clear().apply();
     }
 }

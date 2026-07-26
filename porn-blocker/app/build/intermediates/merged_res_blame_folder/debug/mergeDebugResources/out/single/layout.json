@@ -8,19 +8,35 @@
         "source": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-main-34:/layout/item_app_block.xml"
     },
     {
+        "merged": "com.pornblocker.app-mergeDebugResources-31:/layout/activity_login.xml",
+        "source": "com.pornblocker.app-main-34:/layout/activity_login.xml"
+    },
+    {
         "merged": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-mergeDebugResources-31:/layout/activity_main.xml",
         "source": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-main-34:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.pornblocker.app-mergeDebugResources-31:/layout/item_blocked_request.xml",
+        "source": "com.pornblocker.app-main-34:/layout/item_blocked_request.xml"
     },
     {
         "merged": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-mergeDebugResources-31:/layout/activity_blocked_screen.xml",
         "source": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-main-34:/layout/activity_blocked_screen.xml"
     },
     {
+        "merged": "com.pornblocker.app-mergeDebugResources-31:/layout/fragment_activity_log.xml",
+        "source": "com.pornblocker.app-main-34:/layout/fragment_activity_log.xml"
+    },
+    {
         "merged": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-mergeDebugResources-31:/layout/fragment_blocklist.xml",
         "source": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-main-34:/layout/fragment_blocklist.xml"
     },
     {
-        "merged": "com.pornblocker.app-mergeDebugResources-31:/layout/activity_main.xml",
-        "source": "com.pornblocker.app-main-34:/layout/activity_main.xml"
+        "merged": "com.pornblocker.app-mergeDebugResources-31:/layout/fragment_dashboard.xml",
+        "source": "com.pornblocker.app-main-34:/layout/fragment_dashboard.xml"
+    },
+    {
+        "merged": "com.pornblocker.app-mergeDebugResources-31:/layout/fragment_profile.xml",
+        "source": "com.pornblocker.app-main-34:/layout/fragment_profile.xml"
     }
 ]

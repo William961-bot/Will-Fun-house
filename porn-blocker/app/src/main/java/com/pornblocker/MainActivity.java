@@ -38,6 +38,10 @@ public class MainActivity extends AppCompatActivity {
                 tab.setText("Home");
             } else if (position == 1) {
                 tab.setText("Blocklist");
+            } else if (position == 2) {
+                tab.setText("Activity");
+            } else if (position == 3) {
+                tab.setText("Profile");
             }
         }).attach();
 
@@ -51,6 +55,10 @@ public class MainActivity extends AppCompatActivity {
         );
 
         setupPermissions();
+    }
+
+    public ViewPager2 getViewPager2() {
+        return viewPager;
     }
 
     private void setupPermissions() {
@@ -73,6 +81,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void stopVpn() {
+        Intent intent = new Intent(this, BlockerVpnService.class);
+        intent.setAction(BlockerVpnService.ACTION_STOP);
+        startService(intent);
+        Toast.makeText(this, "VPN stopped", Toast.LENGTH_SHORT).show();
+    }
+
     private void activateVpn() {
         if (BlockerVpnService.isRunning) {
             Toast.makeText(this, "VPN already active", Toast.LENGTH_SHORT).show();
@@ -85,24 +100,11 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(this, "VPN started", Toast.LENGTH_SHORT).show();
     }
 
-    public void stopVpn() {
-        Intent intent = new Intent(this, BlockerVpnService.class);
-        intent.setAction(BlockerVpnService.ACTION_STOP);
-        startService(intent);
-        Toast.makeText(this, "VPN stopped", Toast.LENGTH_SHORT).show();
-    }
-
     public boolean isVpnRunning() {
         return BlockerVpnService.isRunning;
     }
 
     public int getBlockedCount() {
         return BlockerVpnService.blockedCount.get();
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        // Permissions handled automatically
     }
 }

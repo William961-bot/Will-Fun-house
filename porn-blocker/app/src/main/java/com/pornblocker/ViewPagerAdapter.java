@@ -14,15 +14,22 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
     @NonNull
     @Override
     public Fragment createFragment(int position) {
-        if (position == 0) {
-            return new HomePageFragment();
-        } else {
-            return new BlocklistFragment();
+        switch (position) {
+            case 0:
+                return new DashboardFragment();
+            case 1:
+                return new BlocklistFragment();
+            case 2:
+                return new ActivityLogFragment();
+            case 3:
+                return new ProfileFragment();
+            default:
+                return new DashboardFragment();
         }
     }
 
     @Override
     public int getItemCount() {
-        return 2;
+        return 4;
     }
 }
