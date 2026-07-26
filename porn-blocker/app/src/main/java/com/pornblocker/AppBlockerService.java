@@ -14,6 +14,7 @@ public class AppBlockerService extends AccessibilityService {
     private static final String TAG = "AppBlockerService";
     private static final String PREFS = "porn_blocker_prefs";
     private static final String KEY_BLOCKED_APPS = "blocked_apps";
+    private static final String KEY_BLOCKED_KEYWORDS = "blocked_keywords";
 
     @Override
     public void onServiceConnected() {
@@ -24,6 +25,7 @@ public class AppBlockerService extends AccessibilityService {
         info.feedbackType = AccessibilityServiceInfo.FEEDBACK_SPOKEN;
         info.notificationTimeout = 100;
         setServiceInfo(info);
+        Log.d(TAG, "Accessibility service connected");
     }
 
     @Override
@@ -35,18 +37,28 @@ public class AppBlockerService extends AccessibilityService {
 
         // Check if this app is blocked
         if (isAppBlocked(packageName)) {
+            Log.d(TAG, "Blocking app: " + packageName);
             // This app is blocked - show blocked screen
             Intent intent = new Intent(this, BlockedScreenActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
             intent.putExtra("package_name", packageName);
             intent.putExtra("app_name", getAppLabel(packageName));
             startActivity(intent);
+            return;
+        }
+
+        // Check if current activity URL contains blocked keywords
+        if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            checkBlockedKeywords();
         }
     }
 
+    private void checkBlockedKeywords() {
+        // This would check the current URL/activity for blocked keywords
+        // Implementation would use AccessibilityNodeInfo to get the current URL
+    }
+
     private boolean isAppBlocked(String packageName) {
-        if (!BlockerVpnService.isRunning) return false;
-        
         SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
         Set<String> blockedApps = prefs.getStringSet(KEY_BLOCKED_APPS, new HashSet<>());
         return blockedApps.contains(packageName);

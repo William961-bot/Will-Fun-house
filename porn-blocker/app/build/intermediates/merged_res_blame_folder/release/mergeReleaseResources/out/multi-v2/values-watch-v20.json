@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.pornblocker.app-mergeReleaseResources-30:/values-watch-v20/values-watch-v20.xml",
+            "map": [
+                {
+                    "source": "/home/willnut/.gradle/caches/8.9/transforms/9359bff6e54ce0bc6d1fd58a403ef5c6/transformed/appcompat-1.6.1/res/values-watch-v20/values-watch-v20.xml",
+                    "from": {
+                        "startLines": "2,5,8",
+                        "startColumns": "4,4,4",
+                        "startOffsets": "55,214,385",
+                        "endLines": "4,7,10",
+                        "endColumns": "12,12,12",
+                        "endOffsets": "209,380,553"
+                    }
+                }
+            ]
+        }
+    ]
+}

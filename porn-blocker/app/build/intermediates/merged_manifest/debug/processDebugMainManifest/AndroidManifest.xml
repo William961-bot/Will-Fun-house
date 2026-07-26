@@ -79,6 +79,22 @@
                 android:resource="@xml/accessibility_service_config" />
         </service>
 
+        <!-- Device Admin Receiver - Prevents uninstall when protection active -->
+        <receiver
+            android:name="com.pornblocker.MyDeviceAdminReceiver"
+            android:exported="true"
+            android:permission="android.permission.BIND_DEVICE_ADMIN" >
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin" />
+
+            <intent-filter>
+                <action android:name="android.app.action.ADD_DEVICE_ADMIN" />
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+                <action android:name="android.app.action.DEVICE_ADMIN_DISABLED" />
+            </intent-filter>
+        </receiver>
+
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="com.pornblocker.androidx-startup"

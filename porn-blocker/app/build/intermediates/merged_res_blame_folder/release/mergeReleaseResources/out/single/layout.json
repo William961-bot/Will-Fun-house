@@ -1,0 +1,38 @@
+[
+    {
+        "merged": "com.pornblocker.app-mergeReleaseResources-31:/layout/activity_blocked_screen.xml",
+        "source": "com.pornblocker.app-main-33:/layout/activity_blocked_screen.xml"
+    },
+    {
+        "merged": "com.pornblocker.app-mergeReleaseResources-31:/layout/fragment_blocklist.xml",
+        "source": "com.pornblocker.app-main-33:/layout/fragment_blocklist.xml"
+    },
+    {
+        "merged": "com.pornblocker.app-mergeReleaseResources-31:/layout/activity_main.xml",
+        "source": "com.pornblocker.app-main-33:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.pornblocker.app-mergeReleaseResources-31:/layout/item_app_block.xml",
+        "source": "com.pornblocker.app-main-33:/layout/item_app_block.xml"
+    },
+    {
+        "merged": "com.pornblocker.app-mergeReleaseResources-31:/layout/item_blocked_request.xml",
+        "source": "com.pornblocker.app-main-33:/layout/item_blocked_request.xml"
+    },
+    {
+        "merged": "com.pornblocker.app-mergeReleaseResources-31:/layout/fragment_profile.xml",
+        "source": "com.pornblocker.app-main-33:/layout/fragment_profile.xml"
+    },
+    {
+        "merged": "com.pornblocker.app-mergeReleaseResources-31:/layout/fragment_home.xml",
+        "source": "com.pornblocker.app-main-33:/layout/fragment_home.xml"
+    },
+    {
+        "merged": "com.pornblocker.app-mergeReleaseResources-31:/layout/fragment_activity_log.xml",
+        "source": "com.pornblocker.app-main-33:/layout/fragment_activity_log.xml"
+    },
+    {
+        "merged": "com.pornblocker.app-mergeReleaseResources-31:/layout/fragment_dashboard.xml",
+        "source": "com.pornblocker.app-main-33:/layout/fragment_dashboard.xml"
+    }
+]

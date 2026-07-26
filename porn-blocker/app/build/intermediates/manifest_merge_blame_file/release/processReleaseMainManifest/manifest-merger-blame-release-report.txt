@@ -1,0 +1,238 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.pornblocker"
+4    android:versionCode="1"
+5    android:versionName="1.0.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="26"
+9        android:targetSdkVersion="34" />
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:4:5-67
+11-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:4:22-64
+12    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+12-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:5:5-79
+12-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:5:22-76
+13    <uses-permission android:name="android.permission.BIND_VPN_SERVICE" />
+13-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:6:5-75
+13-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:6:22-72
+14    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+14-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:7:5-77
+14-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:7:22-74
+15    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+15-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:8:5-77
+15-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:8:22-74
+16    <uses-permission
+16-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:9:5-112
+17        android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"
+17-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:9:22-84
+18        android:required="false" />
+18-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:9:85-109
+19    <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
+19-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:10:5-85
+19-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:10:22-82
+20
+21    <permission
+21-->[androidx.core:core:1.12.0] /home/willnut/.gradle/caches/8.9/transforms/4c10ca2e13020634e2df3a590d141a4c/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
+22        android:name="com.pornblocker.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+22-->[androidx.core:core:1.12.0] /home/willnut/.gradle/caches/8.9/transforms/4c10ca2e13020634e2df3a590d141a4c/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
+23        android:protectionLevel="signature" />
+23-->[androidx.core:core:1.12.0] /home/willnut/.gradle/caches/8.9/transforms/4c10ca2e13020634e2df3a590d141a4c/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
+24
+25    <uses-permission android:name="com.pornblocker.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+25-->[androidx.core:core:1.12.0] /home/willnut/.gradle/caches/8.9/transforms/4c10ca2e13020634e2df3a590d141a4c/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
+25-->[androidx.core:core:1.12.0] /home/willnut/.gradle/caches/8.9/transforms/4c10ca2e13020634e2df3a590d141a4c/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
+26
+27    <application
+27-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:12:5-77:19
+28        android:allowBackup="false"
+28-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:13:9-36
+29        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+29-->[androidx.core:core:1.12.0] /home/willnut/.gradle/caches/8.9/transforms/4c10ca2e13020634e2df3a590d141a4c/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
+30        android:extractNativeLibs="false"
+31        android:icon="@mipmap/ic_launcher"
+31-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:14:9-43
+32        android:label="Porn Blocker"
+32-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:15:9-37
+33        android:theme="@style/Theme.PornBlocker"
+33-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:16:9-49
+34        android:usesCleartextTraffic="true" >
+34-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:17:9-44
+35
+36        <!-- Main Activity with Tab Navigation - Entry Point -->
+37        <activity
+37-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:20:9-28:20
+38            android:name="com.pornblocker.MainActivity"
+38-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:21:13-41
+39            android:exported="true"
+39-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:22:13-36
+40            android:theme="@style/Theme.PornBlocker.NoActionBar" >
+40-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:23:13-65
+41            <intent-filter>
+41-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:24:13-27:29
+42                <action android:name="android.intent.action.MAIN" />
+42-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:25:17-69
+42-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:25:25-66
+43
+44                <category android:name="android.intent.category.LAUNCHER" />
+44-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:26:17-77
+44-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:26:27-74
+45            </intent-filter>
+46        </activity>
+47
+48        <!-- Blocked Screen Activity -->
+49        <activity
+49-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:31:9-36:49
+50            android:name="com.pornblocker.BlockedScreenActivity"
+50-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:32:13-50
+51            android:excludeFromRecents="true"
+51-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:36:13-46
+52            android:exported="false"
+52-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:33:13-37
+53            android:taskAffinity=":blocked"
+53-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:35:13-44
+54            android:theme="@style/Theme.PornBlocker.NoActionBar" />
+54-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:34:13-65
+55
+56        <!-- VPN Service -->
+57        <service
+57-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:39:9-46:19
+58            android:name="com.pornblocker.BlockerVpnService"
+58-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:40:13-46
+59            android:exported="true"
+59-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:42:13-36
+60            android:permission="android.permission.BIND_VPN_SERVICE" >
+60-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:41:13-69
+61            <intent-filter>
+61-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:43:13-45:29
+62                <action android:name="android.net.VpnService" />
+62-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:44:17-65
+62-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:44:25-62
+63            </intent-filter>
+64        </service>
+65
+66        <!-- Accessibility Service for App Blocking -->
+67        <service
+67-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:49:9-60:19
+68            android:name="com.pornblocker.AppBlockerService"
+68-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:50:13-46
+69            android:enabled="true"
+69-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:53:13-35
+70            android:exported="false"
+70-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:52:13-37
+71            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" >
+71-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:51:13-79
+72            <intent-filter>
+72-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:54:13-56:29
+73                <action android:name="android.accessibilityservice.AccessibilityService" />
+73-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:55:17-92
+73-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:55:25-89
+74            </intent-filter>
+75
+76            <meta-data
+76-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:57:13-59:72
+77                android:name="android.accessibilityservice"
+77-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:58:17-60
+78                android:resource="@xml/accessibility_service_config" />
+78-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:59:17-69
+79        </service>
+80
+81        <!-- Device Admin Receiver - Prevents uninstall when protection active -->
+82        <receiver
+82-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:63:9-75:20
+83            android:name="com.pornblocker.MyDeviceAdminReceiver"
+83-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:64:13-50
+84            android:exported="true"
+84-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:65:13-36
+85            android:permission="android.permission.BIND_DEVICE_ADMIN" >
+85-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:66:13-70
+86            <meta-data
+86-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:67:13-69:56
+87                android:name="android.app.device_admin"
+87-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:68:17-56
+88                android:resource="@xml/device_admin" />
+88-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:69:17-53
+89
+90            <intent-filter>
+90-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:70:13-74:29
+91                <action android:name="android.app.action.ADD_DEVICE_ADMIN" />
+91-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:71:17-78
+91-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:71:25-75
+92                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+92-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:72:17-82
+92-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:72:25-79
+93                <action android:name="android.app.action.DEVICE_ADMIN_DISABLED" />
+93-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:73:17-83
+93-->/home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:73:25-80
+94            </intent-filter>
+95        </receiver>
+96
+97        <provider
+97-->[androidx.emoji2:emoji2:1.2.0] /home/willnut/.gradle/caches/8.9/transforms/9245cd0e12db1547845d0c5a2b884f52/transformed/emoji2-1.2.0/AndroidManifest.xml:24:9-32:20
+98            android:name="androidx.startup.InitializationProvider"
+98-->[androidx.emoji2:emoji2:1.2.0] /home/willnut/.gradle/caches/8.9/transforms/9245cd0e12db1547845d0c5a2b884f52/transformed/emoji2-1.2.0/AndroidManifest.xml:25:13-67
+99            android:authorities="com.pornblocker.androidx-startup"
+99-->[androidx.emoji2:emoji2:1.2.0] /home/willnut/.gradle/caches/8.9/transforms/9245cd0e12db1547845d0c5a2b884f52/transformed/emoji2-1.2.0/AndroidManifest.xml:26:13-68
+100            android:exported="false" >
+100-->[androidx.emoji2:emoji2:1.2.0] /home/willnut/.gradle/caches/8.9/transforms/9245cd0e12db1547845d0c5a2b884f52/transformed/emoji2-1.2.0/AndroidManifest.xml:27:13-37
+101            <meta-data
+101-->[androidx.emoji2:emoji2:1.2.0] /home/willnut/.gradle/caches/8.9/transforms/9245cd0e12db1547845d0c5a2b884f52/transformed/emoji2-1.2.0/AndroidManifest.xml:29:13-31:52
+102                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+102-->[androidx.emoji2:emoji2:1.2.0] /home/willnut/.gradle/caches/8.9/transforms/9245cd0e12db1547845d0c5a2b884f52/transformed/emoji2-1.2.0/AndroidManifest.xml:30:17-75
+103                android:value="androidx.startup" />
+103-->[androidx.emoji2:emoji2:1.2.0] /home/willnut/.gradle/caches/8.9/transforms/9245cd0e12db1547845d0c5a2b884f52/transformed/emoji2-1.2.0/AndroidManifest.xml:31:17-49
+104            <meta-data
+104-->[androidx.lifecycle:lifecycle-process:2.6.1] /home/willnut/.gradle/caches/8.9/transforms/9d3578259f318eae0dc051c5280a0394/transformed/lifecycle-process-2.6.1/AndroidManifest.xml:29:13-31:52
+105                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+105-->[androidx.lifecycle:lifecycle-process:2.6.1] /home/willnut/.gradle/caches/8.9/transforms/9d3578259f318eae0dc051c5280a0394/transformed/lifecycle-process-2.6.1/AndroidManifest.xml:30:17-78
+106                android:value="androidx.startup" />
+106-->[androidx.lifecycle:lifecycle-process:2.6.1] /home/willnut/.gradle/caches/8.9/transforms/9d3578259f318eae0dc051c5280a0394/transformed/lifecycle-process-2.6.1/AndroidManifest.xml:31:17-49
+107            <meta-data
+107-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/willnut/.gradle/caches/8.9/transforms/60dbfda809d5136d060ba19ad0fd3353/transformed/profileinstaller-1.3.0/AndroidManifest.xml:29:13-31:52
+108                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+108-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/willnut/.gradle/caches/8.9/transforms/60dbfda809d5136d060ba19ad0fd3353/transformed/profileinstaller-1.3.0/AndroidManifest.xml:30:17-85
+109                android:value="androidx.startup" />
+109-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/willnut/.gradle/caches/8.9/transforms/60dbfda809d5136d060ba19ad0fd3353/transformed/profileinstaller-1.3.0/AndroidManifest.xml:31:17-49
+110        </provider>
+111
+112        <receiver
+112-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/willnut/.gradle/caches/8.9/transforms/60dbfda809d5136d060ba19ad0fd3353/transformed/profileinstaller-1.3.0/AndroidManifest.xml:34:9-52:20
+113            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+113-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/willnut/.gradle/caches/8.9/transforms/60dbfda809d5136d060ba19ad0fd3353/transformed/profileinstaller-1.3.0/AndroidManifest.xml:35:13-76
+114            android:directBootAware="false"
+114-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/willnut/.gradle/caches/8.9/transforms/60dbfda809d5136d060ba19ad0fd3353/transformed/profileinstaller-1.3.0/AndroidManifest.xml:36:13-44
+115            android:enabled="true"
+115-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/willnut/.gradle/caches/8.9/transforms/60dbfda809d5136d060ba19ad0fd3353/transformed/profileinstaller-1.3.0/AndroidManifest.xml:37:13-35
+116            android:exported="true"
+116-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/willnut/.gradle/caches/8.9/transforms/60dbfda809d5136d060ba19ad0fd3353/transformed/profileinstaller-1.3.0/AndroidManifest.xml:38:13-36
+117            android:permission="android.permission.DUMP" >
+117-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/willnut/.gradle/caches/8.9/transforms/60dbfda809d5136d060ba19ad0fd3353/transformed/profileinstaller-1.3.0/AndroidManifest.xml:39:13-57
+118            <intent-filter>
+118-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/willnut/.gradle/caches/8.9/transforms/60dbfda809d5136d060ba19ad0fd3353/transformed/profileinstaller-1.3.0/AndroidManifest.xml:40:13-42:29
+119                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+119-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/willnut/.gradle/caches/8.9/transforms/60dbfda809d5136d060ba19ad0fd3353/transformed/profileinstaller-1.3.0/AndroidManifest.xml:41:17-91
+119-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/willnut/.gradle/caches/8.9/transforms/60dbfda809d5136d060ba19ad0fd3353/transformed/profileinstaller-1.3.0/AndroidManifest.xml:41:25-88
+120            </intent-filter>
+121            <intent-filter>
+121-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/willnut/.gradle/caches/8.9/transforms/60dbfda809d5136d060ba19ad0fd3353/transformed/profileinstaller-1.3.0/AndroidManifest.xml:43:13-45:29
+122                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+122-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/willnut/.gradle/caches/8.9/transforms/60dbfda809d5136d060ba19ad0fd3353/transformed/profileinstaller-1.3.0/AndroidManifest.xml:44:17-85
+122-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/willnut/.gradle/caches/8.9/transforms/60dbfda809d5136d060ba19ad0fd3353/transformed/profileinstaller-1.3.0/AndroidManifest.xml:44:25-82
+123            </intent-filter>
+124            <intent-filter>
+124-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/willnut/.gradle/caches/8.9/transforms/60dbfda809d5136d060ba19ad0fd3353/transformed/profileinstaller-1.3.0/AndroidManifest.xml:46:13-48:29
+125                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+125-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/willnut/.gradle/caches/8.9/transforms/60dbfda809d5136d060ba19ad0fd3353/transformed/profileinstaller-1.3.0/AndroidManifest.xml:47:17-88
+125-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/willnut/.gradle/caches/8.9/transforms/60dbfda809d5136d060ba19ad0fd3353/transformed/profileinstaller-1.3.0/AndroidManifest.xml:47:25-85
+126            </intent-filter>
+127            <intent-filter>
+127-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/willnut/.gradle/caches/8.9/transforms/60dbfda809d5136d060ba19ad0fd3353/transformed/profileinstaller-1.3.0/AndroidManifest.xml:49:13-51:29
+128                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+128-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/willnut/.gradle/caches/8.9/transforms/60dbfda809d5136d060ba19ad0fd3353/transformed/profileinstaller-1.3.0/AndroidManifest.xml:50:17-95
+128-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/willnut/.gradle/caches/8.9/transforms/60dbfda809d5136d060ba19ad0fd3353/transformed/profileinstaller-1.3.0/AndroidManifest.xml:50:25-92
+129            </intent-filter>
+130        </receiver>
+131    </application>
+132
+133</manifest>

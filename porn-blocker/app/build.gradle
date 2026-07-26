@@ -14,8 +14,22 @@ android {
         versionName '1.0.0'
     }
 
+    signingConfigs {
+        release {
+            storeFile file('/home/willnut/pornblocker-release.keystore')
+            storePassword 'pornblocker123'
+            keyAlias 'pornblocker_key'
+            keyPassword 'pornblocker123'
+        }
+    }
+
     buildTypes {
         release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+        debug {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }

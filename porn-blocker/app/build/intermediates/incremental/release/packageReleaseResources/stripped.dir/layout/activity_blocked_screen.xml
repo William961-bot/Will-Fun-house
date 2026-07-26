@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="32dp"
+    android:background="#000000">
+
+    <android.graphics.drawable.ShapeDrawable>
+        <android.graphics.drawable.shapes.OvalShape />
+    </android.graphics.drawable.ShapeDrawable>
+
+    <TextView
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:background="@android:drawable/ic_lock_lock"
+        android:layout_marginBottom="24dp"
+        android:gravity="center"
+        android:visibility="gone" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🚫 BLOCKED 🚫"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#F44336"
+        android:gravity="center"
+        android:layout_marginBottom="24dp" />
+
+    <TextView
+        android:id="@+id/tvAppName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="This app has been blocked"
+        android:textSize="18sp"
+        android:textColor="#FFFFFF"
+        android:gravity="center"
+        android:layout_marginBottom="32dp" />
+
+    <Button
+        android:id="@+id/btnUnblock"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Unblock This App"
+        android:textSize="16sp"
+        android:backgroundTint="#4CAF50"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/btnBack"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Back to Home"
+        android:textSize="16sp"
+        android:backgroundTint="#666666"
+        android:textColor="#FFFFFF" />
+
+</LinearLayout>

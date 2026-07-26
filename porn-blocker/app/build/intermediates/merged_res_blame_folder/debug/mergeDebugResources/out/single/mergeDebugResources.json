@@ -48,6 +48,10 @@
         "source": "com.pornblocker.app-main-34:/mipmap-mdpi/ic_launcher.png"
     },
     {
+        "merged": "com.pornblocker.app-debug-32:/xml_device_admin.xml.flat",
+        "source": "com.pornblocker.app-main-34:/xml/device_admin.xml"
+    },
+    {
         "merged": "com.pornblocker.app-debug-32:/layout_fragment_dashboard.xml.flat",
         "source": "com.pornblocker.app-main-34:/layout/fragment_dashboard.xml"
     },

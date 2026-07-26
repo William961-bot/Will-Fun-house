@@ -1,6 +1,8 @@
 package com.pornblocker
 
 import android.app.AlertDialog
+import android.app.admin.DevicePolicyManager
+import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.VpnService
@@ -22,11 +24,16 @@ class MainActivity : AppCompatActivity() {
 
     private val REQUEST_VPN = 1001
     private val REQUEST_POST = 1002
+    private val REQUEST_DEVICE_ADMIN = 1003
 
     private lateinit var viewPager: ViewPager2
     private lateinit var tabLayout: TabLayout
     private lateinit var adapter: ViewPagerAdapter
     private var vpnLauncher: androidx.activity.result.ActivityResultLauncher<Intent>? = null
+
+    // Device Admin
+    private lateinit var deviceAdminReceiver: ComponentName
+    private var devicePolicyManager: DevicePolicyManager? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,7 +60,12 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Setup Device Admin
+        deviceAdminReceiver = ComponentName(this, MyDeviceAdminReceiver::class.java)
+        devicePolicyManager = getSystemService(DEVICE_POLICY_SERVICE) as DevicePolicyManager?
+
         setupPermissions()
+        checkDeviceAdmin()
         
         findViewById<Button>(R.id.btnHelp)?.setOnClickListener {
             showBlockingHelp()
@@ -71,6 +83,41 @@ class MainActivity : AppCompatActivity() {
                 )
             }
         }
+    }
+
+    private fun checkDeviceAdmin() {
+        if (!isDeviceAdminActive()) {
+            AlertDialog.Builder(this)
+                .setTitle("Enable Protection")
+                .setMessage("Enable Device Admin to prevent easy uninstall of the blocker.")
+                .setPositiveButton("Enable") { _, _ ->
+                    val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
+                    intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, deviceAdminReceiver)
+                    intent.putExtra(DevicePolicyManager.EXTRA_ADD_ADMIN_ACCOUNT, null)
+                    startActivityForResult(intent, REQUEST_DEVICE_ADMIN)
+                }
+                .setNegativeButton("Skip") { d, _ -> d.dismiss() }
+                .show()
+        }
+    }
+
+    private fun isDeviceAdminActive(): Boolean {
+        return devicePolicyManager?.isAdminActive(deviceAdminReceiver) ?: false
+    }
+
+    fun startProtection() {
+        // Start VPN
+        startVpn()
+        
+        // Enable Accessibility Service
+        enableAccessibilityService()
+    }
+
+    private fun enableAccessibilityService() {
+        val intent = Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)
+        startActivity(intent)
+        Toast.makeText(this, "Please enable 'Porn Blocker' Accessibility Service in Settings → Accessibility", 
+            Toast.LENGTH_LONG).show()
     }
 
     fun startVpn() {
@@ -125,11 +172,11 @@ class MainActivity : AppCompatActivity() {
             |  Enter: dns.cleanbrowsing.org
             |  or: family-filter.dns.adguard.com
             |
-            |★ VPN METHOD (Requires permission)
-            |  1. Tap "Start Protection" in this app
-            |  2. Tap "OK" in the VPN permission dialog
-            |  3. Wait for "Porn Blocker Active" notification
-            |  4. VPN will block porn domains
+            |★ APP METHOD (Requires setup)
+            |  1. Enable Device Admin (prevents uninstall)
+            |  2. Enable Accessibility Service
+            |  3. Tap "Start Protection"
+            |  4. Tap "OK" in VPN permission dialog
             |
             |Note: Chrome uses DNS-over-HTTPS which may bypass VPN DNS.
             |Router DNS blocks ALL apps including Chrome.

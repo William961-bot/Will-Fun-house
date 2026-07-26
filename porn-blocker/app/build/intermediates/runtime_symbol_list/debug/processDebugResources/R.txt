@@ -7180,3 +7180,4 @@ int styleable ViewTransition_viewTransitionMode 14
 int[] styleable include { 0x7f030132 }
 int styleable include_constraintSet 0
 int xml accessibility_service_config 0x7f130000
+int xml device_admin 0x7f130001
