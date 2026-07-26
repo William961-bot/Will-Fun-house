@@ -37,7 +37,10 @@ public final class ActivityMainBinding implements ViewBinding {
   public final EditText etDomain;
 
   @NonNull
-  public final EditText etQuery;
+  public final TextView etQuery;
+
+  @NonNull
+  public final TextView statusText;
 
   @NonNull
   public final TextView tvBlocked;
@@ -47,8 +50,8 @@ public final class ActivityMainBinding implements ViewBinding {
 
   private ActivityMainBinding(@NonNull LinearLayout rootView, @NonNull Button btnAddDomain,
       @NonNull Button btnOpenBrowser, @NonNull Button btnStartVpn, @NonNull Button btnStopVpn,
-      @NonNull EditText etDomain, @NonNull EditText etQuery, @NonNull TextView tvBlocked,
-      @NonNull TextView tvStatus) {
+      @NonNull EditText etDomain, @NonNull TextView etQuery, @NonNull TextView statusText,
+      @NonNull TextView tvBlocked, @NonNull TextView tvStatus) {
     this.rootView = rootView;
     this.btnAddDomain = btnAddDomain;
     this.btnOpenBrowser = btnOpenBrowser;
@@ -56,6 +59,7 @@ public final class ActivityMainBinding implements ViewBinding {
     this.btnStopVpn = btnStopVpn;
     this.etDomain = etDomain;
     this.etQuery = etQuery;
+    this.statusText = statusText;
     this.tvBlocked = tvBlocked;
     this.tvStatus = tvStatus;
   }
@@ -118,8 +122,14 @@ public final class ActivityMainBinding implements ViewBinding {
       }
 
       id = R.id.etQuery;
-      EditText etQuery = ViewBindings.findChildViewById(rootView, id);
+      TextView etQuery = ViewBindings.findChildViewById(rootView, id);
       if (etQuery == null) {
+        break missingId;
+      }
+
+      id = R.id.statusText;
+      TextView statusText = ViewBindings.findChildViewById(rootView, id);
+      if (statusText == null) {
         break missingId;
       }
 
@@ -136,7 +146,7 @@ public final class ActivityMainBinding implements ViewBinding {
       }
 
       return new ActivityMainBinding((LinearLayout) rootView, btnAddDomain, btnOpenBrowser,
-          btnStartVpn, btnStopVpn, etDomain, etQuery, tvBlocked, tvStatus);
+          btnStartVpn, btnStopVpn, etDomain, etQuery, statusText, tvBlocked, tvStatus);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

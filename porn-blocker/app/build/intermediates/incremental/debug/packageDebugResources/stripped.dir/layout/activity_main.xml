@@ -3,7 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="24dp">
+    android:padding="24dp"
+    android:background="@android:color/black">
 
     <TextView
         android:layout_width="match_parent"
@@ -11,6 +12,7 @@
         android:text="Porn Blocker"
         android:textSize="28sp"
         android:textStyle="bold"
+        android:textColor="@android:color/white"
         android:layout_marginTop="16dp"
         android:layout_marginBottom="16dp"/>
 
@@ -20,14 +22,16 @@
         android:layout_height="wrap_content"
         android:text="Status: inactive"
         android:textSize="18sp"
+        android:textColor="@android:color/white"
         android:layout_marginBottom="8dp"/>
 
     <TextView
         android:id="@+id/tvBlocked"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Blocked: 0"
+        android:text="Blocked requests: 0"
         android:textSize="18sp"
+        android:textColor="@android:color/white"
         android:layout_marginBottom="16dp"/>
 
     <LinearLayout
@@ -68,6 +72,7 @@
         android:text="Blocked Domains"
         android:textSize="20sp"
         android:textStyle="bold"
+        android:textColor="@android:color/white"
         android:layout_marginBottom="8dp"/>
 
     <TextView
@@ -91,7 +96,9 @@
             android:hint="e.g., badsite.com"
             android:inputType="textUri"
             android:layout_weight="1"
-            android:layout_marginEnd="8dp"/>
+            android:layout_marginEnd="8dp"
+            android:textColor="@android:color/white"
+            android:hintTextColor="@android:color/darker_gray"/>
 
         <Button
             android:id="@+id/btnAddDomain"
@@ -100,12 +107,14 @@
             android:text="Add"/>
     </LinearLayout>
 
-    <EditText
+    <TextView
         android:id="@+id/etQuery"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="URL to open in browser"
         android:inputType="textUri"
+        android:textColor="@android:color/white"
+        android:hintTextColor="@android:color/darker_gray"
         android:layout_marginBottom="12dp"/>
 
     <Button
@@ -115,11 +124,13 @@
         android:text="Open in Browser"
         android:layout_marginBottom="12dp"/>
 
-    <fragment
-        android:id="@+id/browserFragment"
-        android:name="com.pornblocker.SimpleBrowser"
+    <TextView
+        android:id="@+id/statusText"
         android:layout_width="match_parent"
+        android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_height="0dp"/>
+        android:text="Browser placeholder"
+        android:textColor="@android:color/white"
+        android:gravity="center"/>
 
 </LinearLayout>

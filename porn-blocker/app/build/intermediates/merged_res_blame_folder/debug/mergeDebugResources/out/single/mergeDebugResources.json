@@ -1,7 +1,11 @@
 [
     {
-        "merged": "com.pornblocker.app-debug-31:/raw_blocklist.txt.flat",
-        "source": "com.pornblocker.app-main-33:/raw/blocklist.txt"
+        "merged": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-debug-31:/layout_activity_main.xml.flat",
+        "source": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-main-33:/layout/activity_main.xml"
+    },
+    {
+        "merged": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-debug-31:/raw_blocklist.txt.flat",
+        "source": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-main-33:/raw/blocklist.txt"
     },
     {
         "merged": "com.pornblocker.app-debug-31:/layout_activity_main.xml.flat",

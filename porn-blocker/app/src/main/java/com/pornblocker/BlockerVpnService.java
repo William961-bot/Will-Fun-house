@@ -24,7 +24,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class BlockerVpnService extends Service {
+public class BlockerVpnService extends VpnService {
 
     private static final String TAG = "BlockerVpnService";
     public static final String ACTION_START = "com.pornblocker.ACTION_START";
@@ -87,7 +87,7 @@ public class BlockerVpnService extends Service {
 
     private void reloadBlocklist() {
         try {
-            Set<String> hosts = BlocklistManagerKt.getAllBlockedHosts(this);
+            Set<String> hosts = BlocklistManager.getAllBlockedHosts(this);
             synchronized (blockedDomains) {
                 blockedDomains.clear();
                 blockedDomains.addAll(hosts);
@@ -102,7 +102,7 @@ public class BlockerVpnService extends Service {
     private void startVpn() {
         if (isRunning) return;
         try {
-            VpnService.Builder builder = new VpnService.Builder(this);
+            VpnService.Builder builder = new VpnService.Builder();
             builder.setSession("PornBlockerVPN");
             builder.setMtu(1500);
             builder.addAddress("10.0.0.2", 32);
@@ -125,7 +125,12 @@ public class BlockerVpnService extends Service {
 
             startForeground(NOTIFY_ID, buildNotification());
 
-            worker = new Thread(() -> runLoop(), "PornBlock");
+            worker = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                runLoop();
+            }
+        }, "PornBlock");
             worker.start();
 
             Log.i(TAG, "VPN started");

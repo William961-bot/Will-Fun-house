@@ -7,13 +7,13 @@ color purple_700
 color teal_200
 color teal_700
 color white
-id browserFragment
 id btnAddDomain
 id btnOpenBrowser
 id btnStartVpn
 id btnStopVpn
 id etDomain
 id etQuery
+id statusText
 id tvBlocked
 id tvStatus
 layout activity_main

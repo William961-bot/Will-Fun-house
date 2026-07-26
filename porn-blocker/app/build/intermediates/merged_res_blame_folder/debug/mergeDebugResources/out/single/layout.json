@@ -1,5 +1,9 @@
 [
     {
+        "merged": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-mergeDebugResources-30:/layout/activity_main.xml",
+        "source": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-main-33:/layout/activity_main.xml"
+    },
+    {
         "merged": "com.pornblocker.app-mergeDebugResources-30:/layout/activity_main.xml",
         "source": "com.pornblocker.app-main-33:/layout/activity_main.xml"
     }

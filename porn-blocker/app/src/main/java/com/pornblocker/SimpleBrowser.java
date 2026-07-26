@@ -30,7 +30,7 @@ public class SimpleBrowser extends Fragment {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageFinished(android.webkit.WebView view, String url) {
-                if (url != null && new BlocklistManager(view.getContext()).isBlocked(url)) {
+                if (url != null && BlocklistManager.getAllBlockedHosts(view.getContext()).contains(url)) {
                     view.loadData(
                         "<h1>Blocked</h1><p>This site is blocked by your settings.</p>",
                         "text/html",
