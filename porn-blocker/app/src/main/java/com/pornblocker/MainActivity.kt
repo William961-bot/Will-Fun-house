@@ -5,13 +5,9 @@ import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
-import android.text.TextUtils
 import android.widget.Button
-import android.widget.EditText
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -22,16 +18,13 @@ import com.google.android.material.tabs.TabLayout
 
 class MainActivity : AppCompatActivity() {
 
-    private val REQUEST_VPN = 1001
     private val REQUEST_POST = 1002
     private val REQUEST_DEVICE_ADMIN = 1003
 
     private lateinit var viewPager: ViewPager2
     private lateinit var tabLayout: TabLayout
     private lateinit var adapter: ViewPagerAdapter
-    private var vpnLauncher: androidx.activity.result.ActivityResultLauncher<Intent>? = null
 
-    // Device Admin
     private lateinit var deviceAdminReceiver: ComponentName
     private var devicePolicyManager: DevicePolicyManager? = null
 
@@ -51,14 +44,6 @@ class MainActivity : AppCompatActivity() {
                 tab.setText(titles[position])
             }
         }.attach()
-
-        vpnLauncher = registerForActivityResult(
-            androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
-        ) { result ->
-            if (result.resultCode == RESULT_OK) {
-                activateVpn()
-            }
-        }
 
         // Setup Device Admin
         deviceAdminReceiver = ComponentName(this, MyDeviceAdminReceiver::class.java)
@@ -106,9 +91,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun startProtection() {
-        // Start VPN
-        startVpn()
-        
         // Enable Accessibility Service
         enableAccessibilityService()
     }
@@ -120,70 +102,35 @@ class MainActivity : AppCompatActivity() {
             Toast.LENGTH_LONG).show()
     }
 
-    fun startVpn() {
-        val intent = VpnService.prepare(this)
-        if (intent != null) {
-            vpnLauncher?.launch(intent)
-        } else {
-            activateVpn()
-        }
-    }
-
-    fun stopVpn() {
-        val intent = Intent(this, BlockerVpnService::class.java)
-        intent.action = BlockerVpnService.ACTION_STOP
-        startService(intent)
-        Toast.makeText(this, "VPN stopped", Toast.LENGTH_SHORT).show()
-    }
-
-    private fun activateVpn() {
-        if (BlockerVpnService.isRunning) {
-            Toast.makeText(this, "VPN already active", Toast.LENGTH_SHORT).show()
-            return
-        }
-        
-        val intent = Intent(this, BlockerVpnService::class.java)
-        intent.action = BlockerVpnService.ACTION_START
-        startService(intent)
-        Toast.makeText(this, "VPN started - tap OK in system dialog", Toast.LENGTH_LONG).show()
-    }
-
-    fun isVpnRunning(): Boolean {
-        return BlockerVpnService.isRunning
-    }
-
-    fun getBlockedCount(): Int {
-        return BlockerVpnService.blockedCount.get()
-    }
-    
     private fun showBlockingHelp() {
         val message = """
-            |For BEST blocking results, use ONE of these methods:
+            |How BlockerHero Style Blocking Works:
             |
-            |★ ROUTER DNS (MOST PERMANENT - Recommended)
-            |  This blocks on ALL devices automatically
-            |  1. Login to your router (usually 192.168.1.1)
-            |  2. Find DNS settings (Advanced → Internet)
-            |  3. Set PRIMARY DNS: 185.228.168.9
-            |  4. Save and reboot router
-            |
-            |★ PRIVATE DNS (System-wide)
-            |  Settings → Network & Internet → Private DNS
-            |  Enter: dns.cleanbrowsing.org
-            |  or: family-filter.dns.adguard.com
-            |
-            |★ APP METHOD (Requires setup)
+            |★ APP BLOCKING (Main Protection)
             |  1. Enable Device Admin (prevents uninstall)
             |  2. Enable Accessibility Service
-            |  3. Tap "Start Protection"
-            |  4. Tap "OK" in VPN permission dialog
+            |  3. Blocked apps will show warning screen
             |
-            |Note: Chrome uses DNS-over-HTTPS which may bypass VPN DNS.
-            |Router DNS blocks ALL apps including Chrome.
+            |★ Blocked Apps (Default)
+            |  • Chrome (blocks entire browser)
+            |  • Brave Browser
+            |  • PornHub app
+            |  • XVideos app
+            |  • XNXX app
+            |  • RedTube app
+            |  • YouPorn app
+            |  • Any app with "porn", "adult", "nude", "sex" in name
+            |
+            |★ How it works
+            |  When you try to open a blocked app,
+            |  a warning screen appears instead.
+            |
+            |★ To add/remove blocked apps
+            |  Go to Blocklist tab in the app.
         """.trimMargin()
         
         AlertDialog.Builder(this)
-            .setTitle("Blocking Help - Most Effective First")
+            .setTitle("Blocking Help")
             .setMessage(message)
             .setPositiveButton("Got it") { d, _ -> d.dismiss() }
             .show()

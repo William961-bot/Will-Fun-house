@@ -3,7 +3,6 @@ package com.pornblocker;
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
 import java.util.HashSet;
@@ -14,7 +13,6 @@ public class AppBlockerService extends AccessibilityService {
     private static final String TAG = "AppBlockerService";
     private static final String PREFS = "porn_blocker_prefs";
     private static final String KEY_BLOCKED_APPS = "blocked_apps";
-    private static final String KEY_BLOCKED_KEYWORDS = "blocked_keywords";
 
     @Override
     public void onServiceConnected() {
@@ -38,30 +36,35 @@ public class AppBlockerService extends AccessibilityService {
         // Check if this app is blocked
         if (isAppBlocked(packageName)) {
             Log.d(TAG, "Blocking app: " + packageName);
-            // This app is blocked - show blocked screen
+            
+            // Show blocked screen
             Intent intent = new Intent(this, BlockedScreenActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
             intent.putExtra("package_name", packageName);
             intent.putExtra("app_name", getAppLabel(packageName));
             startActivity(intent);
-            return;
         }
-
-        // Check if current activity URL contains blocked keywords
-        if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-            checkBlockedKeywords();
-        }
-    }
-
-    private void checkBlockedKeywords() {
-        // This would check the current URL/activity for blocked keywords
-        // Implementation would use AccessibilityNodeInfo to get the current URL
     }
 
     private boolean isAppBlocked(String packageName) {
-        SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
-        Set<String> blockedApps = prefs.getStringSet(KEY_BLOCKED_APPS, new HashSet<>());
-        return blockedApps.contains(packageName);
+        // Default blocked apps - porn-related packages
+        Set<String> defaultBlocked = new HashSet<>();
+        defaultBlocked.add("com.pornhub");
+        defaultBlocked.add("com.xvideos");
+        defaultBlocked.add("com.xnxx");
+        defaultBlocked.add("com.redtube");
+        defaultBlocked.add("com.youporn");
+        defaultBlocked.add("com.tube");
+        defaultBlocked.add("com.incel");
+        defaultBlocked.add("com.nude");
+        defaultBlocked.add("com.sex");
+        defaultBlocked.add("com.adult");
+        defaultBlocked.add("com.brave"); // Popular porn browser
+        defaultBlocked.add("com.google.android.chrome"); // Block Chrome entirely
+        
+        android.content.SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
+        Set<String> blockedApps = prefs.getStringSet(KEY_BLOCKED_APPS, defaultBlocked);
+        return blockedApps != null && blockedApps.contains(packageName);
     }
 
     private String getAppLabel(String packageName) {

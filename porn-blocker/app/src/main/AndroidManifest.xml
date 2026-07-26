@@ -3,10 +3,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.BIND_VPN_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" android:required="false" />
     <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
 
     <application
@@ -35,17 +32,7 @@
             android:taskAffinity=":blocked"
             android:excludeFromRecents="true" />
 
-        <!-- VPN Service -->
-        <service
-            android:name=".BlockerVpnService"
-            android:permission="android.permission.BIND_VPN_SERVICE"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.net.VpnService" />
-            </intent-filter>
-        </service>
-
-        <!-- Accessibility Service for App Blocking -->
+        <!-- Accessibility Service for App Blocking - Main blocking mechanism -->
         <service
             android:name=".AppBlockerService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"

@@ -10,12 +10,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.BIND_VPN_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission
-        android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"
-        android:required="false" />
     <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
 
     <permission
@@ -54,17 +49,7 @@
             android:taskAffinity=":blocked"
             android:theme="@style/Theme.PornBlocker.NoActionBar" />
 
-        <!-- VPN Service -->
-        <service
-            android:name="com.pornblocker.BlockerVpnService"
-            android:exported="true"
-            android:permission="android.permission.BIND_VPN_SERVICE" >
-            <intent-filter>
-                <action android:name="android.net.VpnService" />
-            </intent-filter>
-        </service>
-
-        <!-- Accessibility Service for App Blocking -->
+        <!-- Accessibility Service for App Blocking - Main blocking mechanism -->
         <service
             android:name="com.pornblocker.AppBlockerService"
             android:enabled="true"
