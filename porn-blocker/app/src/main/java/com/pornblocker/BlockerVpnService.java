@@ -93,24 +93,28 @@ public class BlockerVpnService extends VpnService {
                 blockedDomains.clear();
                 blockedDomains.addAll(hosts);
             }
-            // Extract IPs from the blocklist
             blockedIps.clear();
             for (String host : hosts) {
                 if (isIpAddress(host)) {
                     blockedIps.add(host);
                 }
             }
-            Log.i(TAG, "Loaded " + blockedDomains.size() + " domains, " + blockedIps.size() + " IPs");
+            Log.i(TAG, "Loaded " + blockedDomains.size() + " items, " + blockedIps.size() + " IPs");
         } catch (Throwable ignored) {}
     }
     
     private boolean isIpAddress(String address) {
-        try {
-            InetAddress.getByName(address);
-            return address.matches("\\d+\\.\\d+\\.\\d+\\.\\d+");
-        } catch (Exception e) {
-            return false;
+        String[] parts = address.split("\\.");
+        if (parts.length != 4) return false;
+        for (String part : parts) {
+            try {
+                int i = Integer.parseInt(part);
+                if (i < 0 || i > 255) return false;
+            } catch (NumberFormatException e) {
+                return false;
+            }
         }
+        return true;
     }
 
     public int getBlockedCount() {
@@ -125,9 +129,14 @@ public class BlockerVpnService extends VpnService {
             builder.setMtu(1500);
             builder.addAddress("10.0.0.2", 32);
             builder.addRoute("0.0.0.0", 0);
+            
             // Use CleanBrowsing Family DNS which blocks porn domains
-            builder.addDnsServer("185.228.168.9");  // CleanBrowsing Family Protection
-            builder.addDnsServer("185.228.169.9");  // CleanBrowsing backup
+            builder.addDnsServer("185.228.168.9");
+            builder.addDnsServer("185.228.169.9");
+            
+            // Also allow DNS traffic to be routed through VPN
+            builder.addRoute("185.228.168.9", 32);
+            builder.addRoute("185.228.169.9", 32);
 
             pfd = builder.establish();
             if (pfd == null) {
@@ -144,15 +153,32 @@ public class BlockerVpnService extends VpnService {
 
             startForeground(NOTIFY_ID, buildNotification());
 
-            worker = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                runLoop();
-            }
-        }, "PornBlock");
+            worker = new Thread(() -> {
+                try {
+                    ByteBuffer packet = ByteBuffer.allocate(32767);
+                    while (vpnActive) {
+                        int length;
+                        try {
+                            length = in.read(packet.array());
+                        } catch (IOException e) {
+                            break;
+                        }
+                        if (length > 0) {
+                            try {
+                                handlePacket(packet, length);
+                            } catch (Throwable t) {
+                                Log.e(TAG, "Packet handling error", t);
+                            }
+                        }
+                        packet.clear();
+                    }
+                } catch (Throwable t) {
+                    Log.e(TAG, "VPN loop died", t);
+                }
+            }, "PornBlock");
             worker.start();
 
-            Log.i(TAG, "VPN started with CleanBrowsing DNS");
+            Log.i(TAG, "VPN started successfully");
         } catch (Exception e) {
             Log.e(TAG, "Failed to start VPN", e);
             stopSelf();
@@ -175,30 +201,6 @@ public class BlockerVpnService extends VpnService {
         stopForeground(true);
     }
 
-    private void runLoop() {
-        try {
-            ByteBuffer packet = ByteBuffer.allocate(32767);
-            while (vpnActive) {
-                int length;
-                try {
-                    length = in.read(packet.array());
-                } catch (IOException e) {
-                    break;
-                }
-                if (length > 0) {
-                    try {
-                        handlePacket(packet, length);
-                    } catch (Throwable t) {
-                        // ignore bad packets, keep loop alive
-                    }
-                }
-                packet.clear();
-            }
-        } catch (Throwable t) {
-            Log.e(TAG, "VPN loop died", t);
-        }
-    }
-
     private void handlePacket(ByteBuffer packet, int length) {
         if (length < 20) return;
         byte version = (byte) ((packet.get(0) >> 4) & 0x0F);
@@ -212,39 +214,28 @@ public class BlockerVpnService extends VpnService {
         dstBytes[2] = (byte) ((dstIp >>> 8) & 0xFF);
         dstBytes[3] = (byte) (dstIp & 0xFF);
 
-        InetAddress dstAddr;
+        String dstStr;
         try {
-            dstAddr = InetAddress.getByAddress(dstBytes);
+            dstStr = InetAddress.getByAddress(dstBytes).getHostAddress();
         } catch (Exception e) {
             return;
         }
-        String dstStr = dstAddr.getHostAddress();
 
         // Check if destination IP is in blocklist
         if (blockedIps.contains(dstStr)) {
-            blockAndCount();
+            blockedCount.incrementAndGet();
+            Log.d(TAG, "Blocked IP: " + dstStr);
             return;
         }
 
-        byte protocol = packet.get(9);
-
-        // DNS blocking via UDP port 53
-        if (protocol == 17 && length >= 28) {
-            int dstPort = ((packet.get(22) & 0xFF) << 8) | (packet.get(23) & 0xFF);
-            if (dstPort == 53) {
-                // DNS query - let it through to CleanBrowsing which will filter
-                // We don't need to block DNS ourselves since CleanBrowsing handles it
-            }
+        // Check if destination is a porn domain IP (185.228.168.x or 185.228.169.x)
+        if (dstStr.startsWith("185.228.168.") || dstStr.startsWith("185.228.169.")) {
+            blockedCount.incrementAndGet();
+            Log.d(TAG, "Blocked CleanBrowsing domain: " + dstStr);
+            return;
         }
 
-        pass(packet, length);
-    }
-
-    private void blockAndCount() {
-        blockedCount.incrementAndGet();
-    }
-
-    private void pass(ByteBuffer packet, int length) {
+        // Pass all other traffic
         try {
             out.write(packet.array(), 0, length);
         } catch (IOException ignored) {}
