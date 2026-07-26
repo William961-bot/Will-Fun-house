@@ -55,7 +55,6 @@ class MainActivity : AppCompatActivity() {
 
         setupPermissions()
         
-        // Add help button
         findViewById<Button>(R.id.btnHelp)?.setOnClickListener {
             showBlockingHelp()
         }
@@ -99,7 +98,7 @@ class MainActivity : AppCompatActivity() {
         val intent = Intent(this, BlockerVpnService::class.java)
         intent.action = BlockerVpnService.ACTION_START
         startService(intent)
-        Toast.makeText(this, "VPN started", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "VPN started - tap OK in system dialog", Toast.LENGTH_LONG).show()
     }
 
     fun isVpnRunning(): Boolean {
@@ -112,30 +111,28 @@ class MainActivity : AppCompatActivity() {
     
     private fun showBlockingHelp() {
         val message = """
-            |For BEST blocking results, use one of these methods:
+            |For BEST blocking results, use ONE of these methods:
             |
-            |1. ROUTER DNS (Most Permanent)
-            |   Login to your router's admin page (usually 192.168.1.1)
-            |   Find DNS settings and enter:
-            |   Primary: 185.228.168.9 (CleanBrowsing Family)
-            |   or: 94.140.14.14 (AdGuard Family)
-            |   This blocks ALL devices on your network
+            |★ ROUTER DNS (MOST PERMANENT - Recommended)
+            |  This blocks on ALL devices automatically
+            |  1. Login to your router (usually 192.168.1.1)
+            |  2. Find DNS settings (Advanced → Internet)
+            |  3. Set PRIMARY DNS: 185.228.168.9
+            |  4. Save and reboot router
             |
-            |2. PRIVATE DNS (System-wide)
-            |   Settings → Network & Internet → Private DNS
-            |   Enter: dns.cleanbrowsing.org
-            |   or: family-filter.dns.adguard.com
+            |★ PRIVATE DNS (System-wide)
+            |  Settings → Network & Internet → Private DNS
+            |  Enter: dns.cleanbrowsing.org
+            |  or: family-filter.dns.adguard.com
             |
-            |3. CHROME SETTINGS
-            |   Open Chrome → chrome://settings/security
-            |   Enable "Enhanced protection"
+            |★ VPN METHOD (Requires permission)
+            |  1. Tap "Start Protection" in this app
+            |  2. Tap "OK" in the VPN permission dialog
+            |  3. Wait for "Porn Blocker Active" notification
+            |  4. VPN will block porn domains
             |
-            |4. BUILT-IN BROWSER
-            |   Use the app's "Browser" tab
-            |   Blocks within the app's WebView
-            |
-            |VPN method: Works for apps using system DNS.
-            |Chrome uses DNS-over-HTTPS which bypasses VPN DNS.
+            |Note: Chrome uses DNS-over-HTTPS which may bypass VPN DNS.
+            |Router DNS blocks ALL apps including Chrome.
         """.trimMargin()
         
         AlertDialog.Builder(this)
