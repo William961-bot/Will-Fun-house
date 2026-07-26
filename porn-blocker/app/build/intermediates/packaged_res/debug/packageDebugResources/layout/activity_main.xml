@@ -18,7 +18,7 @@
         android:id="@+id/tvStatus"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Status: active"
+        android:text="Status: inactive"
         android:textSize="18sp"
         android:layout_marginBottom="8dp"/>
 
@@ -26,20 +26,46 @@
         android:id="@+id/tvBlocked"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Blocked domains: 15"
+        android:text="Blocked: 0"
         android:textSize="18sp"
         android:layout_marginBottom="16dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="16dp"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/btnStartVpn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Start Blocker"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"/>
+
+        <Button
+            android:id="@+id/btnStopVpn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Stop Blocker"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:enabled="false"/>
+    </LinearLayout>
 
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_marginTop="16dp"
-        android:layout_marginBottom="16dp"/>
+        android:layout_marginBottom="16dp"
+        android:background="?android:attr/listDivider"/>
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="App Browser"
+        android:text="Blocked Domains"
         android:textSize="20sp"
         android:textStyle="bold"
         android:layout_marginBottom="8dp"/>
@@ -47,31 +73,53 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Blocked domains are enforced in the in-app browser only."
+        android:text="Add domains to block while VPN is active."
         android:textSize="14sp"
         android:textColor="?android:textColorSecondary"
         android:layout_marginBottom="12dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="8dp">
+
+        <EditText
+            android:id="@+id/etDomain"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="e.g., badsite.com"
+            android:inputType="textUri"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"/>
+
+        <Button
+            android:id="@+id/btnAddDomain"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Add"/>
+    </LinearLayout>
 
     <EditText
         android:id="@+id/etQuery"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Enter URL (e.g., example.com)"
+        android:hint="URL to open in browser"
         android:inputType="textUri"
-        android:layout_marginBottom="8dp"/>
+        android:layout_marginBottom="12dp"/>
 
     <Button
         android:id="@+id/btnOpenBrowser"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Open in Blocker Browser"/>
+        android:text="Open in Browser"
+        android:layout_marginBottom="12dp"/>
 
     <fragment
         android:id="@+id/browserFragment"
         android:name="com.pornblocker.SimpleBrowser"
         android:layout_width="match_parent"
         android:layout_weight="1"
-        android:layout_height="0dp"
-        android:layout_marginTop="12dp"/>
+        android:layout_height="0dp"/>
 
 </LinearLayout>

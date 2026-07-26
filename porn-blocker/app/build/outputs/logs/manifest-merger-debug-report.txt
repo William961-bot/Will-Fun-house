@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 manifest
-ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:2:1-36:12
-INJECTED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:2:1-36:12
-INJECTED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:2:1-36:12
-INJECTED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:2:1-36:12
+ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:2:1-37:12
+INJECTED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:2:1-37:12
+INJECTED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:2:1-37:12
+INJECTED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:2:1-37:12
 MERGED from [androidx.databinding:viewbinding:8.3.0] /home/willnut/.gradle/caches/8.9/transforms/d17e224f36fc774ca7238020dc810e45/transformed/viewbinding-8.3.0/AndroidManifest.xml:2:1-7:12
 MERGED from [com.google.android.material:material:1.11.0] /home/willnut/.gradle/caches/8.9/transforms/97a6be6f8d2c2c92ed121709c048c516/transformed/material-1.11.0/AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] /home/willnut/.gradle/caches/8.9/transforms/c3a085dd01b3790e5f798edf4aa5ed22/transformed/constraintlayout-2.1.4/AndroidManifest.xml:2:1-11:12
@@ -74,9 +74,15 @@ uses-permission#android.permission.POST_NOTIFICATIONS
 ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:8:5-77
 	android:name
 		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:8:22-74
+uses-permission#android.permission.FOREGROUND_SERVICE_DATA_SYNC
+ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:9:5-112
+	android:required
+		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:9:85-109
+	android:name
+		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:9:22-84
 application
-ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:10:5-34:19
-INJECTED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:10:5-34:19
+ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:11:5-35:19
+INJECTED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:11:5-35:19
 MERGED from [com.google.android.material:material:1.11.0] /home/willnut/.gradle/caches/8.9/transforms/97a6be6f8d2c2c92ed121709c048c516/transformed/material-1.11.0/AndroidManifest.xml:22:5-20
 MERGED from [com.google.android.material:material:1.11.0] /home/willnut/.gradle/caches/8.9/transforms/97a6be6f8d2c2c92ed121709c048c516/transformed/material-1.11.0/AndroidManifest.xml:22:5-20
 MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] /home/willnut/.gradle/caches/8.9/transforms/c3a085dd01b3790e5f798edf4aa5ed22/transformed/constraintlayout-2.1.4/AndroidManifest.xml:9:5-20
@@ -98,43 +104,43 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] /home/willnut/.gradle/cache
 	android:appComponentFactory
 		ADDED from [androidx.core:core:1.12.0] /home/willnut/.gradle/caches/8.9/transforms/4c10ca2e13020634e2df3a590d141a4c/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
 	android:label
-		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:13:9-37
+		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:14:9-37
 	android:icon
-		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:12:9-54
+		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:13:9-54
 	android:allowBackup
-		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:11:9-36
+		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:12:9-36
 	android:theme
-		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:14:9-49
+		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:15:9-49
 activity#com.pornblocker.MainActivity
-ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:16:9-23:20
+ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:17:9-24:20
 	android:exported
-		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:18:13-36
+		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:19:13-36
 	android:name
-		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:17:13-41
+		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:18:13-41
 intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
-ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:19:13-22:29
+ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:20:13-23:29
 action#android.intent.action.MAIN
-ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:20:17-69
+ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:21:17-69
 	android:name
-		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:20:25-66
+		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:21:25-66
 category#android.intent.category.LAUNCHER
-ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:21:17-77
+ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:22:17-77
 	android:name
-		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:21:27-74
+		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:22:27-74
 service#com.pornblocker.BlockerVpnService
-ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:25:9-32:19
+ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:26:9-33:19
 	android:exported
-		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:28:13-36
+		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:29:13-36
 	android:permission
-		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:27:13-69
+		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:28:13-69
 	android:name
-		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:26:13-46
+		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:27:13-46
 intent-filter#action:name:android.net.VpnService
-ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:29:13-31:29
+ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:30:13-32:29
 action#android.net.VpnService
-ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:30:17-65
+ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:31:17-65
 	android:name
-		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:30:25-62
+		ADDED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml:31:25-62
 uses-sdk
 INJECTED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /home/willnut/Downloads/stuff/creative-coding-cpp/porn-blocker/app/src/main/AndroidManifest.xml

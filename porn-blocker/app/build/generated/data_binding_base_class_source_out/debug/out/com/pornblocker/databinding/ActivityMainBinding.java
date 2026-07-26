@@ -22,7 +22,19 @@ public final class ActivityMainBinding implements ViewBinding {
   private final LinearLayout rootView;
 
   @NonNull
+  public final Button btnAddDomain;
+
+  @NonNull
   public final Button btnOpenBrowser;
+
+  @NonNull
+  public final Button btnStartVpn;
+
+  @NonNull
+  public final Button btnStopVpn;
+
+  @NonNull
+  public final EditText etDomain;
 
   @NonNull
   public final EditText etQuery;
@@ -33,10 +45,16 @@ public final class ActivityMainBinding implements ViewBinding {
   @NonNull
   public final TextView tvStatus;
 
-  private ActivityMainBinding(@NonNull LinearLayout rootView, @NonNull Button btnOpenBrowser,
-      @NonNull EditText etQuery, @NonNull TextView tvBlocked, @NonNull TextView tvStatus) {
+  private ActivityMainBinding(@NonNull LinearLayout rootView, @NonNull Button btnAddDomain,
+      @NonNull Button btnOpenBrowser, @NonNull Button btnStartVpn, @NonNull Button btnStopVpn,
+      @NonNull EditText etDomain, @NonNull EditText etQuery, @NonNull TextView tvBlocked,
+      @NonNull TextView tvStatus) {
     this.rootView = rootView;
+    this.btnAddDomain = btnAddDomain;
     this.btnOpenBrowser = btnOpenBrowser;
+    this.btnStartVpn = btnStartVpn;
+    this.btnStopVpn = btnStopVpn;
+    this.etDomain = etDomain;
     this.etQuery = etQuery;
     this.tvBlocked = tvBlocked;
     this.tvStatus = tvStatus;
@@ -69,9 +87,33 @@ public final class ActivityMainBinding implements ViewBinding {
     // This is done to optimize the compiled bytecode for size and performance.
     int id;
     missingId: {
+      id = R.id.btnAddDomain;
+      Button btnAddDomain = ViewBindings.findChildViewById(rootView, id);
+      if (btnAddDomain == null) {
+        break missingId;
+      }
+
       id = R.id.btnOpenBrowser;
       Button btnOpenBrowser = ViewBindings.findChildViewById(rootView, id);
       if (btnOpenBrowser == null) {
+        break missingId;
+      }
+
+      id = R.id.btnStartVpn;
+      Button btnStartVpn = ViewBindings.findChildViewById(rootView, id);
+      if (btnStartVpn == null) {
+        break missingId;
+      }
+
+      id = R.id.btnStopVpn;
+      Button btnStopVpn = ViewBindings.findChildViewById(rootView, id);
+      if (btnStopVpn == null) {
+        break missingId;
+      }
+
+      id = R.id.etDomain;
+      EditText etDomain = ViewBindings.findChildViewById(rootView, id);
+      if (etDomain == null) {
         break missingId;
       }
 
@@ -93,8 +135,8 @@ public final class ActivityMainBinding implements ViewBinding {
         break missingId;
       }
 
-      return new ActivityMainBinding((LinearLayout) rootView, btnOpenBrowser, etQuery, tvBlocked,
-          tvStatus);
+      return new ActivityMainBinding((LinearLayout) rootView, btnAddDomain, btnOpenBrowser,
+          btnStartVpn, btnStopVpn, etDomain, etQuery, tvBlocked, tvStatus);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

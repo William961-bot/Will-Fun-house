@@ -3180,7 +3180,10 @@ id bounceBoth
 id bounceEnd
 id bounceStart
 id browserFragment
+id btnAddDomain
 id btnOpenBrowser
+id btnStartVpn
+id btnStopVpn
 id buttonPanel
 id cache_measures
 id callMeasure
@@ -3262,6 +3265,7 @@ id end
 id endToStart
 id enterAlways
 id enterAlwaysCollapsed
+id etDomain
 id etQuery
 id exitUntilCollapsed
 id expand_activities_button
