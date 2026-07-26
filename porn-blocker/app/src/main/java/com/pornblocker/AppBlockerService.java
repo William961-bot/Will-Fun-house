@@ -47,7 +47,7 @@ public class AppBlockerService extends AccessibilityService {
     }
 
     private boolean isAppBlocked(String packageName) {
-        // Default blocked apps - porn-related packages
+        // Porn-specific apps only - browsers stay open
         Set<String> defaultBlocked = new HashSet<>();
         defaultBlocked.add("com.pornhub");
         defaultBlocked.add("com.xvideos");
@@ -59,8 +59,6 @@ public class AppBlockerService extends AccessibilityService {
         defaultBlocked.add("com.nude");
         defaultBlocked.add("com.sex");
         defaultBlocked.add("com.adult");
-        defaultBlocked.add("com.brave"); // Popular porn browser
-        defaultBlocked.add("com.google.android.chrome"); // Block Chrome entirely
         
         android.content.SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
         Set<String> blockedApps = prefs.getStringSet(KEY_BLOCKED_APPS, defaultBlocked);
@@ -78,7 +76,5 @@ public class AppBlockerService extends AccessibilityService {
     }
 
     @Override
-    public void onInterrupt() {
-        // Do nothing
-    }
+    public void onInterrupt() {}
 }
