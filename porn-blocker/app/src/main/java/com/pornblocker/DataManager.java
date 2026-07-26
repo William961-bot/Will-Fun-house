@@ -2,15 +2,10 @@ package com.pornblocker;
 
 import android.content.Context;
 import android.util.Log;
-import org.json.JSONObject;
-import org.json.JSONArray;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 
 /**
- * Data manager for Supabase integration
+ * Data manager for app settings
+ * Note: No backend/cloud integration - all local storage
  */
 public class DataManager {
 
@@ -21,6 +16,8 @@ public class DataManager {
 
     private DataManager(Context context) {
         this.context = context.getApplicationContext();
+        // Default user for local-only app
+        this.currentUser = new UserProfile("local_user", "Local User", "Device User", UserRole.GUARDIAN);
     }
 
     public static synchronized DataManager getInstance(Context context) {
@@ -30,12 +27,12 @@ public class DataManager {
         return instance;
     }
 
-    public void setCurrentUser(UserProfile user) {
-        this.currentUser = user;
-    }
-
     public UserProfile getCurrentUser() {
         return currentUser;
+    }
+
+    public void setCurrentUser(UserProfile user) {
+        this.currentUser = user;
     }
 
     public boolean isLoggedIn() {
@@ -44,34 +41,5 @@ public class DataManager {
 
     public UserRole getCurrentUserRole() {
         return currentUser != null ? currentUser.role : null;
-    }
-
-    // Supabase API calls would go here
-    // Using Retrofit or OkHttp for actual implementation
-    
-    public interface AuthCallback {
-        void onSuccess(UserProfile user);
-        void onError(String error);
-    }
-
-    // Placeholder methods for Supabase integration
-    public void signIn(String email, String password, AuthCallback callback) {
-        // TODO: Implement Supabase auth
-        Log.d(TAG, "signIn: " + email);
-    }
-
-    public void signOut(AuthCallback callback) {
-        currentUser = null;
-        callback.onSuccess(null);
-    }
-
-    public void fetchProfile(String userId, ProfileCallback callback) {
-        // TODO: Implement Supabase profile fetch
-        callback.onSuccess(currentUser);
-    }
-
-    public interface ProfileCallback {
-        void onSuccess(UserProfile profile);
-        void onError(String error);
     }
 }

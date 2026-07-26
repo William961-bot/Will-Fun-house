@@ -11,15 +11,11 @@ drawable edit_text_background
 id btnBack
 id btnManageBlocklist
 id btnSettings
-id btnSignIn
 id btnStartVpn
 id btnStopVpn
 id btnUnblock
 id btnViewActivity
-id etEmail
-id etPassword
 id ivIcon
-id progressBar
 id recyclerView
 id recyclerViewBlockedApps
 id switchAdultContent
@@ -44,7 +40,6 @@ id tvUrl
 id tvWelcome
 id viewPager
 layout activity_blocked_screen
-layout activity_login
 layout activity_main
 layout fragment_activity_log
 layout fragment_blocklist

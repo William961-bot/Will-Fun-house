@@ -16,25 +16,14 @@
         android:theme="@style/Theme.PornBlocker"
         android:usesCleartextTraffic="true">
 
-        <!-- Login Activity -->
-        <activity
-            android:name=".LoginActivity"
-            android:exported="true"
-            android:theme="@style/Theme.PornBlocker.NoActionBar">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <!-- Main Activity with Tab Navigation -->
+        <!-- Main Activity with Tab Navigation - Entry Point -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.PornBlocker.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 

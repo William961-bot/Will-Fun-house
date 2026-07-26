@@ -3183,7 +3183,6 @@ id bounceStart
 id btnBack
 id btnManageBlocklist
 id btnSettings
-id btnSignIn
 id btnStartVpn
 id btnStopVpn
 id btnUnblock
@@ -3269,8 +3268,6 @@ id end
 id endToStart
 id enterAlways
 id enterAlwaysCollapsed
-id etEmail
-id etPassword
 id exitUntilCollapsed
 id expand_activities_button
 id expanded_menu
@@ -3448,7 +3445,6 @@ id pooling_container_listener_holder_tag
 id position
 id postLayout
 id pressed
-id progressBar
 id progress_circular
 id progress_horizontal
 id radio
@@ -3730,7 +3726,6 @@ layout abc_search_view
 layout abc_select_dialog_material
 layout abc_tooltip
 layout activity_blocked_screen
-layout activity_login
 layout activity_main
 layout custom_dialog
 layout design_bottom_navigation_item

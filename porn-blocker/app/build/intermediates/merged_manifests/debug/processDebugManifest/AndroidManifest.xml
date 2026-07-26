@@ -34,19 +34,7 @@
         android:theme="@style/Theme.PornBlocker"
         android:usesCleartextTraffic="true" >
 
-        <!-- Login Activity -->
-        <activity
-            android:name="com.pornblocker.LoginActivity"
-            android:exported="true"
-            android:theme="@style/Theme.PornBlocker.NoActionBar" >
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <!-- Main Activity with Tab Navigation -->
+        <!-- Main Activity with Tab Navigation - Entry Point -->
         <activity
             android:name="com.pornblocker.MainActivity"
             android:exported="true"
@@ -54,7 +42,7 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
