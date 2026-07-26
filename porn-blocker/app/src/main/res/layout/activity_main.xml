@@ -3,134 +3,26 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="24dp"
-    android:background="@android:color/black">
+    android:background="#121212">
 
-    <TextView
+    <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Porn Blocker"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:textColor="@android:color/white"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="16dp"/>
+        android:layout_height="wrap_content">
 
-    <TextView
-        android:id="@+id/tvStatus"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Status: inactive"
-        android:textSize="18sp"
-        android:textColor="@android:color/white"
-        android:layout_marginBottom="8dp"/>
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="#1E1E1E"
+            android:title="Porn Blocker"
+            android:titleTextColor="#FFFFFF" />
 
-    <TextView
-        android:id="@+id/tvBlocked"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Blocked requests: 0"
-        android:textSize="18sp"
-        android:textColor="@android:color/white"
-        android:layout_marginBottom="16dp"/>
+    </com.google.android.material.appbar.AppBarLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="16dp"
-        android:gravity="center">
-
-        <Button
-            android:id="@+id/btnStartVpn"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="Start Blocker"
-            android:layout_weight="1"
-            android:layout_marginEnd="8dp"/>
-
-        <Button
-            android:id="@+id/btnStopVpn"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="Stop Blocker"
-            android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:enabled="false"/>
-    </LinearLayout>
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="16dp"
-        android:background="?android:attr/listDivider"/>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Blocked Domains"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="@android:color/white"
-        android:layout_marginBottom="8dp"/>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Add domains to block while VPN is active."
-        android:textSize="14sp"
-        android:textColor="?android:textColorSecondary"
-        android:layout_marginBottom="12dp"/>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="8dp">
-
-        <EditText
-            android:id="@+id/etDomain"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:hint="e.g., badsite.com"
-            android:inputType="textUri"
-            android:layout_weight="1"
-            android:layout_marginEnd="8dp"
-            android:textColor="@android:color/white"
-            android:hintTextColor="@android:color/darker_gray"/>
-
-        <Button
-            android:id="@+id/btnAddDomain"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Add"/>
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/etQuery"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="URL to open in browser"
-        android:inputType="textUri"
-        android:textColor="@android:color/white"
-        android:hintTextColor="@android:color/darker_gray"
-        android:layout_marginBottom="12dp"/>
-
-    <Button
-        android:id="@+id/btnOpenBrowser"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Open in Browser"
-        android:layout_marginBottom="12dp"/>
-
-    <TextView
-        android:id="@+id/statusText"
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/viewPager"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:text="Browser placeholder"
-        android:textColor="@android:color/white"
-        android:gravity="center"/>
+        android:layout_weight="1" />
 
 </LinearLayout>
