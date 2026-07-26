@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.pornblocker.app-mergeDebugResources-29:/values-v23/values-v23.xml",
+            "outputFile": "com.pornblocker.app-mergeDebugResources-30:/values-v23/values-v23.xml",
             "map": [
                 {
                     "source": "/home/willnut/.gradle/caches/8.9/transforms/d234000dd6f4819b349ea080b8a85058/transformed/cardview-1.0.0/res/values-v23/values-v23.xml",

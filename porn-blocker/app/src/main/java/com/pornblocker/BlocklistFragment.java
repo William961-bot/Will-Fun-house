@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -73,7 +74,8 @@ public class BlocklistFragment extends Fragment {
             if (info.packageName.equals(requireContext().getPackageName())) continue;
 
             String name = pm.getApplicationLabel(info).toString();
-            apps.add(new AppInfo(info.packageName, name, info.icon));
+            Drawable icon = info.loadIcon(pm);
+            apps.add(new AppInfo(info.packageName, name, icon));
         }
 
         return apps;

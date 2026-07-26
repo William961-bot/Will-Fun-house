@@ -7,22 +7,35 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" android:required="false" />
+    <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
 
     <application
         android:allowBackup="false"
-        android:icon="@android:drawable/ic_lock_lock"
+        android:icon="@mipmap/ic_launcher"
         android:label="Porn Blocker"
-        android:theme="@style/Theme.PornBlocker">
+        android:theme="@style/Theme.PornBlocker"
+        android:usesCleartextTraffic="true">
 
+        <!-- Main Activity with Tab Navigation -->
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:theme="@style/Theme.PornBlocker.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
+        <!-- Blocked Screen Activity -->
+        <activity
+            android:name=".BlockedScreenActivity"
+            android:exported="false"
+            android:theme="@style/Theme.PornBlocker.NoActionBar"
+            android:taskAffinity=":blocked"
+            android:excludeFromRecents="true" />
+
+        <!-- VPN Service -->
         <service
             android:name=".BlockerVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
@@ -30,6 +43,20 @@
             <intent-filter>
                 <action android:name="android.net.VpnService" />
             </intent-filter>
+        </service>
+
+        <!-- Accessibility Service for App Blocking -->
+        <service
+            android:name=".AppBlockerService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="false"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
         </service>
 
     </application>

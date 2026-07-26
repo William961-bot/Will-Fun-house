@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Porn Blocker</string>
+    <string name="desc_accessibility_service">Blocks apps you select from opening</string>
+    <string name="app_icon">App Icon</string>
+</resources>

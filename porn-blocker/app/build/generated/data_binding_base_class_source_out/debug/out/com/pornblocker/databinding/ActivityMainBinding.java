@@ -4,14 +4,13 @@ package com.pornblocker.databinding;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.viewbinding.ViewBinding;
 import androidx.viewbinding.ViewBindings;
+import androidx.viewpager2.widget.ViewPager2;
+import com.google.android.material.tabs.TabLayout;
 import com.pornblocker.R;
 import java.lang.NullPointerException;
 import java.lang.Override;
@@ -22,46 +21,16 @@ public final class ActivityMainBinding implements ViewBinding {
   private final LinearLayout rootView;
 
   @NonNull
-  public final Button btnAddDomain;
+  public final TabLayout tabLayout;
 
   @NonNull
-  public final Button btnOpenBrowser;
+  public final ViewPager2 viewPager;
 
-  @NonNull
-  public final Button btnStartVpn;
-
-  @NonNull
-  public final Button btnStopVpn;
-
-  @NonNull
-  public final EditText etDomain;
-
-  @NonNull
-  public final TextView etQuery;
-
-  @NonNull
-  public final TextView statusText;
-
-  @NonNull
-  public final TextView tvBlocked;
-
-  @NonNull
-  public final TextView tvStatus;
-
-  private ActivityMainBinding(@NonNull LinearLayout rootView, @NonNull Button btnAddDomain,
-      @NonNull Button btnOpenBrowser, @NonNull Button btnStartVpn, @NonNull Button btnStopVpn,
-      @NonNull EditText etDomain, @NonNull TextView etQuery, @NonNull TextView statusText,
-      @NonNull TextView tvBlocked, @NonNull TextView tvStatus) {
+  private ActivityMainBinding(@NonNull LinearLayout rootView, @NonNull TabLayout tabLayout,
+      @NonNull ViewPager2 viewPager) {
     this.rootView = rootView;
-    this.btnAddDomain = btnAddDomain;
-    this.btnOpenBrowser = btnOpenBrowser;
-    this.btnStartVpn = btnStartVpn;
-    this.btnStopVpn = btnStopVpn;
-    this.etDomain = etDomain;
-    this.etQuery = etQuery;
-    this.statusText = statusText;
-    this.tvBlocked = tvBlocked;
-    this.tvStatus = tvStatus;
+    this.tabLayout = tabLayout;
+    this.viewPager = viewPager;
   }
 
   @Override
@@ -91,62 +60,19 @@ public final class ActivityMainBinding implements ViewBinding {
     // This is done to optimize the compiled bytecode for size and performance.
     int id;
     missingId: {
-      id = R.id.btnAddDomain;
-      Button btnAddDomain = ViewBindings.findChildViewById(rootView, id);
-      if (btnAddDomain == null) {
+      id = R.id.tabLayout;
+      TabLayout tabLayout = ViewBindings.findChildViewById(rootView, id);
+      if (tabLayout == null) {
         break missingId;
       }
 
-      id = R.id.btnOpenBrowser;
-      Button btnOpenBrowser = ViewBindings.findChildViewById(rootView, id);
-      if (btnOpenBrowser == null) {
+      id = R.id.viewPager;
+      ViewPager2 viewPager = ViewBindings.findChildViewById(rootView, id);
+      if (viewPager == null) {
         break missingId;
       }
 
-      id = R.id.btnStartVpn;
-      Button btnStartVpn = ViewBindings.findChildViewById(rootView, id);
-      if (btnStartVpn == null) {
-        break missingId;
-      }
-
-      id = R.id.btnStopVpn;
-      Button btnStopVpn = ViewBindings.findChildViewById(rootView, id);
-      if (btnStopVpn == null) {
-        break missingId;
-      }
-
-      id = R.id.etDomain;
-      EditText etDomain = ViewBindings.findChildViewById(rootView, id);
-      if (etDomain == null) {
-        break missingId;
-      }
-
-      id = R.id.etQuery;
-      TextView etQuery = ViewBindings.findChildViewById(rootView, id);
-      if (etQuery == null) {
-        break missingId;
-      }
-
-      id = R.id.statusText;
-      TextView statusText = ViewBindings.findChildViewById(rootView, id);
-      if (statusText == null) {
-        break missingId;
-      }
-
-      id = R.id.tvBlocked;
-      TextView tvBlocked = ViewBindings.findChildViewById(rootView, id);
-      if (tvBlocked == null) {
-        break missingId;
-      }
-
-      id = R.id.tvStatus;
-      TextView tvStatus = ViewBindings.findChildViewById(rootView, id);
-      if (tvStatus == null) {
-        break missingId;
-      }
-
-      return new ActivityMainBinding((LinearLayout) rootView, btnAddDomain, btnOpenBrowser,
-          btnStartVpn, btnStopVpn, etDomain, etQuery, statusText, tvBlocked, tvStatus);
+      return new ActivityMainBinding((LinearLayout) rootView, tabLayout, viewPager);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

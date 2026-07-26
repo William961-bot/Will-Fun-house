@@ -3179,11 +3179,10 @@ id bounce
 id bounceBoth
 id bounceEnd
 id bounceStart
-id browserFragment
-id btnAddDomain
-id btnOpenBrowser
+id btnBack
 id btnStartVpn
 id btnStopVpn
+id btnUnblock
 id buttonPanel
 id cache_measures
 id callMeasure
@@ -3265,8 +3264,6 @@ id end
 id endToStart
 id enterAlways
 id enterAlwaysCollapsed
-id etDomain
-id etQuery
 id exitUntilCollapsed
 id expand_activities_button
 id expanded_menu
@@ -3314,8 +3311,10 @@ id indeterminate
 id info
 id invisible
 id inward
+id is_pooling_container_tag
 id italic
 id item_touch_helper_previous_elevation
+id ivIcon
 id jumpToEnd
 id jumpToStart
 id labeled
@@ -3438,6 +3437,7 @@ id pathRelative
 id peekHeight
 id percent
 id pin
+id pooling_container_listener_holder_tag
 id position
 id postLayout
 id pressed
@@ -3446,6 +3446,7 @@ id progress_horizontal
 id radio
 id ratio
 id rectangles
+id recyclerViewBlockedApps
 id report_drawn
 id reverseSawtooth
 id right
@@ -3515,6 +3516,9 @@ id stretch
 id submenuarrow
 id submit_area
 id supportScrollUp
+id switchAdultContent
+id switchBlock
+id tabLayout
 id tabMode
 id tag_accessibility_actions
 id tag_accessibility_clickable_spans
@@ -3561,14 +3565,20 @@ id transition_position
 id transition_scene_layoutid_cache
 id transition_transform
 id triangle
-id tvBlocked
+id tvAppName
+id tvBlockedAppsTitle
+id tvBlockedCount
+id tvNoBlockedApps
 id tvStatus
+id tvToggleLabel
+id tvToggleValue
 id unchecked
 id uniform
 id unlabeled
 id up
 id useLogo
 id vertical_only
+id viewPager
 id view_offset_helper
 id view_transition
 id view_tree_lifecycle_owner
@@ -3700,6 +3710,7 @@ layout abc_search_dropdown_item_icons_2line
 layout abc_search_view
 layout abc_select_dialog_material
 layout abc_tooltip
+layout activity_blocked_screen
 layout activity_main
 layout custom_dialog
 layout design_bottom_navigation_item
@@ -3717,8 +3728,11 @@ layout design_navigation_menu
 layout design_navigation_menu_item
 layout design_text_input_end_icon
 layout design_text_input_start_icon
+layout fragment_blocklist
+layout fragment_home
 layout ime_base_split_test_activity
 layout ime_secondary_split_test_activity
+layout item_app_block
 layout m3_alert_dialog
 layout m3_alert_dialog_actions
 layout m3_alert_dialog_title
@@ -3780,6 +3794,7 @@ layout select_dialog_item_material
 layout select_dialog_multichoice_material
 layout select_dialog_singlechoice_material
 layout support_simple_spinner_dropdown_item
+mipmap ic_launcher
 plurals mtrl_badge_content_description
 raw blocklist
 string abc_action_bar_home_description
@@ -3810,6 +3825,7 @@ string abc_shareactionprovider_share_with
 string abc_shareactionprovider_share_with_application
 string abc_toolbar_collapse_description
 string androidx_startup
+string app_icon
 string app_name
 string appbar_scrolling_view_behavior
 string bottom_sheet_behavior
@@ -3829,12 +3845,12 @@ string character_counter_content_description
 string character_counter_overflowed_content_description
 string character_counter_pattern
 string clear_text_end_icon_content_description
+string desc_accessibility_service
 string error_a11y_label
 string error_icon_content_description
 string exposed_dropdown_menu_content_description
 string fab_transformation_scrim_behavior
 string fab_transformation_sheet_behavior
-string go
 string hide_bottom_view_on_scroll_behavior
 string icon_content_description
 string item_view_role_description
@@ -4576,6 +4592,7 @@ style Theme_MaterialComponents_Light_NoActionBar_Bridge
 style Theme_MaterialComponents_NoActionBar
 style Theme_MaterialComponents_NoActionBar_Bridge
 style Theme_PornBlocker
+style Theme_PornBlocker_NoActionBar
 style ThemeOverlay_AppCompat
 style ThemeOverlay_AppCompat_ActionBar
 style ThemeOverlay_AppCompat_Dark
@@ -5220,3 +5237,4 @@ styleable ViewPager2 android_orientation
 styleable ViewStubCompat android_id android_layout android_inflatedId
 styleable ViewTransition android_id SharedValue SharedValueId clearsTag duration ifTagNotSet ifTagSet motionInterpolator motionTarget onStateTransition pathMotionArc setsTag transitionDisable upDuration viewTransitionMode
 styleable include constraintSet
+xml accessibility_service_config

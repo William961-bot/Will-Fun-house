@@ -107,8 +107,8 @@ public class BlockerVpnService extends VpnService {
             builder.setMtu(1500);
             builder.addAddress("10.0.0.2", 32);
             builder.addRoute("0.0.0.0", 0);
-            builder.addDnsServer("1.1.1.1");
-            builder.addDnsServer("8.8.8.8");
+            builder.addDnsServer("208.67.222.123");  // OpenDNS Family Shield - blocks adult content
+            builder.addDnsServer("208.67.220.123");  // OpenDNS Family Shield backup
 
             pfd = builder.establish();
             if (pfd == null) {
