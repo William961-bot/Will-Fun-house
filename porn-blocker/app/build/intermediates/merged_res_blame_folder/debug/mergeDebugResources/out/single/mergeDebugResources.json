@@ -8,6 +8,10 @@
         "source": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-main-34:/mipmap-xxhdpi/ic_launcher.png"
     },
     {
+        "merged": "com.pornblocker.app-debug-32:/raw_raw_blocklist.txt.flat",
+        "source": "com.pornblocker.app-main-34:/raw/raw_blocklist.txt"
+    },
+    {
         "merged": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-debug-32:/layout_item_app_block.xml.flat",
         "source": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-main-34:/layout/item_app_block.xml"
     },

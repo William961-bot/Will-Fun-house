@@ -49,7 +49,7 @@ layout fragment_profile
 layout item_app_block
 layout item_blocked_request
 mipmap ic_launcher
-raw blocklist
+raw raw_blocklist
 string app_icon
 string app_name
 string desc_accessibility_service

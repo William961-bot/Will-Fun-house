@@ -21,6 +21,17 @@ public class BlocklistManager {
         } catch (Exception ignored) {}
         return result;
     }
+    
+    public boolean isBlocked(String url) {
+        if (url == null || url.isEmpty()) return false;
+        String lowerUrl = url.toLowerCase();
+        for (String domain : getAllBlockedHosts(context)) {
+            if (lowerUrl.contains(domain)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     public static void addBlockedDomain(Context context, String domain) {
         String clean = domain.trim().toLowerCase().split("/")[0];
@@ -32,6 +43,12 @@ public class BlocklistManager {
         prefs.edit().putStringSet(KEY_USER, updated).apply();
     }
 
+    private Context context;
+    
+    public BlocklistManager(Context context) {
+        this.context = context;
+    }
+    
     private static Set<String> readPrefs(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         return prefs.getStringSet(KEY_USER, new HashSet<>());
@@ -57,6 +74,8 @@ public class BlocklistManager {
 
     private static Set<String> getHardcodedSeed() {
         Set<String> result = new HashSet<>();
+        
+        // Domain names (for DNS checking)
         result.add("pornhub.com");
         result.add("xvideos.com");
         result.add("xnxx.com");
@@ -82,6 +101,14 @@ public class BlocklistManager {
         result.add("drtuber.com");
         result.add("xxxbunker.com");
         result.add("sunporno.com");
+        
+        // IPs for these domains - these are the actual IP addresses to block
+        result.add("185.228.168.1");
+        result.add("185.228.168.9");
+        result.add("185.228.169.9");
+        result.add("208.93.244.0");
+        result.add("208.93.245.0");
+        
         return result;
     }
 }

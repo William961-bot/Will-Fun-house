@@ -42,6 +42,7 @@ public class BlockerVpnService extends VpnService {
     private FileOutputStream out;
     private ParcelFileDescriptor pfd;
     private final Set<String> blockedDomains = new HashSet<>();
+    private final Set<String> blockedIps = new HashSet<>();
 
     @Override
     public void onCreate() {
@@ -92,7 +93,24 @@ public class BlockerVpnService extends VpnService {
                 blockedDomains.clear();
                 blockedDomains.addAll(hosts);
             }
+            // Extract IPs from the blocklist
+            blockedIps.clear();
+            for (String host : hosts) {
+                if (isIpAddress(host)) {
+                    blockedIps.add(host);
+                }
+            }
+            Log.i(TAG, "Loaded " + blockedDomains.size() + " domains, " + blockedIps.size() + " IPs");
         } catch (Throwable ignored) {}
+    }
+    
+    private boolean isIpAddress(String address) {
+        try {
+            InetAddress.getByName(address);
+            return address.matches("\\d+\\.\\d+\\.\\d+\\.\\d+");
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public int getBlockedCount() {
@@ -107,6 +125,7 @@ public class BlockerVpnService extends VpnService {
             builder.setMtu(1500);
             builder.addAddress("10.0.0.2", 32);
             builder.addRoute("0.0.0.0", 0);
+            // Use CleanBrowsing Family DNS which blocks porn domains
             builder.addDnsServer("185.228.168.9");  // CleanBrowsing Family Protection
             builder.addDnsServer("185.228.169.9");  // CleanBrowsing backup
 
@@ -133,7 +152,7 @@ public class BlockerVpnService extends VpnService {
         }, "PornBlock");
             worker.start();
 
-            Log.i(TAG, "VPN started");
+            Log.i(TAG, "VPN started with CleanBrowsing DNS");
         } catch (Exception e) {
             Log.e(TAG, "Failed to start VPN", e);
             stopSelf();
@@ -201,23 +220,21 @@ public class BlockerVpnService extends VpnService {
         }
         String dstStr = dstAddr.getHostAddress();
 
+        // Check if destination IP is in blocklist
+        if (blockedIps.contains(dstStr)) {
+            blockAndCount();
+            return;
+        }
+
         byte protocol = packet.get(9);
 
         // DNS blocking via UDP port 53
         if (protocol == 17 && length >= 28) {
             int dstPort = ((packet.get(22) & 0xFF) << 8) | (packet.get(23) & 0xFF);
             if (dstPort == 53) {
-                blockAndCount();
-                return;
+                // DNS query - let it through to CleanBrowsing which will filter
+                // We don't need to block DNS ourselves since CleanBrowsing handles it
             }
-        }
-
-        // Check if destination IP is in blocklist
-        Set<String> snapshot;
-        synchronized (blockedDomains) { snapshot = new HashSet<>(blockedDomains); }
-        if (snapshot.contains(dstStr)) {
-            blockAndCount();
-            return;
         }
 
         pass(packet, length);

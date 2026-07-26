@@ -606,6 +606,21 @@
             ]
         },
         {
+            "outputFile": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-debug-32:/values-w320dp-land-v13_values-w320dp-land-v13.arsc.flat",
+            "map": [
+                {
+                    "source": "/home/willnut/.gradle/caches/8.9/transforms/97a6be6f8d2c2c92ed121709c048c516/transformed/material-1.11.0/res/values-w320dp-land-v13/values-w320dp-land-v13.xml",
+                    "from": {
+                        "startLines": "2,3",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,110",
+                        "endColumns": "54,61",
+                        "endOffsets": "105,167"
+                    }
+                }
+            ]
+        },
+        {
             "outputFile": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-debug-32:/values-v25_values-v25.arsc.flat",
             "map": [
                 {
@@ -617,21 +632,6 @@
                         "endLines": "2,3,5,7",
                         "endColumns": "70,82,12,12",
                         "endOffsets": "121,204,303,414"
-                    }
-                }
-            ]
-        },
-        {
-            "outputFile": "/home/willnut/.gradle/daemon/8.9/com.pornblocker.app-debug-32:/values-w320dp-land-v13_values-w320dp-land-v13.arsc.flat",
-            "map": [
-                {
-                    "source": "/home/willnut/.gradle/caches/8.9/transforms/97a6be6f8d2c2c92ed121709c048c516/transformed/material-1.11.0/res/values-w320dp-land-v13/values-w320dp-land-v13.xml",
-                    "from": {
-                        "startLines": "2,3",
-                        "startColumns": "4,4",
-                        "startOffsets": "55,110",
-                        "endColumns": "54,61",
-                        "endOffsets": "105,167"
                     }
                 }
             ]
