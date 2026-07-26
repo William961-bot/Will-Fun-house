@@ -22,6 +22,9 @@ public final class FragmentHomeBinding implements ViewBinding {
   private final LinearLayout rootView;
 
   @NonNull
+  public final Button btnHelp;
+
+  @NonNull
   public final Button btnStartVpn;
 
   @NonNull
@@ -42,11 +45,12 @@ public final class FragmentHomeBinding implements ViewBinding {
   @NonNull
   public final TextView tvToggleValue;
 
-  private FragmentHomeBinding(@NonNull LinearLayout rootView, @NonNull Button btnStartVpn,
-      @NonNull Button btnStopVpn, @NonNull Switch switchAdultContent,
+  private FragmentHomeBinding(@NonNull LinearLayout rootView, @NonNull Button btnHelp,
+      @NonNull Button btnStartVpn, @NonNull Button btnStopVpn, @NonNull Switch switchAdultContent,
       @NonNull TextView tvBlockedCount, @NonNull TextView tvStatus, @NonNull TextView tvToggleLabel,
       @NonNull TextView tvToggleValue) {
     this.rootView = rootView;
+    this.btnHelp = btnHelp;
     this.btnStartVpn = btnStartVpn;
     this.btnStopVpn = btnStopVpn;
     this.switchAdultContent = switchAdultContent;
@@ -83,6 +87,12 @@ public final class FragmentHomeBinding implements ViewBinding {
     // This is done to optimize the compiled bytecode for size and performance.
     int id;
     missingId: {
+      id = R.id.btnHelp;
+      Button btnHelp = ViewBindings.findChildViewById(rootView, id);
+      if (btnHelp == null) {
+        break missingId;
+      }
+
       id = R.id.btnStartVpn;
       Button btnStartVpn = ViewBindings.findChildViewById(rootView, id);
       if (btnStartVpn == null) {
@@ -125,7 +135,7 @@ public final class FragmentHomeBinding implements ViewBinding {
         break missingId;
       }
 
-      return new FragmentHomeBinding((LinearLayout) rootView, btnStartVpn, btnStopVpn,
+      return new FragmentHomeBinding((LinearLayout) rootView, btnHelp, btnStartVpn, btnStopVpn,
           switchAdultContent, tvBlockedCount, tvStatus, tvToggleLabel, tvToggleValue);
     }
     String missingId = rootView.getResources().getResourceName(id);

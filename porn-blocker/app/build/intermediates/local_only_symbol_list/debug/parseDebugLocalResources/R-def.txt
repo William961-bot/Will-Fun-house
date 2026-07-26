@@ -9,6 +9,7 @@ color teal_700
 color white
 drawable edit_text_background
 id btnBack
+id btnHelp
 id btnManageBlocklist
 id btnSettings
 id btnStartVpn

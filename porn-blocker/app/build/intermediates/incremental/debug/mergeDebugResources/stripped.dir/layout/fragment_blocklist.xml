@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#121212">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="App Blocklist"
+        android:textSize="20sp"
+        android:textColor="#FFFFFF"
+        android:padding="16dp"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:id="@+id/tvBlockedAppsTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Blocked Apps"
+        android:textSize="16sp"
+        android:textColor="#888888"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerViewBlockedApps"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="#1E1E1E" />
+
+    <TextView
+        android:id="@+id/tvNoBlockedApps"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No apps blocked yet"
+        android:textSize="16sp"
+        android:textColor="#666666"
+        android:gravity="center"
+        android:layout_gravity="center"
+        android:padding="32dp"
+        android:visibility="gone" />
+
+</LinearLayout>

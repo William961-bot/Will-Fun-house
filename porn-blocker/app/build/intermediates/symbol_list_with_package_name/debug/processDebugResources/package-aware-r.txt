@@ -3181,6 +3181,7 @@ id bounceBoth
 id bounceEnd
 id bounceStart
 id btnBack
+id btnHelp
 id btnManageBlocklist
 id btnSettings
 id btnStartVpn

@@ -82,6 +82,15 @@
         android:text="Stop Blocker"
         android:backgroundTint="#F44336"
         android:textColor="#FFFFFF"
-        android:enabled="false" />
+        android:enabled="false"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/btnHelp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="How to enable blocking"
+        android:backgroundTint="#2196F3"
+        android:textColor="#FFFFFF" />
 
 </LinearLayout>

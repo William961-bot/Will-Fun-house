@@ -75,7 +75,7 @@ public class BlocklistManager {
     private static Set<String> getHardcodedSeed() {
         Set<String> result = new HashSet<>();
         
-        // Domain names (for DNS checking)
+        // Porn domain names - these will be checked in the built-in browser
         result.add("pornhub.com");
         result.add("xvideos.com");
         result.add("xnxx.com");
@@ -101,13 +101,6 @@ public class BlocklistManager {
         result.add("drtuber.com");
         result.add("xxxbunker.com");
         result.add("sunporno.com");
-        
-        // IPs for these domains - these are the actual IP addresses to block
-        result.add("185.228.168.1");
-        result.add("185.228.168.9");
-        result.add("185.228.169.9");
-        result.add("208.93.244.0");
-        result.add("208.93.245.0");
         
         return result;
     }

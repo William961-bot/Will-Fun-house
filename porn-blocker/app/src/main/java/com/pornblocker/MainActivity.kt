@@ -4,6 +4,7 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.VpnService
+import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.widget.Button
@@ -12,158 +13,128 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import com.google.android.material.tabs.TabLayoutMediator
+import androidx.viewpager2.widget.ViewPager2
+import com.google.android.material.tabs.TabLayout
 
 class MainActivity : AppCompatActivity() {
 
     private val REQUEST_VPN = 1001
     private val REQUEST_POST = 1002
 
-    private lateinit var tvStatus: TextView
-    private lateinit var tvBlocked: TextView
-    private lateinit var btnStart: Button
-    private lateinit var btnStop: Button
-    private lateinit var etDomain: EditText
-    private lateinit var browser: com.pornblocker.SimpleBrowser
-
-    private val refreshIntervalMs = 1000L
-    private var refreshJob: Runnable? = null
+    private lateinit var viewPager: ViewPager2
+    private lateinit var tabLayout: TabLayout
+    private lateinit var adapter: ViewPagerAdapter
+    private var vpnLauncher: androidx.activity.result.ActivityResultLauncher<Intent>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        tvStatus = findViewById(R.id.tvStatus)
-        tvBlocked = findViewById(R.id.tvBlocked)
-        btnStart = findViewById(R.id.btnStartVpn)
-        btnStop = findViewById(R.id.btnStopVpn)
-        etDomain = findViewById(R.id.etDomain)
+        viewPager = findViewById(R.id.viewPager)
+        tabLayout = findViewById(R.id.tabLayout)
 
-        if (savedInstanceState == null) {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.browserFragment, com.pornblocker.SimpleBrowser.newInstance())
-                .commitNow()
+        adapter = ViewPagerAdapter(this)
+        viewPager.adapter = adapter
+
+        TabLayoutMediator(tabLayout, viewPager) { tab, position ->
+            val titles = listOf("Home", "Blocklist", "Activity", "Profile")
+            if (position < titles.size) {
+                tab.setText(titles[position])
+            }
+        }.attach()
+
+        vpnLauncher = registerForActivityResult(
+            androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+            if (result.resultCode == RESULT_OK) {
+                activateVpn()
+            }
         }
-        browser = supportFragmentManager.findFragmentById(R.id.browserFragment) as com.pornblocker.SimpleBrowser
 
-        btnStart.setOnClickListener {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU &&
-                checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED) {
+        setupPermissions()
+        
+        // Add help button
+        findViewById<Button>(R.id.btnHelp)?.setOnClickListener {
+            showBlockingHelp()
+        }
+    }
+
+    private fun setupPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(
                     this,
                     arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
                     REQUEST_POST
                 )
-                return@setOnClickListener
             }
-            startVpn()
         }
-
-        btnStop.setOnClickListener {
-            val intent = Intent(this, com.pornblocker.BlockerVpnService::class.java).apply {
-                action = com.pornblocker.BlockerVpnService.ACTION_STOP
-            }
-            startService(intent)
-            setActive(false)
-        }
-
-        findViewById<Button>(R.id.btnAddDomain).setOnClickListener {
-            val raw = etDomain.text.toString().trim()
-            if (TextUtils.isEmpty(raw)) return@setOnClickListener
-            val domain = raw.lowercase().replaceFirst("https://", "").replaceFirst("http://", "").split("/")[0]
-            if (domain.isBlank()) return@setOnClickListener
-            BlocklistManager.addBlockedDomain(applicationContext, domain)
-            etDomain.text?.clear()
-            reloadVpnBlocklist()
-            Toast.makeText(this, "Blocked $domain", Toast.LENGTH_SHORT).show()
-        }
-
-        findViewById<Button>(R.id.btnOpenBrowser).setOnClickListener {
-            val url = findViewById<EditText>(R.id.etQuery).text.toString().trim()
-            if (TextUtils.isEmpty(url)) return@setOnClickListener
-            val prefix = if (!url.startsWith("http://") && !url.startsWith("https://")) "https://$url" else url
-            browser.load(prefix)
-        }
-
-        setActive(com.pornblocker.BlockerVpnService.isRunning)
-        refreshCount()
     }
 
-    override fun onResume() {
-        super.onResume()
-        setActive(com.pornblocker.BlockerVpnService.isRunning)
-        refreshCount()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        refreshJob = null
-    }
-
-    private fun setActive(active: Boolean) {
-        btnStart.isEnabled = !active
-        btnStop.isEnabled = active
-        tvStatus.text = if (active) "Status: active" else "Status: inactive"
-    }
-
-    private fun refreshCount() {
-        val count = com.pornblocker.BlockerVpnService.blockedCount.get()
-        tvBlocked.text = "Blocked requests: $count"
-    }
-
-    private fun startVpn() {
+    fun startVpn() {
         val intent = VpnService.prepare(this)
         if (intent != null) {
-            startActivityForResult(intent, REQUEST_VPN)
+            vpnLauncher?.launch(intent)
         } else {
             activateVpn()
         }
     }
 
-    private fun activateVpn() {
-        val intent = Intent(this, com.pornblocker.BlockerVpnService::class.java).apply {
-            action = com.pornblocker.BlockerVpnService.ACTION_START
-        }
+    fun stopVpn() {
+        val intent = Intent(this, BlockerVpnService::class.java)
+        intent.action = BlockerVpnService.ACTION_STOP
         startService(intent)
-        setActive(true)
-        startRefreshLoop()
+        Toast.makeText(this, "VPN stopped", Toast.LENGTH_SHORT).show()
     }
 
-    private fun startRefreshLoop() {
-        val job = object : Runnable {
-            override fun run() {
-                if (!com.pornblocker.BlockerVpnService.isRunning) {
-                    refreshJob = null
-                    return
-                }
-                refreshCount()
-                tvStatus.postDelayed(this, refreshIntervalMs)
-            }
+    private fun activateVpn() {
+        if (BlockerVpnService.isRunning) {
+            Toast.makeText(this, "VPN already active", Toast.LENGTH_SHORT).show()
+            return
         }
-        refreshJob = job
-        tvStatus.post(job)
+        
+        val intent = Intent(this, BlockerVpnService::class.java)
+        intent.action = BlockerVpnService.ACTION_START
+        startService(intent)
+        Toast.makeText(this, "VPN started", Toast.LENGTH_SHORT).show()
     }
 
-    private fun reloadVpnBlocklist() {
-        try {
-            val intent = Intent(this, com.pornblocker.BlockerVpnService::class.java).apply {
-                action = com.pornblocker.BlockerVpnService.ACTION_RELOAD
-            }
-            startService(intent)
-        } catch (e: Exception) { e.printStackTrace() }
+    fun isVpnRunning(): Boolean {
+        return BlockerVpnService.isRunning
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_VPN && resultCode == RESULT_OK) {
-            activateVpn()
-        }
+    fun getBlockedCount(): Int {
+        return BlockerVpnService.blockedCount.get()
     }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_POST && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            startVpn()
-        }
+    
+    private fun showBlockingHelp() {
+        val message = """
+            |For BEST blocking results, use one of these methods:
+            |
+            |1. PRIVATE DNS (Recommended)
+            |   Settings → Network & Internet → Private DNS
+            |   Enter: dns.cleanbrowsing.org
+            |   or: family-filter.dns.adguard.com
+            |
+            |2. CHROME SETTINGS
+            |   Open Chrome → chrome://settings/security
+            |   Enable "Enhanced protection"
+            |
+            |3. BUILT-IN BROWSER
+            |   Use the app's "Browser" tab
+            |   This blocks within the app's WebView
+            |
+            |VPN method: Works for apps that use system DNS.
+            |Chrome uses DNS-over-HTTPS which bypasses VPN DNS.
+        """.trimMargin()
+        
+        AlertDialog.Builder(this)
+            .setTitle("Blocking Help")
+            .setMessage(message)
+            .setPositiveButton("Got it") { d, _ -> d.dismiss() }
+            .show()
     }
 }
