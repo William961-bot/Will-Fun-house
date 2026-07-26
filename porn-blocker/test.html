@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Porn Blocker - Mobile Preview</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 360px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 24px; }
+        h1 { font-size: 24px; font-weight: bold; margin: 0 0 16px; color: #333; }
+        .status { background: #e8f5e9; color: #2e7d32; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
+        .blocked { background: #fce4ec; color: #c2185b; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; display: none; }
+        .input-group { display: flex; gap: 8px; margin-bottom: 16px; }
+        input[type="text"] { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        button { flex: 1; padding: 12px; background: #1976d2; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        button:hover { background: #1565c0; }
+        .webview { border: 1px solid #ccc; border-radius: 8px; height: 300px; display: flex; align-items: center; justify-content: center; background: #fafafa; margin-top: 16px; }
+        .webview-text { color: #999; font-size: 14px; }
+        .domain-list { margin-top: 16px; }
+        .domain-list h3 { font-size: 16px; margin: 0 0 8px; }
+        .domain-item { font-size: 14px; color: #666; padding: 4px 0; border-bottom: 1px solid #eee; }
+        .domain-item:last-child { border-bottom: none; }
+        .domain-blocked { color: #c2185b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Porn Blocker</h1>
+        <div class="status">Status: active</div>
+        <div id="blockedMsg" class="blocked">Blocked domain detected</div>
+        <div class="input-group">
+            <input type="text" id="urlInput" placeholder="Enter URL (e.g., pornhub.com)">
+            <button onclick="checkUrl()">Open</button>
+        </div>
+        <div class="webview">
+            <span class="webview-text">WebView preview</span>
+        </div>
+        <div class="domain-list">
+            <h3>Blocked domains (15)</h3>
+            <div class="domain-item">pornhub.com</div>
+            <div class="domain-item">xvideos.com</div>
+            <div class="domain-item">xnxx.com</div>
+            <div class="domain-item">youporn.com</div>
+            <div class="domain-item">spankwire.com</div>
+            <div class="domain-item">redtube.com</div>
+            <div class="domain-item">dailymotion.com/watch</div>
+            <div class="domain-item">tiktok.com</div>
+            <div class="domain-item">instagram.com</div>
+            <div class="domain-item">twitter.com</div>
+            <div class="domain-item">reddit.com</div>
+            <div class="domain-item">8kun.top</div>
+            <div class="domain-item">4chan.org</div>
+            <div class="domain-item">hentaihaven.com</div>
+            <div class="domain-item">phim.vip</div>
+        </div>
+    </div>
+    <script>
+        const blockedDomains = ['pornhub.com', 'xvideos.com', 'xnxx.com', 'youporn.com', 'spankwire.com', 'redtube.com', 'tiktok.com', 'hentaihaven.com', 'phim.vip'];
+        function checkUrl() {
+            const url = document.getElementById('urlInput').value.trim().toLowerCase();
+            if (!url) return alert('Enter a URL');
+            const isBlocked = blockedDomains.some(d => url.includes(d));
+            if (isBlocked) {
+                document.getElementById('blockedMsg').style.display = 'block';
+                document.querySelector('.webview-text').textContent = 'BLOCKED';
+            } else {
+                document.getElementById('blockedMsg').style.display = 'none';
+                document.querySelector('.webview-text').textContent = 'Loading: ' + url;
+            }
+        }
+    </script>
+</body>
+</html>
