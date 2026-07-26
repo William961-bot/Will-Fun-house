@@ -114,25 +114,32 @@ class MainActivity : AppCompatActivity() {
         val message = """
             |For BEST blocking results, use one of these methods:
             |
-            |1. PRIVATE DNS (Recommended)
+            |1. ROUTER DNS (Most Permanent)
+            |   Login to your router's admin page (usually 192.168.1.1)
+            |   Find DNS settings and enter:
+            |   Primary: 185.228.168.9 (CleanBrowsing Family)
+            |   or: 94.140.14.14 (AdGuard Family)
+            |   This blocks ALL devices on your network
+            |
+            |2. PRIVATE DNS (System-wide)
             |   Settings → Network & Internet → Private DNS
             |   Enter: dns.cleanbrowsing.org
             |   or: family-filter.dns.adguard.com
             |
-            |2. CHROME SETTINGS
+            |3. CHROME SETTINGS
             |   Open Chrome → chrome://settings/security
             |   Enable "Enhanced protection"
             |
-            |3. BUILT-IN BROWSER
+            |4. BUILT-IN BROWSER
             |   Use the app's "Browser" tab
-            |   This blocks within the app's WebView
+            |   Blocks within the app's WebView
             |
-            |VPN method: Works for apps that use system DNS.
+            |VPN method: Works for apps using system DNS.
             |Chrome uses DNS-over-HTTPS which bypasses VPN DNS.
         """.trimMargin()
         
         AlertDialog.Builder(this)
-            .setTitle("Blocking Help")
+            .setTitle("Blocking Help - Most Effective First")
             .setMessage(message)
             .setPositiveButton("Got it") { d, _ -> d.dismiss() }
             .show()
