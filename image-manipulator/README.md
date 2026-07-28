@@ -34,3 +34,16 @@ Or build manually:
 g++ -std=c++17 main_simple.cpp -o simple_test
 ./simple_test
 ```
+
+## Learning Resources (No AI Required)
+
+If you get stuck on `applyBlur` or other filters, these are the places to look:
+
+- **Your own code** — `learn.cpp` already has step-by-step TODO comments for the box-blur algorithm.
+- **Szeliski** — *Computer Vision: Algorithms and Applications* (free PDF), chapter on filtering.
+- **Wikipedia** — Box blur, Gaussian blur, kernel (image processing).
+- **Real-Time Rendering** — has 3x3 / 5x5 convolution examples.
+- **OpenCV source** — `imgproc/src/filter.cpp` shows real C++ convolution.
+- **GeeksforGeeks** — "Image Blurring using OpenCV" (concepts translate to plain C++).
+- **YouTube** — The Coding Train "Image Filtering", Sebastian Lague "Convolution".
+- **Stack Overflow** — search `c++ box blur image` for the exact neighbor-loop pattern.
