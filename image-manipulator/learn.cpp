@@ -147,7 +147,8 @@ void applyBlur(std::vector<Pixel>& p, int w, int h, int r) {
     std::vector<Pixel> out(p.size());
 
     // TODO: visit every pixel in the image
-    // need x and y for each pixel; use either flat i with i%w / i/w, or nested x/y loops
+    // need x and y for each pixel; use either flat i with 
+    //i%w / i/w, or nested x/y loops
 
     // TODO: for each pixel, sum pixels in a box around it
     // box spans from x-r to x+r and y-r to y+r
