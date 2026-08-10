@@ -147,7 +147,7 @@ void applyBlur(std::vector<Pixel>& p, int w, int h, int r) {
     std::vector<Pixel> out(p.size());
 
     // TODO: visit every pixel in the image
- for 
+
 
 
 
