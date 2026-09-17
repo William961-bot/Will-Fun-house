@@ -148,6 +148,12 @@ void applyBlur(std::vector<Pixel>& p, int w, int h, int r) {
 
     // TODO: visit every pixel in the image
 
+for(int)
+
+
+
+
+
     // need x and y for each pixel; use either flat i with 
     //i%w / i/w, or nested x/y loops
 
