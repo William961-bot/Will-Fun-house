@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://dc1e8148bq738"]
+
+[ext_resource type="Script" uid="uid://djj3a436e7l7u" path="res://scripts/main.gd" id="1"]
+[ext_resource type="PackedScene" path="res://world.tscn" id="2"]
+[ext_resource type="Script" uid="uid://dedr54al8p7lw" path="res://scripts/editor_preview.gd" id="3"]
+
+[node name="Main" type="Node3D" unique_id=663002499]
+script = ExtResource("1")
+
+[node name="World" parent="." unique_id=2110458093 instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.34, 0, 0)
+
+[node name="EditorPreview" type="Node3D" parent="." unique_id=12521902]
+script = ExtResource("3")
