@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hoodratz</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0b0b10; overflow: hidden; }
+    canvas { display: block; position: absolute; inset: 0; margin: auto; }
+    .menu-controls { position: fixed; left: 50%; top: 50%; width: 1280px; height: 720px; pointer-events: none; transform: translate(-50%, -50%); }
+    .menu-controls[hidden] { display: none; }
+    .menu-controls button { position: absolute; left: 470px; width: 340px; height: 66px; border: 0; border-radius: 14px; background: transparent; color: transparent; font: bold 26px sans-serif; pointer-events: auto; cursor: pointer; }
+    .menu-controls button:focus { outline: none; }
+    .menu-controls button:focus-visible { outline: 3px solid #e6edf6; outline-offset: 5px; }
+  </style>
+</head>
+<body>
+  <canvas id="game" width="1280" height="720"></canvas>
+  <nav id="home-menu" class="menu-controls" aria-label="Home menu">
+    <button type="button" style="top:300px">Play</button>
+    <button type="button" style="top:384px">Practice</button>
+    <button type="button" style="top:468px">Quit</button>
+  </nav>
+  <section id="quit-menu" class="menu-controls" aria-label="Game exited" hidden>
+    <button type="button" style="top:420px">Back to menu</button>
+  </section>
+  <!-- Classic scripts (not modules) so the game runs by opening this file directly. -->
+  <script src="src/config.js"></script>
+  <script src="src/moves.js"></script>
+  <script src="src/input.js"></script>
+<script src="src/cpu.js"></script>
+  <script src="src/audio.js"></script>
+  <script src="src/practice.js"></script>
+  <script src="src/practice-cpu.js"></script>
+  <script src="src/characters/haze.js"></script>
+  <script src="src/characters/rip.js"></script>
+  <script src="src/characters/gooner.js"></script>
+  <script src="src/characters/yitty.js"></script>
+<script src="src/characters/roster-support.js"></script>
+<script src="src/characters/lancer.js"></script>
+<script src="src/characters/cheese.js"></script>
+<script src="src/characters/teo.js"></script>
+<script src="src/characters/null.js"></script>
+<script src="src/characters/sombra.js"></script>
+<script src="src/characters/curtis.js"></script>
+<script src="src/characters/siglarp.js"></script>
+<script src="src/characters/kinkade.js"></script>
+<script src="src/characters/brainlag.js"></script>
+<script src="src/fighter.js"></script>
+<script src="src/combo-system.js"></script>
+  <script src="src/combat.js"></script>
+  <script src="src/throws.js"></script>
+<script src="src/throws-new.js"></script>
+  <script src="src/render.js"></script>
+  <script src="src/animation.js"></script>
+  <script src="src/render-fx.js"></script>
+  <script src="src/domains.js"></script>
+  <script src="src/render-domains.js"></script>
+  <script src="src/render-practice.js"></script>
+  <script src="src/side-select.js"></script>
+  <script src="src/character-select.js"></script>
+  <script src="src/projectiles.js"></script>
+  <script src="src/render-yitty.js"></script>
+<script src="src/render-new-roster.js"></script>
+<script src="src/render-style.js"></script>
+<script src="src/render-null.js"></script>
+<script src="src/render-sombra.js"></script>
+<script src="src/render-curtis.js"></script>
+<script src="src/render-siglarp.js"></script>
+<script src="src/render-kinkade.js"></script>
+<script src="src/render-brainlag.js"></script>
+  <script src="src/main.js"></script>
+</body>
+</html>
+
+
+

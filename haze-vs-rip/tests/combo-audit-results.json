@@ -1,0 +1,1887 @@
+{
+  "limits": {
+    "beforeBounce": 10,
+    "afterBounce": 5,
+    "total": 15,
+    "bounceScale": 0.5
+  },
+  "routes": [
+    {
+      "character": "haze",
+      "kind": "normal",
+      "peak": 10,
+      "damageHits": 10,
+      "bounces": 1,
+      "ended": false,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "overhead",
+          "combo": 4
+        },
+        {
+          "move": "air",
+          "combo": 5
+        },
+        {
+          "move": "airMedium",
+          "combo": 6
+        },
+        {
+          "move": "airHeavy",
+          "combo": 7
+        },
+        {
+          "move": "light",
+          "combo": 8
+        },
+        {
+          "move": "medium",
+          "combo": 9
+        },
+        {
+          "move": "low",
+          "combo": 10
+        }
+      ]
+    },
+    {
+      "character": "rip",
+      "kind": "normal",
+      "peak": 10,
+      "damageHits": 10,
+      "bounces": 1,
+      "ended": false,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "overhead",
+          "combo": 4
+        },
+        {
+          "move": "air",
+          "combo": 5
+        },
+        {
+          "move": "airMedium",
+          "combo": 6
+        },
+        {
+          "move": "airHeavy",
+          "combo": 7
+        },
+        {
+          "move": "light",
+          "combo": 8
+        },
+        {
+          "move": "medium",
+          "combo": 9
+        },
+        {
+          "move": "low",
+          "combo": 10
+        }
+      ]
+    },
+    {
+      "character": "gooner",
+      "kind": "normal",
+      "peak": 10,
+      "damageHits": 10,
+      "bounces": 1,
+      "ended": false,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "overhead",
+          "combo": 4
+        },
+        {
+          "move": "air",
+          "combo": 5
+        },
+        {
+          "move": "airMedium",
+          "combo": 6
+        },
+        {
+          "move": "airHeavy",
+          "combo": 7
+        },
+        {
+          "move": "light",
+          "combo": 8
+        },
+        {
+          "move": "medium",
+          "combo": 9
+        },
+        {
+          "move": "low",
+          "combo": 10
+        }
+      ]
+    },
+    {
+      "character": "yitty",
+      "kind": "normal",
+      "peak": 10,
+      "damageHits": 10,
+      "bounces": 1,
+      "ended": false,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "overhead",
+          "combo": 4
+        },
+        {
+          "move": "air",
+          "combo": 5
+        },
+        {
+          "move": "airMedium",
+          "combo": 6
+        },
+        {
+          "move": "airHeavy",
+          "combo": 7
+        },
+        {
+          "move": "light",
+          "combo": 8
+        },
+        {
+          "move": "medium",
+          "combo": 9
+        },
+        {
+          "move": "low",
+          "combo": 10
+        }
+      ]
+    },
+    {
+      "character": "lancer",
+      "kind": "normal",
+      "peak": 10,
+      "damageHits": 10,
+      "bounces": 1,
+      "ended": false,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "overhead",
+          "combo": 4
+        },
+        {
+          "move": "air",
+          "combo": 5
+        },
+        {
+          "move": "airMedium",
+          "combo": 6
+        },
+        {
+          "move": "airHeavy",
+          "combo": 7
+        },
+        {
+          "move": "light",
+          "combo": 8
+        },
+        {
+          "move": "medium",
+          "combo": 9
+        },
+        {
+          "move": "low",
+          "combo": 10
+        }
+      ]
+    },
+    {
+      "character": "cheese",
+      "kind": "normal",
+      "peak": 10,
+      "damageHits": 10,
+      "bounces": 1,
+      "ended": false,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "overhead",
+          "combo": 4
+        },
+        {
+          "move": "air",
+          "combo": 5
+        },
+        {
+          "move": "airMedium",
+          "combo": 6
+        },
+        {
+          "move": "airHeavy",
+          "combo": 7
+        },
+        {
+          "move": "light",
+          "combo": 8
+        },
+        {
+          "move": "medium",
+          "combo": 9
+        },
+        {
+          "move": "low",
+          "combo": 10
+        }
+      ]
+    },
+    {
+      "character": "teo",
+      "kind": "normal",
+      "peak": 10,
+      "damageHits": 10,
+      "bounces": 1,
+      "ended": false,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "overhead",
+          "combo": 4
+        },
+        {
+          "move": "air",
+          "combo": 5
+        },
+        {
+          "move": "airMedium",
+          "combo": 6
+        },
+        {
+          "move": "airHeavy",
+          "combo": 7
+        },
+        {
+          "move": "light",
+          "combo": 8
+        },
+        {
+          "move": "medium",
+          "combo": 9
+        },
+        {
+          "move": "low",
+          "combo": 10
+        }
+      ]
+    },
+    {
+      "character": "null",
+      "kind": "normal",
+      "peak": 10,
+      "damageHits": 10,
+      "bounces": 1,
+      "ended": false,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "overhead",
+          "combo": 4
+        },
+        {
+          "move": "air",
+          "combo": 5
+        },
+        {
+          "move": "airMedium",
+          "combo": 6
+        },
+        {
+          "move": "airHeavy",
+          "combo": 7
+        },
+        {
+          "move": "light",
+          "combo": 8
+        },
+        {
+          "move": "medium",
+          "combo": 9
+        },
+        {
+          "move": "low",
+          "combo": 10
+        }
+      ]
+    },
+    {
+      "character": "sombra",
+      "kind": "normal",
+      "peak": 9,
+      "damageHits": 9,
+      "bounces": 1,
+      "ended": true,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "medium",
+          "combo": 4
+        },
+        {
+          "move": "overhead",
+          "combo": 5
+        },
+        {
+          "move": "air",
+          "combo": 6
+        },
+        {
+          "move": "airMedium",
+          "combo": 7
+        },
+        {
+          "move": "airMedium",
+          "combo": 8
+        },
+        {
+          "move": "airHeavy",
+          "combo": 9
+        }
+      ],
+      "error": "timeout idle/light; victim idle/0",
+      "debug": {
+        "frame": 47,
+        "move": {
+          "startup": 5,
+          "active": 3,
+          "recovery": 10,
+          "dmg": 40,
+          "height": "high",
+          "hitstun": 16,
+          "kb": 2,
+          "step": 3,
+          "hitstop": 3,
+          "shake": 0,
+          "box": {
+            "x": 30,
+            "y": -128,
+            "w": 78,
+            "h": 30
+          }
+        },
+        "chain": [],
+        "hitstop": 0,
+        "gameFrame": 52644
+      }
+    },
+    {
+      "character": "curtis",
+      "kind": "normal",
+      "peak": 10,
+      "damageHits": 10,
+      "bounces": 1,
+      "ended": false,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "overhead",
+          "combo": 4
+        },
+        {
+          "move": "air",
+          "combo": 5
+        },
+        {
+          "move": "airMedium",
+          "combo": 6
+        },
+        {
+          "move": "airHeavy",
+          "combo": 7
+        },
+        {
+          "move": "light",
+          "combo": 8
+        },
+        {
+          "move": "medium",
+          "combo": 9
+        },
+        {
+          "move": "low",
+          "combo": 10
+        }
+      ]
+    },
+    {
+      "character": "siglarp",
+      "kind": "normal",
+      "peak": 10,
+      "damageHits": 10,
+      "bounces": 1,
+      "ended": false,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "overhead",
+          "combo": 4
+        },
+        {
+          "move": "air",
+          "combo": 5
+        },
+        {
+          "move": "airMedium",
+          "combo": 6
+        },
+        {
+          "move": "airHeavy",
+          "combo": 7
+        },
+        {
+          "move": "light",
+          "combo": 8
+        },
+        {
+          "move": "medium",
+          "combo": 9
+        },
+        {
+          "move": "low",
+          "combo": 10
+        }
+      ]
+    },
+    {
+      "character": "kinkade",
+      "kind": "normal",
+      "peak": 10,
+      "damageHits": 10,
+      "bounces": 1,
+      "ended": false,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "overhead",
+          "combo": 4
+        },
+        {
+          "move": "air",
+          "combo": 5
+        },
+        {
+          "move": "airMedium",
+          "combo": 6
+        },
+        {
+          "move": "airHeavy",
+          "combo": 7
+        },
+        {
+          "move": "light",
+          "combo": 8
+        },
+        {
+          "move": "medium",
+          "combo": 9
+        },
+        {
+          "move": "low",
+          "combo": 10
+        }
+      ]
+    },
+    {
+      "character": "kinkade",
+      "kind": "Earned Pump + double Bench + normal follow-ups",
+      "peak": 7,
+      "damageHits": 7,
+      "bounces": 0,
+      "ended": false,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "medium",
+          "combo": 2
+        },
+        {
+          "move": "lowMedium",
+          "combo": 3
+        },
+        {
+          "move": "benchPress",
+          "combo": 4
+        },
+        {
+          "move": "benchPress",
+          "combo": 5
+        },
+        {
+          "move": "light",
+          "combo": 6
+        },
+        {
+          "move": "medium",
+          "combo": 7
+        }
+      ]
+    },
+    {
+      "character": "lancer",
+      "kind": "special launcher route",
+      "peak": 10,
+      "damageHits": 10,
+      "bounces": 1,
+      "ended": false,
+      "hits": [
+        {
+          "move": "flashSlash",
+          "combo": 1
+        },
+        {
+          "move": "light",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "overhead",
+          "combo": 4
+        },
+        {
+          "move": "air",
+          "combo": 5
+        },
+        {
+          "move": "airMedium",
+          "combo": 6
+        },
+        {
+          "move": "airHeavy",
+          "combo": 7
+        },
+        {
+          "move": "light",
+          "combo": 8
+        },
+        {
+          "move": "medium",
+          "combo": 9
+        },
+        {
+          "move": "low",
+          "combo": 10
+        }
+      ]
+    },
+    {
+      "character": "null",
+      "kind": "special launcher route",
+      "peak": 10,
+      "damageHits": 10,
+      "bounces": 1,
+      "ended": false,
+      "hits": [
+        {
+          "move": "nullZoom",
+          "combo": 1
+        },
+        {
+          "move": "light",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "overhead",
+          "combo": 4
+        },
+        {
+          "move": "air",
+          "combo": 5
+        },
+        {
+          "move": "airMedium",
+          "combo": 6
+        },
+        {
+          "move": "airHeavy",
+          "combo": 7
+        },
+        {
+          "move": "light",
+          "combo": 8
+        },
+        {
+          "move": "medium",
+          "combo": 9
+        },
+        {
+          "move": "low",
+          "combo": 10
+        }
+      ]
+    },
+    {
+      "character": "cheese",
+      "kind": "Vanish attack route",
+      "peak": 7,
+      "damageHits": 7,
+      "bounces": 1,
+      "ended": false,
+      "hits": [
+        {
+          "move": "overhead",
+          "combo": 1
+        },
+        {
+          "move": "air",
+          "combo": 2
+        },
+        {
+          "move": "airMedium",
+          "combo": 3
+        },
+        {
+          "move": "airHeavy",
+          "combo": 4
+        },
+        {
+          "move": "light",
+          "combo": 5
+        },
+        {
+          "move": "medium",
+          "combo": 6
+        },
+        {
+          "move": "low",
+          "combo": 7
+        }
+      ]
+    },
+    {
+      "character": "haze",
+      "kind": "Smoke Weed prep",
+      "peak": 10,
+      "damageHits": 10,
+      "bounces": 1,
+      "ended": false,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "overhead",
+          "combo": 4
+        },
+        {
+          "move": "air",
+          "combo": 5
+        },
+        {
+          "move": "airMedium",
+          "combo": 6
+        },
+        {
+          "move": "airHeavy",
+          "combo": 7
+        },
+        {
+          "move": "light",
+          "combo": 8
+        },
+        {
+          "move": "medium",
+          "combo": 9
+        },
+        {
+          "move": "low",
+          "combo": 10
+        }
+      ]
+    },
+    {
+      "character": "rip",
+      "kind": "Relentless prep",
+      "peak": 10,
+      "damageHits": 10,
+      "bounces": 1,
+      "ended": false,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "overhead",
+          "combo": 4
+        },
+        {
+          "move": "air",
+          "combo": 5
+        },
+        {
+          "move": "airMedium",
+          "combo": 6
+        },
+        {
+          "move": "airHeavy",
+          "combo": 7
+        },
+        {
+          "move": "light",
+          "combo": 8
+        },
+        {
+          "move": "medium",
+          "combo": 9
+        },
+        {
+          "move": "low",
+          "combo": 10
+        }
+      ]
+    },
+    {
+      "character": "gooner",
+      "kind": "Debug prep",
+      "peak": 10,
+      "damageHits": 10,
+      "bounces": 1,
+      "ended": false,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "overhead",
+          "combo": 4
+        },
+        {
+          "move": "air",
+          "combo": 5
+        },
+        {
+          "move": "airMedium",
+          "combo": 6
+        },
+        {
+          "move": "airHeavy",
+          "combo": 7
+        },
+        {
+          "move": "light",
+          "combo": 8
+        },
+        {
+          "move": "medium",
+          "combo": 9
+        },
+        {
+          "move": "low",
+          "combo": 10
+        }
+      ]
+    },
+    {
+      "character": "yitty",
+      "kind": "HUT prep",
+      "peak": 10,
+      "damageHits": 10,
+      "bounces": 1,
+      "ended": false,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "overhead",
+          "combo": 4
+        },
+        {
+          "move": "air",
+          "combo": 5
+        },
+        {
+          "move": "airMedium",
+          "combo": 6
+        },
+        {
+          "move": "airHeavy",
+          "combo": 7
+        },
+        {
+          "move": "light",
+          "combo": 8
+        },
+        {
+          "move": "medium",
+          "combo": 9
+        },
+        {
+          "move": "low",
+          "combo": 10
+        }
+      ]
+    },
+    {
+      "character": "teo",
+      "kind": "Chug prep (one earned bottle available)",
+      "peak": 10,
+      "damageHits": 10,
+      "bounces": 1,
+      "ended": false,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "overhead",
+          "combo": 4
+        },
+        {
+          "move": "air",
+          "combo": 5
+        },
+        {
+          "move": "airMedium",
+          "combo": 6
+        },
+        {
+          "move": "airHeavy",
+          "combo": 7
+        },
+        {
+          "move": "light",
+          "combo": 8
+        },
+        {
+          "move": "medium",
+          "combo": 9
+        },
+        {
+          "move": "low",
+          "combo": 10
+        }
+      ]
+    },
+    {
+      "character": "cheese",
+      "kind": "Phone Call setup",
+      "peak": 10,
+      "damageHits": 10,
+      "bounces": 1,
+      "ended": false,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "overhead",
+          "combo": 4
+        },
+        {
+          "move": "air",
+          "combo": 5
+        },
+        {
+          "move": "airMedium",
+          "combo": 6
+        },
+        {
+          "move": "airHeavy",
+          "combo": 7
+        },
+        {
+          "move": "light",
+          "combo": 8
+        },
+        {
+          "move": "medium",
+          "combo": 9
+        },
+        {
+          "move": "low",
+          "combo": 10
+        }
+      ]
+    },
+    {
+      "character": "teo",
+      "kind": "Pickpocket route",
+      "peak": 1,
+      "damageHits": 0,
+      "bounces": 0,
+      "ended": true,
+      "hits": [],
+      "error": "victim recovered before medium",
+      "debug": {
+        "frame": 9,
+        "move": {
+          "startup": 7,
+          "active": 3,
+          "recovery": 13,
+          "dmg": 45,
+          "height": "low",
+          "hitstun": 24,
+          "kb": 3,
+          "step": 3,
+          "hitstop": 4,
+          "shake": 0,
+          "box": {
+            "x": 25,
+            "y": -38,
+            "w": 88,
+            "h": 32
+          }
+        },
+        "chain": [
+          "light",
+          "low"
+        ],
+        "hitstop": 0,
+        "gameFrame": 54319
+      }
+    },
+    {
+      "character": "null",
+      "kind": "Marked double Zoom (spear mark from preceding exchange)",
+      "peak": 10,
+      "damageHits": 10,
+      "bounces": 1,
+      "ended": false,
+      "hits": [
+        {
+          "move": "nullZoom",
+          "combo": 1
+        },
+        {
+          "move": "nullZoom",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "overhead",
+          "combo": 4
+        },
+        {
+          "move": "air",
+          "combo": 5
+        },
+        {
+          "move": "airMedium",
+          "combo": 6
+        },
+        {
+          "move": "airHeavy",
+          "combo": 7
+        },
+        {
+          "move": "light",
+          "combo": 8
+        },
+        {
+          "move": "medium",
+          "combo": 9
+        },
+        {
+          "move": "low",
+          "combo": 10
+        }
+      ]
+    },
+    {
+      "character": "yitty",
+      "kind": "Normals + Tackle + suplexes + bounce",
+      "peak": 8,
+      "damageHits": 8,
+      "bounces": 0,
+      "ended": true,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "lowMedium",
+          "combo": 4
+        },
+        {
+          "move": "spear",
+          "combo": 5
+        },
+        {
+          "move": "grab",
+          "combo": 6
+        },
+        {
+          "move": "grab",
+          "combo": 7
+        },
+        {
+          "move": "grab",
+          "combo": 8
+        }
+      ],
+      "error": "timeout idle/light; victim idle/0",
+      "debug": {
+        "frame": 47,
+        "move": {
+          "startup": 5,
+          "active": 3,
+          "recovery": 10,
+          "dmg": 40,
+          "height": "high",
+          "hitstun": 16,
+          "kb": 2,
+          "step": 3,
+          "hitstop": 3,
+          "shake": 0,
+          "box": {
+            "x": 30,
+            "y": -128,
+            "w": 78,
+            "h": 30
+          }
+        },
+        "chain": [],
+        "hitstop": 0,
+        "gameFrame": 54718
+      }
+    },
+    {
+      "character": "yitty",
+      "kind": "Normals + Tackle + HUT suplexes + bounce",
+      "peak": 12,
+      "damageHits": 12,
+      "bounces": 1,
+      "ended": false,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "lowMedium",
+          "combo": 4
+        },
+        {
+          "move": "spear",
+          "combo": 5
+        },
+        {
+          "move": "grab",
+          "combo": 6
+        },
+        {
+          "move": "grab",
+          "combo": 7
+        },
+        {
+          "move": "grab",
+          "combo": 8
+        },
+        {
+          "move": "grab",
+          "combo": 9
+        },
+        {
+          "move": "light",
+          "combo": 10
+        },
+        {
+          "move": "medium",
+          "combo": 11
+        },
+        {
+          "move": "low",
+          "combo": 12
+        }
+      ]
+    },
+    {
+      "character": "gooner",
+      "kind": "Ten normals + Goon Su (70 starting ultimate)",
+      "peak": 11,
+      "damageHits": 11,
+      "bounces": 1,
+      "ended": false,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "overhead",
+          "combo": 4
+        },
+        {
+          "move": "air",
+          "combo": 5
+        },
+        {
+          "move": "airMedium",
+          "combo": 6
+        },
+        {
+          "move": "airHeavy",
+          "combo": 7
+        },
+        {
+          "move": "light",
+          "combo": 8
+        },
+        {
+          "move": "medium",
+          "combo": 9
+        },
+        {
+          "move": "low",
+          "combo": 10
+        },
+        {
+          "move": "low",
+          "combo": 11
+        }
+      ]
+    },
+    {
+      "character": "gooner",
+      "kind": "Ten normals + Goon Su + follow-ups (70 starting ultimate)",
+      "peak": 12,
+      "damageHits": 12,
+      "bounces": 1,
+      "ended": true,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "overhead",
+          "combo": 4
+        },
+        {
+          "move": "air",
+          "combo": 5
+        },
+        {
+          "move": "airMedium",
+          "combo": 6
+        },
+        {
+          "move": "airHeavy",
+          "combo": 7
+        },
+        {
+          "move": "light",
+          "combo": 8
+        },
+        {
+          "move": "medium",
+          "combo": 9
+        },
+        {
+          "move": "low",
+          "combo": 10
+        },
+        {
+          "move": "low",
+          "combo": 11
+        },
+        {
+          "move": "light",
+          "combo": 12
+        }
+      ],
+      "error": "victim recovered before low",
+      "debug": {
+        "frame": 11,
+        "move": {
+          "startup": 9,
+          "active": 3,
+          "recovery": 14,
+          "dmg": 65,
+          "height": "high",
+          "hitstun": 26,
+          "kb": 2,
+          "step": 4,
+          "hitstop": 4,
+          "shake": 1,
+          "box": {
+            "x": 25,
+            "y": -135,
+            "w": 100,
+            "h": 45
+          }
+        },
+        "chain": [
+          "light",
+          "medium"
+        ],
+        "hitstop": 0,
+        "gameFrame": 56151
+      }
+    },
+    {
+      "character": "gooner",
+      "kind": "Ten normals + Goon Su + fast low follow-up (70 starting ultimate)",
+      "peak": 12,
+      "damageHits": 12,
+      "bounces": 1,
+      "ended": true,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "overhead",
+          "combo": 4
+        },
+        {
+          "move": "air",
+          "combo": 5
+        },
+        {
+          "move": "airMedium",
+          "combo": 6
+        },
+        {
+          "move": "airHeavy",
+          "combo": 7
+        },
+        {
+          "move": "light",
+          "combo": 8
+        },
+        {
+          "move": "medium",
+          "combo": 9
+        },
+        {
+          "move": "low",
+          "combo": 10
+        },
+        {
+          "move": "low",
+          "combo": 11
+        },
+        {
+          "move": "light",
+          "combo": 12
+        }
+      ],
+      "error": "timeout idle/low; victim idle/0",
+      "debug": {
+        "frame": 42,
+        "move": {
+          "startup": 7,
+          "active": 3,
+          "recovery": 13,
+          "dmg": 45,
+          "height": "low",
+          "hitstun": 24,
+          "kb": 3,
+          "step": 3,
+          "hitstop": 4,
+          "shake": 0,
+          "box": {
+            "x": 25,
+            "y": -38,
+            "w": 88,
+            "h": 32
+          }
+        },
+        "chain": [],
+        "hitstop": 0,
+        "gameFrame": 56804
+      }
+    },
+    {
+      "character": "gooner",
+      "kind": "Goon Su route toward left wall",
+      "peak": 12,
+      "damageHits": 12,
+      "bounces": 1,
+      "ended": true,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "overhead",
+          "combo": 4
+        },
+        {
+          "move": "air",
+          "combo": 5
+        },
+        {
+          "move": "airMedium",
+          "combo": 6
+        },
+        {
+          "move": "airHeavy",
+          "combo": 7
+        },
+        {
+          "move": "light",
+          "combo": 8
+        },
+        {
+          "move": "medium",
+          "combo": 9
+        },
+        {
+          "move": "low",
+          "combo": 10
+        },
+        {
+          "move": "low",
+          "combo": 11
+        },
+        {
+          "move": "light",
+          "combo": 12
+        }
+      ],
+      "error": "timeout idle/low; victim idle/0",
+      "debug": {
+        "frame": 42,
+        "move": {
+          "startup": 7,
+          "active": 3,
+          "recovery": 13,
+          "dmg": 45,
+          "height": "low",
+          "hitstun": 24,
+          "kb": 3,
+          "step": 3,
+          "hitstop": 4,
+          "shake": 0,
+          "box": {
+            "x": 25,
+            "y": -38,
+            "w": 88,
+            "h": 32
+          }
+        },
+        "chain": [],
+        "hitstop": 0,
+        "gameFrame": 57457
+      }
+    },
+    {
+      "character": "yitty",
+      "kind": "HUT suplex route toward left wall",
+      "peak": 12,
+      "damageHits": 12,
+      "bounces": 1,
+      "ended": false,
+      "hits": [
+        {
+          "move": "light",
+          "combo": 1
+        },
+        {
+          "move": "low",
+          "combo": 2
+        },
+        {
+          "move": "medium",
+          "combo": 3
+        },
+        {
+          "move": "lowMedium",
+          "combo": 4
+        },
+        {
+          "move": "spear",
+          "combo": 5
+        },
+        {
+          "move": "grab",
+          "combo": 6
+        },
+        {
+          "move": "grab",
+          "combo": 7
+        },
+        {
+          "move": "grab",
+          "combo": 8
+        },
+        {
+          "move": "grab",
+          "combo": 9
+        },
+        {
+          "move": "light",
+          "combo": 10
+        },
+        {
+          "move": "medium",
+          "combo": 11
+        },
+        {
+          "move": "low",
+          "combo": 12
+        }
+      ]
+    },
+    {
+      "character": "yitty",
+      "kind": "throw normal",
+      "damageHits": 3,
+      "peak": 3,
+      "visualSlashes": 0
+    },
+    {
+      "character": "yitty",
+      "kind": "throw HUT",
+      "damageHits": 4,
+      "peak": 4,
+      "visualSlashes": 0
+    },
+    {
+      "character": "yitty",
+      "kind": "throw Tackle",
+      "damageHits": 4,
+      "peak": 4,
+      "visualSlashes": 0
+    },
+    {
+      "character": "yitty",
+      "kind": "throw HUT + Tackle",
+      "damageHits": 5,
+      "peak": 5,
+      "visualSlashes": 0
+    },
+    {
+      "character": "lancer",
+      "kind": "throw normal",
+      "damageHits": 1,
+      "peak": 1,
+      "visualSlashes": 6
+    },
+    {
+      "character": "lancer",
+      "kind": "throw masked",
+      "damageHits": 1,
+      "peak": 1,
+      "visualSlashes": 14
+    },
+    {
+      "character": "cheese",
+      "kind": "throw normal",
+      "damageHits": 1,
+      "peak": 1,
+      "visualSlashes": 0
+    },
+    {
+      "character": "teo",
+      "kind": "throw normal",
+      "damageHits": 1,
+      "peak": 1,
+      "visualSlashes": 0
+    },
+    {
+      "character": "sombra",
+      "kind": "throw normal",
+      "damageHits": 1,
+      "peak": 1,
+      "visualSlashes": 0
+    },
+    {
+      "character": "curtis",
+      "kind": "throw normal",
+      "damageHits": 1,
+      "peak": 1,
+      "visualSlashes": 0
+    },
+    {
+      "character": "siglarp",
+      "kind": "throw normal",
+      "damageHits": 1,
+      "peak": 1,
+      "visualSlashes": 0
+    },
+    {
+      "character": "kinkade",
+      "kind": "throw normal",
+      "damageHits": 1,
+      "peak": 1,
+      "visualSlashes": 0
+    },
+    {
+      "character": "haze",
+      "kind": "15-hit normal extension",
+      "damageHits": 15,
+      "peak": 15,
+      "bounces": 1,
+      "recovered": false
+    },
+    {
+      "character": "rip",
+      "kind": "15-hit normal extension",
+      "damageHits": 15,
+      "peak": 15,
+      "bounces": 1,
+      "recovered": false
+    },
+    {
+      "character": "gooner",
+      "kind": "15-hit normal extension",
+      "damageHits": 15,
+      "peak": 15,
+      "bounces": 1,
+      "recovered": false
+    },
+    {
+      "character": "yitty",
+      "kind": "15-hit normal extension",
+      "damageHits": 15,
+      "peak": 15,
+      "bounces": 1,
+      "recovered": false
+    },
+    {
+      "character": "lancer",
+      "kind": "15-hit normal extension",
+      "damageHits": 15,
+      "peak": 15,
+      "bounces": 1,
+      "recovered": false
+    },
+    {
+      "character": "cheese",
+      "kind": "15-hit normal extension",
+      "damageHits": 15,
+      "peak": 15,
+      "bounces": 1,
+      "recovered": false
+    },
+    {
+      "character": "teo",
+      "kind": "15-hit normal extension",
+      "damageHits": 15,
+      "peak": 15,
+      "bounces": 1,
+      "recovered": false
+    },
+    {
+      "character": "null",
+      "kind": "15-hit normal extension",
+      "damageHits": 15,
+      "peak": 15,
+      "bounces": 1,
+      "recovered": false
+    },
+    {
+      "character": "sombra",
+      "kind": "15-hit normal extension",
+      "damageHits": 15,
+      "peak": 15,
+      "bounces": 1,
+      "recovered": false
+    },
+    {
+      "character": "curtis",
+      "kind": "15-hit normal extension",
+      "damageHits": 15,
+      "peak": 15,
+      "bounces": 1,
+      "recovered": false
+    },
+    {
+      "character": "siglarp",
+      "kind": "15-hit normal extension",
+      "damageHits": 15,
+      "peak": 15,
+      "bounces": 1,
+      "recovered": false
+    },
+    {
+      "character": "kinkade",
+      "kind": "15-hit normal extension",
+      "damageHits": 15,
+      "peak": 15,
+      "bounces": 1,
+      "recovered": false
+    },
+    {
+      "character": "null",
+      "kind": "15-hit ability extension",
+      "damageHits": 15,
+      "peak": 15,
+      "bounces": 1,
+      "recovered": false
+    },
+    {
+      "character": "lancer",
+      "kind": "15-hit ability extension",
+      "damageHits": 15,
+      "peak": 15,
+      "bounces": 1,
+      "recovered": false
+    },
+    {
+      "character": "yitty",
+      "kind": "15-hit ability extension",
+      "damageHits": 15,
+      "peak": 15,
+      "bounces": 1,
+      "recovered": false
+    }
+  ]
+}
