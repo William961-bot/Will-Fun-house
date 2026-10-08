@@ -1,0 +1,1553 @@
+<title>Shadows Wired Twice 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Shippori+Mincho:wght@600;800&display=swap">
+<style>
+  :root { --ink:#0a0c13; --bone:#e9e3d1; color-scheme:dark; }
+  html, body { height:100%; margin:0; background:var(--ink); overflow:hidden; overscroll-behavior:none; }
+  body { touch-action:none; user-select:none; -webkit-user-select:none; }
+  #g3, #hud { position:fixed; inset:0; width:100%; height:100%; display:block; }
+  #g3 { outline:none; }
+  #hud { pointer-events:none; }
+  #pad { position:fixed; left:0; right:0; bottom:0; display:flex; justify-content:space-between; align-items:flex-end;
+         gap:12px; padding:12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); pointer-events:none; }
+  #pad[hidden] { display:none; }
+  #joy { width:124px; height:124px; border:1px solid rgba(233,227,209,.35); border-radius:50%; pointer-events:auto;
+         position:relative; background:rgba(10,12,19,.35); touch-action:none; }
+  #knob { position:absolute; left:50%; top:50%; width:44px; height:44px; margin:-22px 0 0 -22px; border-radius:50%;
+          border:1px solid rgba(233,227,209,.7); }
+  .cl { display:grid; grid-template-columns:repeat(5, 52px); gap:8px; pointer-events:auto; }
+  #pad button { height:46px; border:1px solid rgba(233,227,209,.4); background:rgba(10,12,19,.6); color:var(--bone);
+                font:600 10px "IBM Plex Mono", ui-monospace, monospace; letter-spacing:.06em; border-radius:3px;
+                touch-action:none; padding:0; }
+  #pad button.wide { grid-column:span 3; border-color:rgba(143,230,242,.6); color:#8fe6f2; }
+  #pad button.on { background:rgba(233,227,209,.2); }
+</style>
+
+<canvas id="g3" tabindex="0" aria-label="Shadows Wired Twice 3D"></canvas>
+<canvas id="hud"></canvas>
+<div id="pad" hidden>
+  <div id="joy" aria-label="Move"><div id="knob"></div></div>
+  <div class="cl">
+    <button data-k="lock">LOCK</button><button data-k="heal">GOURD</button><button data-k="roll">ROLL</button><button data-k="dge">STEP</button><button data-k="jump">JUMP</button>
+    <button data-k="grd">GUARD</button><button data-k="hvy">HEAVY</button><button data-k="atk" class="wide">STRIKE</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const cv3 = $('g3'), hud = $('hud'), hx = hud.getContext('2d'), pad = $('pad'), joyEl = $('joy'), knob = $('knob');
+const isTouch = matchMedia('(pointer: coarse)').matches;
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (isTouch) pad.hidden = false;
+
+const C = {
+  ink:'#0a0c13', mist:'#4a5470', bone:'#e9e3d1', dim:'#8b8fa3', blood:'#e3343f', gold:'#f2b441',
+  pb:'#8fe6f2', eb:'#f3a36f', petal:'#d98fa8', enemy:'#c4bcab', ronin:'#b8c4d8', boss:'#f3dccb', torii:'#a8323a'
+};
+const HEX = s => parseInt(s.slice(1), 16);
+const MONO = '"IBM Plex Mono", ui-monospace, Consolas, monospace';
+const SERIF = '"Shippori Mincho", "Yu Mincho", "Hiragino Mincho ProN", serif';
+const TAU = Math.PI * 2;
+const rand = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const angDiff = (a, b) => { let d = a - b; while (d > Math.PI) d -= TAU; while (d < -Math.PI) d += TAU; return d; };
+const codes = s => [...s].map(c => c.charCodeAt(0));
+
+if (!window.THREE) {
+  hx.fillStyle = C.bone; hx.font = `14px ${MONO}`;
+  hx.fillText('Three.js did not load. Check your connection and reload.', 20, 40);
+  return;
+}
+const V3 = THREE.Vector3;
+const _v = new V3(), _v2 = new V3();
+
+// ---------- renderer ----------
+const renderer = new THREE.WebGLRenderer({ canvas: cv3, antialias: true });
+renderer.setClearColor(HEX(C.ink));
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(HEX(C.ink), 22, 105);
+const camera = new THREE.PerspectiveCamera(58, 1, .1, 900);
+let W, H, DPR;
+function resize() {
+  W = innerWidth; H = innerHeight; DPR = Math.min(2, devicePixelRatio || 1);
+  renderer.setPixelRatio(DPR); renderer.setSize(W, H, false);
+  camera.aspect = W / H; camera.updateProjectionMatrix();
+  hud.width = Math.round(W * DPR); hud.height = Math.round(H * DPR);
+}
+addEventListener('resize', resize); resize();
+
+// ---------- audio ----------
+let AC = null, master = null, NB = null;
+function initAudio() {
+  if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
+  try { AC = new (window.AudioContext || window.webkitAudioContext)(); master = AC.createGain(); master.gain.value = .35; master.connect(AC.destination); } catch (e) { AC = null; }
+}
+function tone(f, d, type = 'sine', v = .3, f2) {
+  if (!AC) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d);
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.001, t + d);
+  o.connect(g).connect(master); o.start(t); o.stop(t + d + .02);
+}
+function noise(d, v = .3, freq = 2000, type = 'bandpass') {
+  if (!AC) return;
+  if (!NB) { NB = AC.createBuffer(1, AC.sampleRate * .5, AC.sampleRate); const a = NB.getChannelData(0); for (let i = 0; i < a.length; i++) a[i] = Math.random() * 2 - 1; }
+  const t = AC.currentTime, s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+  s.buffer = NB; f.type = type; f.frequency.value = freq; g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.001, t + d);
+  s.connect(f).connect(g).connect(master); s.start(t); s.stop(t + d + .02);
+}
+const sfx = {
+  swing() { noise(.12, .16, 1300); },
+  clang() { tone(2400, .35, 'triangle', .22); tone(3610, .25, 'sine', .14); tone(1210, .2, 'square', .05); noise(.08, .28, 6000, 'highpass'); },
+  // parry: sharp transient + inharmonic metal partials; slight random pitch so rapid deflects don't sound cloned
+  parry(v = 1) {
+    const k = rand(.96, 1.05);
+    noise(.022, .55 * v, 7500, 'highpass');
+    for (const [m, vol, d] of [[1, .2, .5], [1.51, .12, .34], [2.37, .08, .24], [3.11, .05, .16]]) tone(2150 * k * m, d, 'sine', vol * v);
+    tone(430 * k, .09, 'triangle', .13 * v, 170);
+  },
+  block() { tone(880, .15, 'triangle', .18); noise(.08, .22, 3000); },
+  hit()   { noise(.14, .4, 700, 'lowpass'); tone(160, .15, 'sawtooth', .14, 60); },
+  peril() { tone(180, .5, 'sawtooth', .12, 170); tone(271, .5, 'sawtooth', .07); },
+  brk()   { tone(520, .45, 'square', .1, 90); },
+  exec()  { noise(.3, .5, 500, 'lowpass'); tone(90, .6, 'sawtooth', .2, 40); tone(1800, .5, 'sine', .1); },
+  mikiri(){ tone(1400, .2, 'square', .1, 300); noise(.1, .3, 2000); },
+  perfect(){ noise(.35, .22, 900); tone(1760, .6, 'sine', .1, 1320); tone(2637, .5, 'sine', .06, 1975); tone(220, .4, 'triangle', .08, 110); },
+  shatter(){ noise(.18, .2, 5000, 'highpass'); tone(3300, .25, 'sine', .05, 2200); },
+  heal()  { tone(600, .35, 'sine', .14, 900); },
+  die()   { tone(110, 1.4, 'sawtooth', .18, 40); },
+  jump()  { noise(.06, .1, 900); },
+  roll()  { noise(.3, .18, 400, 'lowpass'); noise(.12, .08, 1600); },
+  idol()  { tone(660, .6, 'sine', .14); tone(990, .8, 'sine', .09); },
+  adapt() { tone(220, .25, 'square', .08, 330); tone(440, .3, 'triangle', .06, 660); },
+  read()  { tone(330, .18, 'square', .1, 990); noise(.05, .2, 4000, 'highpass'); },
+};
+
+// ---------- input ----------
+const keys = {}, pressed = {};
+const KM = { KeyW:'fw', KeyS:'bk', KeyA:'lf', KeyD:'rt', ArrowUp:'fw', ArrowDown:'bk', ArrowLeft:'camL', ArrowRight:'camR',
+  Space:'jump', ShiftLeft:'dge', ShiftRight:'dge', KeyL:'dge', KeyJ:'atk', KeyF:'hvy', KeyK:'grd', KeyQ:'lock', Tab:'lock',
+  KeyE:'heal', KeyR:'rst', Enter:'atk', KeyC:'roll' };
+function press(a) { if (!keys[a]) pressed[a] = true; keys[a] = true; }
+function tryLock() { if (isTouch || document.pointerLockElement === cv3) return; try { const r = cv3.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) {} }
+let inputMode = isTouch ? 'touch' : 'kb';
+addEventListener('keydown', ev => {
+  initAudio(); inputMode = 'kb'; const a = KM[ev.code];
+  if (game.mode === 'title') { startGame(); ev.preventDefault(); return; }
+  if (a) { press(a); ev.preventDefault(); }
+});
+addEventListener('keyup', ev => { const a = KM[ev.code]; if (a) keys[a] = false; });
+cv3.addEventListener('contextmenu', ev => ev.preventDefault());
+const drag = { id:null, x:0, y:0 };
+cv3.addEventListener('pointerdown', ev => {
+  initAudio(); cv3.focus();
+  if (game.mode === 'title') { startGame(); tryLock(); return; }
+  if (ev.pointerType === 'mouse') {
+    inputMode = 'kb';
+    if (document.pointerLockElement !== cv3 && game.mode === 'play') { tryLock(); }
+    press(ev.button === 2 ? 'grd' : ev.button === 1 ? 'lock' : 'atk');
+    if (ev.button === 1) ev.preventDefault();
+  } else {
+    if (game.mode !== 'play') { press('atk'); return; }
+    drag.id = ev.pointerId; drag.x = ev.clientX; drag.y = ev.clientY;
+  }
+});
+addEventListener('pointerup', ev => {
+  if (ev.pointerType === 'mouse') keys[ev.button === 2 ? 'grd' : ev.button === 1 ? 'lock' : 'atk'] = false;
+  if (ev.pointerId === drag.id) drag.id = null;
+});
+addEventListener('pointermove', ev => {
+  if (ev.pointerId === drag.id) {
+    cam.yaw -= (ev.clientX - drag.x) * .006; cam.pitch = clamp(cam.pitch + (ev.clientY - drag.y) * .004, -.15, .95);
+    drag.x = ev.clientX; drag.y = ev.clientY;
+  }
+});
+document.addEventListener('mousemove', ev => {
+  if (document.pointerLockElement !== cv3) return;
+  cam.yaw -= ev.movementX * .0026; cam.pitch = clamp(cam.pitch + ev.movementY * .002, -.15, .95);
+});
+pad.querySelectorAll('button').forEach(b => {
+  const k = b.dataset.k;
+  const up = () => { keys[k] = false; b.classList.remove('on'); };
+  b.addEventListener('pointerdown', ev => { ev.preventDefault(); initAudio(); if (game.mode === 'title') { startGame(); return; } press(k); b.classList.add('on'); });
+  b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('pointerleave', up);
+});
+const joy = { x:0, y:0, id:null };
+
+// ---------- gamepad (standard / Xbox layout) ----------
+const PADMAP = [[5,'atk'], [7,'hvy'], [4,'grd'], [6,'grd'], [0,'jump'], [1,'dge'], [2,'roll'], [3,'heal'], [11,'lock'], [9,'rst']];
+const padStick = { x:0, y:0 }, padPrev = {};
+let padName = null;
+function readPad() {
+  let list = [];
+  try { list = navigator.getGamepads ? navigator.getGamepads() : []; } catch (e) { return null; }
+  for (const g of list) if (g && g.connected) return g;
+  return null;
+}
+function rumble(strong, weak, ms) {
+  const g = readPad(); if (!g || inputMode !== 'pad') return;
+  try { if (g.vibrationActuator && g.vibrationActuator.playEffect) g.vibrationActuator.playEffect('dual-rumble', { duration:ms, strongMagnitude:strong, weakMagnitude:weak }).catch(() => {}); } catch (e) {}
+}
+function pollPad(dt) {
+  const g = readPad();
+  if (!g) { padStick.x = padStick.y = 0; if (padName) { padName = null; } return; }
+  if (padName !== g.id) { padName = g.id; }
+  const dz = v => Math.abs(v) < .18 ? 0 : (v - Math.sign(v) * .18) / .82;
+  const ax = i => dz(g.axes[i] || 0);
+  padStick.x = ax(0); padStick.y = -ax(1);
+  const rx = ax(2), ry = ax(3);
+  if (padStick.x || padStick.y || rx || ry) inputMode = 'pad';
+  if (game.mode !== 'title') { cam.yaw -= rx * 2.7 * dt; cam.pitch = clamp(cam.pitch + ry * 1.6 * dt, -.15, .95); }
+  let any = false;
+  for (const [i, a] of PADMAP) {
+    const b = g.buttons[i], down = !!b && (b.pressed || b.value > .5);
+    const key = i + a;
+    if (down && !padPrev[key]) { any = true; press(a); }
+    else if (!down && padPrev[key]) keys[a] = false;
+    padPrev[key] = down;
+  }
+  // d-pad fallback for movement
+  const btn = i => g.buttons[i] && g.buttons[i].pressed;
+  if (btn(12)) padStick.y = 1; if (btn(13)) padStick.y = -1; if (btn(14)) padStick.x = -1; if (btn(15)) padStick.x = 1;
+  if (any) { inputMode = 'pad'; initAudio(); if (game.mode === 'title') startGame(); }
+}
+addEventListener('gamepadconnected', () => { inputMode = 'pad'; });
+function moveJoy(ev) {
+  const r = joyEl.getBoundingClientRect();
+  let dx = (ev.clientX - (r.left + r.width / 2)) / (r.width / 2), dy = (ev.clientY - (r.top + r.height / 2)) / (r.height / 2);
+  const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; }
+  joy.x = dx; joy.y = -dy; knob.style.transform = `translate(${dx * 38}px, ${dy * 38}px)`;
+}
+joyEl.addEventListener('pointerdown', ev => { ev.preventDefault(); initAudio(); if (game.mode === 'title') { startGame(); return; } joy.id = ev.pointerId; joyEl.setPointerCapture(ev.pointerId); moveJoy(ev); });
+joyEl.addEventListener('pointermove', ev => { if (ev.pointerId === joy.id) moveJoy(ev); });
+const endJoy = ev => { if (ev.pointerId === joy.id) { joy.id = null; joy.x = joy.y = 0; knob.style.transform = ''; } };
+joyEl.addEventListener('pointerup', endJoy); joyEl.addEventListener('pointercancel', endJoy);
+
+// ---------- number textures ----------
+function weapon(name, len, color, butt) { const c = codes(name); return { name, codes:c, str:c.join(' ') + '  ', len, color, butt }; }
+const WP = {
+  kusabimaru: weapon('KUSABIMARU', .88, C.pb, .22),
+  katana:     weapon('KATANA', .8, C.eb, .2),
+  yari:       weapon('YARI', 1.5, C.eb, .95),
+  nodachi:    weapon('NODACHI', 1.25, C.eb, .3),
+  tomoe:      weapon('TOMOE', .98, C.boss, .24),
+};
+function drawBladeCanvas(wp) {
+  const c = wp.canvas || (wp.canvas = document.createElement('canvas'));
+  c.width = 1024; c.height = 64;
+  const g = c.getContext('2d'); g.clearRect(0, 0, 1024, 64);
+  let s = wp.str; while (s.length < 30) s += wp.str;
+  const fs = Math.min(52, 1024 / (s.length * .62));
+  g.font = `600 ${fs}px ${MONO}`; g.fillStyle = wp.color; g.textBaseline = 'middle'; g.textAlign = 'left';
+  g.shadowColor = wp.color; g.shadowBlur = 8;
+  g.fillText(s, 6, 34);
+  if (wp.tex) wp.tex.needsUpdate = true;
+}
+for (const k in WP) { drawBladeCanvas(WP[k]); WP[k].tex = new THREE.CanvasTexture(WP[k].canvas); }
+const numCache = {};
+function numTex(txt, color) {
+  const key = txt + color; if (numCache[key]) return numCache[key];
+  const c = document.createElement('canvas'); c.width = 128; c.height = 64;
+  const g = c.getContext('2d'); g.font = `600 46px ${MONO}`; g.fillStyle = color; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.shadowColor = color; g.shadowBlur = 6; g.fillText(txt, 64, 34);
+  return (numCache[key] = new THREE.CanvasTexture(c));
+}
+try {
+  document.fonts.load('80px "Shippori Mincho"', '危死忍殺回生隻狼').catch(() => {});
+  document.fonts.load('600 40px "IBM Plex Mono"').then(() => { for (const k in WP) drawBladeCanvas(WP[k]); for (const k in numCache) delete numCache[k]; }).catch(() => {});
+} catch (e) {}
+
+// number sprites: sparks, blood, and blade trails are all ASCII codes
+const POOL = [];
+for (let i = 0; i < 420; i++) {
+  const m = new THREE.SpriteMaterial({ map:numTex('0', C.bone), transparent:true, depthWrite:false, blending:THREE.AdditiveBlending });
+  const s = new THREE.Sprite(m); s.visible = false; scene.add(s);
+  POOL.push({ s, m, life:0, max:1, vel:new V3(), grav:0, size:.15 });
+}
+let poolI = 0;
+function spawnNum(pos, txt, color, vel, life, size, grav) {
+  const q = POOL[poolI = (poolI + 1) % POOL.length];
+  q.m.map = numTex(String(txt), color); q.s.position.copy(pos); q.vel.copy(vel);
+  q.life = q.max = life; q.size = size; q.grav = grav; q.s.visible = true; q.s.scale.set(size * 2, size, 1);
+}
+// streak sparks for weapon clashes
+const SPARK_N = 72, sparkArr = new Float32Array(SPARK_N * 6), sparkCol = new Float32Array(SPARK_N * 6), sparks = [];
+const sparkGeo = new THREE.BufferGeometry();
+sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkArr, 3));
+sparkGeo.setAttribute('color', new THREE.BufferAttribute(sparkCol, 3));
+const sparkLines = new THREE.LineSegments(sparkGeo, new THREE.LineBasicMaterial({ vertexColors:true, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false }));
+sparkLines.frustumCulled = false; scene.add(sparkLines);
+for (let i = 0; i < SPARK_N; i++) sparks.push({ p:new V3(), v:new V3(), life:0, max:1 });
+let sparkI = 0;
+function spawnSparks(pos, n, spd) {
+  for (let i = 0; i < n; i++) {
+    const s = sparks[sparkI = (sparkI + 1) % SPARK_N];
+    s.p.copy(pos); s.v.set(rand(-1, 1), rand(-.2, 1), rand(-1, 1)).normalize().multiplyScalar(spd * rand(.5, 1.3));
+    s.life = s.max = rand(.1, .24);
+  }
+}
+const glowTex = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  const r = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  r.addColorStop(0, 'rgba(255,255,245,1)'); r.addColorStop(.25, 'rgba(255,214,130,.85)'); r.addColorStop(1, 'rgba(242,180,65,0)');
+  g.fillStyle = r; g.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(c);
+})();
+const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map:glowTex, transparent:true, depthWrite:false, depthTest:false, blending:THREE.AdditiveBlending }));
+glow.visible = false; scene.add(glow);
+const clash = { glowT:0, flashT:0, flashA:0, last:-9, dodgeT:0 };
+
+// ---------- afterimages ----------
+// a ghost is a frozen clone of a fighter's wire body, recoloured and faded out
+const ghosts = [];
+function makeGhost(f, color, opacity, life) {
+  f.body.root.updateMatrixWorld(true);
+  const obj = f.body.root.clone(true);
+  const lineMat = new THREE.LineBasicMaterial({ color:HEX(color), transparent:true, opacity, blending:THREE.AdditiveBlending, depthWrite:false });
+  const bladeMat = new THREE.MeshBasicMaterial({ color:HEX(color), map:f.wp.tex, transparent:true, opacity, blending:THREE.AdditiveBlending, depthWrite:false, side:THREE.DoubleSide });
+  const eyeMat = new THREE.MeshBasicMaterial({ color:HEX(color), transparent:true, opacity, blending:THREE.AdditiveBlending, depthWrite:false });
+  const own = [];
+  obj.traverse(o => {
+    if (o.isLine) {
+      if (f.body.scarf && o.geometry === f.body.scarf.geometry) { o.geometry = o.geometry.clone(); own.push(o.geometry); }
+      o.material = lineMat;
+    } else if (o.isMesh) o.material = o.geometry.type === 'BoxGeometry' ? eyeMat : bladeMat;
+  });
+  scene.add(obj);
+  const g = { obj, mats:[lineMat, bladeMat, eyeMat], own, life, max:life, base:opacity, perfect:false, pending:false, shattered:false };
+  ghosts.push(g); return g;
+}
+function updateGhosts(dt) {
+  for (const g of ghosts) {
+    if (g.pending) continue;
+    g.life -= dt;
+    const k = clamp(g.life / g.max, 0, 1);
+    let a = g.base * k * k;
+    if (g.perfect) {
+      const age = g.max - g.life;
+      if (!g.shattered && age > .2) {  // the enemy's blade passes through the ghost and it breaks into its codes
+        g.shattered = true; sfx.shatter();
+        const c = g.obj.position.clone(); c.y += 1.2;
+        burst(c, player.wp.codes, C.pb, 16, 3, 1.5); spawnSparks(c, 8, 5);
+      }
+      a = g.shattered ? g.base * k * k : g.base * (.75 + .25 * Math.sin(T * 45));
+      if (g.shattered) g.obj.scale.multiplyScalar(1 + dt * .5);
+    }
+    for (const m of g.mats) m.opacity = a;
+  }
+  for (let i = ghosts.length - 1; i >= 0; i--) {
+    const g = ghosts[i];
+    if (g.pending || g.life > 0) continue;
+    scene.remove(g.obj); for (const m of g.mats) m.dispose(); for (const geo of g.own) geo.dispose();
+    ghosts.splice(i, 1);
+  }
+}
+// dodge/roll start: leave a hidden snapshot where the player stood; a perfect dodge reveals it
+function beginEvade(p) {
+  if (p.startGhost) p.startGhost.pending = false, p.startGhost.life = 0;
+  const g = makeGhost(p, C.pb, 0, 1); g.pending = true; g.obj.visible = false;
+  p.startGhost = g; p.ghostT = 0;
+}
+function updateClash(dt) {
+  const gold = [1, .78, .35];
+  for (let i = 0; i < SPARK_N; i++) {
+    const s = sparks[i], o = i * 6;
+    if (s.life > 0) {
+      s.life -= dt; s.v.y -= 9 * dt; s.p.addScaledVector(s.v, dt);
+      const k = Math.max(0, s.life / s.max);
+      sparkArr[o] = s.p.x; sparkArr[o + 1] = s.p.y; sparkArr[o + 2] = s.p.z;
+      sparkArr[o + 3] = s.p.x - s.v.x * .035; sparkArr[o + 4] = s.p.y - s.v.y * .035; sparkArr[o + 5] = s.p.z - s.v.z * .035;
+      sparkCol[o] = k; sparkCol[o + 1] = k; sparkCol[o + 2] = k * .9;
+      sparkCol[o + 3] = gold[0] * k * .5; sparkCol[o + 4] = gold[1] * k * .5; sparkCol[o + 5] = gold[2] * k * .5;
+    } else { sparkCol.fill(0, o, o + 6); }
+  }
+  sparkGeo.attributes.position.needsUpdate = true; sparkGeo.attributes.color.needsUpdate = true;
+  if (clash.glowT > 0) {
+    clash.glowT -= dt; const k = Math.max(0, clash.glowT / .09);
+    glow.visible = k > 0; glow.material.opacity = k; glow.scale.setScalar(.5 + (1 - k) * .9);
+  }
+  if (clash.flashT > 0) clash.flashT -= dt;
+  if (clash.dodgeT > 0) clash.dodgeT -= dt;
+}
+function burst(pos, list, color, n, spd, up = 2) {
+  for (let i = 0; i < n; i++) {
+    const v = new V3(rand(-1, 1), rand(-.3, 1), rand(-1, 1)).normalize().multiplyScalar(spd * rand(.35, 1.2)); v.y += up;
+    spawnNum(pos, list[(Math.random() * list.length) | 0], color, v, rand(.45, .9), rand(.12, .2), 7);
+  }
+}
+
+// ---------- world ----------
+const lm = (c, op = 1, fog = true) => new THREE.LineBasicMaterial({ color:HEX(c), transparent:op < 1, opacity:op, fog });
+function addWire(geo, mat, x, y, z, ry = 0, parent = scene) {
+  const m = new THREE.LineSegments(new THREE.WireframeGeometry(geo), mat);
+  m.position.set(x, y, z); m.rotation.y = ry; parent.add(m); return m;
+}
+function segs(pts, mat, parent = scene) {
+  const g = new THREE.BufferGeometry().setFromPoints(pts);
+  const l = new THREE.LineSegments(g, mat); parent.add(l); return l;
+}
+function ring(r, n, y, mat, cx = 0, cz = 0) {
+  const pts = []; for (let i = 0; i <= n; i++) { const a = i / n * TAU; pts.push(new V3(cx + Math.cos(a) * r, y, cz + Math.sin(a) * r)); }
+  const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), mat); scene.add(l); return l;
+}
+const ARENA = { x:0, z:102, r:15 };
+const IDOLS = [{ x:0, z:2 }, { x:0, z:79 }];
+let arenaFence, moon, petals, idolMats = [];
+function buildWorld() {
+  const mist = lm(C.mist, .55), dim = lm(C.dim, .5), far = lm(C.mist, .4, false), toriiM = lm(C.torii, .85);
+  const grid = new THREE.GridHelper(260, 130, HEX(C.mist), HEX(C.mist));
+  grid.material.transparent = true; grid.material.opacity = .26; grid.position.z = 50; scene.add(grid);
+  // path fences
+  const fp = [];
+  for (const sx of [-13, 13]) for (let z = -6; z < 86; z += 3) {
+    fp.push(new V3(sx, 0, z), new V3(sx, 1.1, z));
+    fp.push(new V3(sx, .9, z), new V3(sx, .9, Math.min(86, z + 3)), new V3(sx, .45, z), new V3(sx, .45, Math.min(86, z + 3)));
+  }
+  fp.push(new V3(-13, 0, -6), new V3(13, 0, -6), new V3(-13, 1.1, -6), new V3(13, 1.1, -6));
+  segs(fp, dim);
+  // torii gates
+  for (const z of [9, 41, 86]) {
+    addWire(new THREE.CylinderGeometry(.16, .2, 3.4, 6), toriiM, -2.6, 1.7, z);
+    addWire(new THREE.CylinderGeometry(.16, .2, 3.4, 6), toriiM, 2.6, 1.7, z);
+    addWire(new THREE.BoxGeometry(7.2, .22, .36), toriiM, 0, 3.5, z);
+    addWire(new THREE.BoxGeometry(5.8, .16, .2), toriiM, 0, 2.85, z);
+  }
+  // pines and lanterns
+  const r = (() => { let s = 7; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; })();
+  for (let i = 0; i < 70; i++) {
+    const side = r() < .5 ? -1 : 1, x = side * (15 + r() * 22), z = -12 + r() * 140;
+    if (Math.hypot(x - ARENA.x, z - ARENA.z) < ARENA.r + 3) continue;
+    const s = .8 + r() * .7, g = new THREE.Group(); g.position.set(x, 0, z); g.scale.setScalar(s); scene.add(g);
+    addWire(new THREE.CylinderGeometry(.12, .2, 4.2, 5), mist, 0, 2.1, 0, 0, g);
+    addWire(new THREE.ConeGeometry(1.7, 1.8, 7), mist, 0, 2.6, 0, r(), g);
+    addWire(new THREE.ConeGeometry(1.25, 1.5, 7), mist, 0, 3.6, 0, r(), g);
+    addWire(new THREE.ConeGeometry(.8, 1.2, 7), mist, 0, 4.5, 0, r(), g);
+  }
+  for (let z = 4; z < 84; z += 12) for (const x of [-4, 4]) {
+    const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
+    addWire(new THREE.BoxGeometry(.5, .3, .5), dim, 0, .15, 0, 0, g);
+    addWire(new THREE.CylinderGeometry(.08, .08, .8, 4), dim, 0, .7, 0, 0, g);
+    addWire(new THREE.BoxGeometry(.46, .4, .46), dim, 0, 1.3, 0, 0, g);
+    addWire(new THREE.ConeGeometry(.46, .36, 4), dim, 0, 1.68, 0, Math.PI / 4, g);
+  }
+  // arena rings + fence that rises when the fight starts
+  ring(ARENA.r, 64, .02, lm(C.bone, .45), ARENA.x, ARENA.z);
+  ring(ARENA.r - 1.2, 64, .02, lm(C.mist, .5), ARENA.x, ARENA.z);
+  ring(3, 32, .02, lm(C.blood, .35), ARENA.x, ARENA.z);
+  const af = [];
+  for (let i = 0; i < 72; i++) {
+    const a = i / 72 * TAU, x = ARENA.x + Math.cos(a) * (ARENA.r + .3), z = ARENA.z + Math.sin(a) * (ARENA.r + .3);
+    af.push(new V3(x, 0, z), new V3(x, 2.6, z));
+    const a2 = (i + 1) / 72 * TAU, x2 = ARENA.x + Math.cos(a2) * (ARENA.r + .3), z2 = ARENA.z + Math.sin(a2) * (ARENA.r + .3);
+    af.push(new V3(x, 2.6, z), new V3(x2, 2.6, z2), new V3(x, 1.3, z), new V3(x2, 1.3, z2));
+  }
+  arenaFence = segs(af, lm(C.blood, .6)); arenaFence.visible = false;
+  // castle keep beyond the arena
+  const keep = new THREE.Group(); keep.position.set(0, 0, 175); scene.add(keep);
+  const km = lm(C.dim, .55, false);
+  addWire(new THREE.BoxGeometry(34, 7, 26, 4, 1, 3), km, 0, 3.5, 0, 0, keep);
+  let y = 7;
+  for (let i = 0; i < 5; i++) {
+    const w = 22 - i * 3.8, h = 4.4 - i * .3;
+    addWire(new THREE.BoxGeometry(w, h, w * .75, 3, 1, 2), km, 0, y + h / 2, 0, 0, keep); y += h;
+    const roof = addWire(new THREE.ConeGeometry(w * .82, 2.8, 4, 1, true), km, 0, y + 1.2, 0, Math.PI / 4, keep);
+    roof.scale.z = .78; y += 2.2;
+  }
+  // mountains
+  for (let i = 0; i < 26; i++) {
+    const a = i / 26 * TAU + r() * .2, d = 230 + r() * 70;
+    const m = addWire(new THREE.ConeGeometry(45 + r() * 50, 50 + r() * 90, 5 + (r() * 3 | 0), 3), far, Math.sin(a) * d, 0, 60 + Math.cos(a) * d, r() * 3);
+    m.position.y = m.geometry.parameters ? 0 : 0; m.translateY(35);
+  }
+  moon = addWire(new THREE.SphereGeometry(22, 16, 10), lm(C.bone, .32, false), -80, 120, 320);
+  // idols
+  for (const id of IDOLS) {
+    const mat = lm(C.dim, .9); idolMats.push(mat);
+    const g = new THREE.Group(); g.position.set(id.x + 2.2, 0, id.z); scene.add(g);
+    addWire(new THREE.BoxGeometry(.8, .3, .8), mat, 0, .15, 0, 0, g);
+    addWire(new THREE.ConeGeometry(.32, 1.05, 5), mat, 0, .82, 0, 0, g);
+    addWire(new THREE.IcosahedronGeometry(.17, 0), mat, 0, 1.5, 0, 0, g);
+    id.pos = new V3(id.x + 2.2, 0, id.z);
+  }
+  // petals
+  const pg = new THREE.BufferGeometry(), pa = new Float32Array(360 * 3);
+  for (let i = 0; i < 360; i++) { pa[i * 3] = rand(-25, 25); pa[i * 3 + 1] = rand(0, 14); pa[i * 3 + 2] = rand(-25, 25); }
+  pg.setAttribute('position', new THREE.BufferAttribute(pa, 3));
+  petals = new THREE.Points(pg, new THREE.PointsMaterial({ color:HEX(C.petal), size:.06, transparent:true, opacity:.75 }));
+  scene.add(petals);
+}
+buildWorld();
+
+// ---------- poses (joint angles, radians) ----------
+const PK = ['hy','tx','ty','hx','sFx','sFz','eFx','sBx','sBz','eBx','lFx','kFx','lBx','kBx','wx','tz','hr','hxo','hdy','wz'];
+const D = { hy:0, tx:.1, ty:0, hx:-.05, sFx:-.7, sFz:.35, eFx:-.9, sBx:-.6, sBz:.45, eBx:-1.0, lFx:-.3, kFx:.35, lBx:.25, kBx:.3, wx:.5, tz:0, hr:0, hxo:0, hdy:0, wz:0 };
+const LUNGE = { lFx:-.75, kFx:.65, lBx:.5, kBx:.25 };
+const P = {};
+const def = (n, o) => { P[n] = Object.assign({}, D, o); };
+def('idle', {});
+def('guard',     { tx:.05, sFx:-1.4, sFz:.5, eFx:-.7, sBx:-1.3, sBz:.6, eBx:-.8, wx:.7, lFx:-.35, kFx:.3, lBx:.35, kBx:.35 });
+def('windup',    { tx:-.1, sFx:-2.9, sFz:.3, eFx:-.5, sBx:-2.8, sBz:.4, eBx:-.6, wx:0, lFx:-.45, kFx:.4, lBx:.4, kBx:.3 });
+def('slash',     { hy:-.08, tx:.35, sFx:-.9, sFz:.3, eFx:-.2, sBx:-.8, sBz:.45, eBx:-.3, wx:.9, ...LUNGE });
+def('lowwind',   { ty:-.3, sFx:.3, sFz:.3, eFx:-.3, sBx:.3, sBz:.4, eBx:-.4, wx:2.4, lFx:-.45, kFx:.4, lBx:.4, kBx:.3 });
+def('rise',      { hy:-.05, tx:-.1, ty:.2, sFx:-2.6, sFz:.3, eFx:-.3, sBx:-2.5, sBz:.4, eBx:-.4, wx:.6, ...LUNGE });
+def('thrustwind',{ tx:-.1, ty:-.4, sFx:-.5, sFz:.1, eFx:-1.2, sBx:-.4, sBz:.2, eBx:-1.3, wx:1.8, lFx:-.5, kFx:.5, lBx:.5, kBx:.35 });
+def('thrust',    { hy:-.12, tx:.3, ty:.15, sFx:-1.5, sFz:.25, eFx:-.05, sBx:-1.4, sBz:.35, eBx:-.1, wx:1.25, lFx:-.9, kFx:.8, lBx:.6, kBx:.2 });
+def('sweepwind', { hy:-.3, tx:.2, ty:-.9, sFx:-.4, sFz:-.2, eFx:-.4, sBx:-.4, sBz:.2, eBx:-.5, wx:1.0, lFx:-1.0, kFx:1.3, lBx:.2, kBx:1.0 });
+def('sweep',     { hy:-.3, tx:.35, ty:.9, sFx:-1.2, sFz:.3, eFx:-.1, sBx:-1.1, sBz:.5, eBx:-.2, wx:1.55, lFx:-1.0, kFx:1.3, lBx:.2, kBx:1.0 });
+def('hurt',      { tx:-.35, hx:-.3, sFx:-.4, sFz:.2, eFx:-.6, sBx:-.3, sBz:.3, eBx:-.6, lFx:-.2, kFx:.2, lBx:.3, kBx:.3 });
+def('broken',    { hy:-.42, tx:.6, hx:.3, sFx:-.2, sFz:.1, eFx:-.2, sBx:-.1, sBz:.1, eBx:-.2, wx:1.8, lFx:-1.4, kFx:1.4, lBx:.1, kBx:2.0 });
+def('jump',      { lFx:-1.0, kFx:1.6, lBx:-.3, kBx:1.5 });
+def('dodge',     { hy:-.2, tx:.45, lFx:-.8, kFx:1.0, lBx:.5, kBx:.6 });
+def('deathblow', { hy:-.25, tx:.6, sFx:-1.2, eFx:-.1, sBx:-1.1, eBx:-.2, wx:1.9, lFx:-.9, kFx:.9, lBx:.6, kBx:.3 });
+def('mikiri',    { tx:-.1, lFx:-1.3, kFx:1.0, lBx:.2, kBx:.3 });
+def('drink',     { sBx:-2.3, sBz:.9, eBx:-1.3 });
+def('roll',      { hy:-.35, tx:1.0, hx:.6, sFx:-1.6, sFz:.6, eFx:-1.6, sBx:-1.6, sBz:.6, eBx:-1.6, lFx:-1.6, kFx:2.2, lBx:-1.4, kBx:2.2, wx:1.6 });
+// the Wolf's ready stance: low hips, bent knees, torso forward and slightly bladed, blade angled up at the foe
+def('wolf',      { hy:-.1, tx:.24, ty:-.12, hx:-.18, sFx:-.85, sFz:.3, eFx:-.75, sBx:-.75, sBz:.55, eBx:-.9, lFx:-.55, kFx:.55, lBx:.25, kBx:.35, wx:.55 });
+// deflect reactions alternate sides so chained deflects read as separate blows
+def('parryA',    { hy:-.12, tx:-.04, ty:-.3, hx:-.1, sFx:-1.75, sFz:.75, eFx:-.45, sBx:-1.55, sBz:.8, eBx:-.55, wx:.95, wz:.25, lFx:-.4, kFx:.55, lBx:.4, kBx:.5 });
+def('parryB',    { hy:-.12, tx:-.02, ty:.22, hx:-.1, sFx:-1.6, sFz:.2, eFx:-.7, sBx:-1.45, sBz:.35, eBx:-.75, wx:.7, wz:-.25, lFx:-.4, kFx:.55, lBx:.4, kBx:.5 });
+def('sprint',    { tx:.5, sFx:.6, sFz:.15, eFx:-.4, sBx:.6, sBz:.15, eBx:-.4, wx:2.1 });
+
+// ---------- attacks ----------
+// player attack types: the boss counts each one separately and adapts to repeats
+const ATYPES = ['light', 'heavy', 'aerial', 'dash'];
+const ALABEL = { light:'LIGHT', heavy:'HEAVY', aerial:'AERIAL', dash:'DASH' };
+const PATK = {
+  light: [
+    { w:'windup',  s:'slash', wind:.12, act:.1, rec:.22, lunge:.5, dmg:12, post:9,  type:'light' },
+    { w:'lowwind', s:'rise',  wind:.11, act:.1, rec:.22, lunge:.4, dmg:12, post:9,  type:'light' },
+    { w:'windup',  s:'slash', wind:.15, act:.11, rec:.34, lunge:.7, dmg:16, post:13, type:'light' },
+  ],
+  heavy:  { w:'thrustwind', s:'thrust', wind:.34, act:.12, rec:.42, lunge:1.3, dmg:22, post:24, type:'heavy', reach:1.25, guardBreak:1.7 },
+  aerial: { w:'windup', s:'slash', wind:.1, act:.14, rec:.26, lunge:.6, dmg:15, post:15, type:'aerial' },
+  dash:   { w:'sprint', s:'slash', wind:.08, act:.13, rec:.32, lunge:2.4, dmg:14, post:13, type:'dash', reach:1.1 },
+};
+const S = (w, s, wind, act, rec, dmg, post, lunge, o = {}) => Object.assign({ w, s, wind, act, rec, dmg, post, lunge }, o);
+const MOVES = {
+  slash:       { strikes:[S('windup','slash',.5,.12,.4,14,22,.5)] },
+  double:      { strikes:[S('windup','slash',.45,.12,.1,13,20,.5), S('lowwind','rise',.28,.12,.45,12,18,.4)] },
+  combo2:      { strikes:[S('windup','slash',.36,.11,.08,15,20,.6), S('lowwind','rise',.22,.11,.45,14,20,.45)] },
+  combo3:      { strikes:[S('windup','slash',.34,.11,.08,15,20,.55), S('lowwind','rise',.2,.11,.08,14,20,.4), S('windup','slash',.26,.12,.5,18,24,.7)] },
+  dashSlash:   { range:5.5, strikes:[S('sprint','slash',.45,.14,.45,16,22,3.1)] },
+  flurry:      { strikes:[S('windup','slash',.32,.09,.04,9,14,.4), S('lowwind','rise',.14,.09,.04,9,14,.3), S('windup','slash',.14,.09,.04,9,14,.3), S('lowwind','rise',.16,.1,.5,11,16,.4)] },
+  poke:        { strikes:[S('thrustwind','thrust',.42,.12,.4,13,20,.4)] },
+  perilThrust: { range:3.6, strikes:[S('thrustwind','thrust',.72,.14,.6,30,35,1.4,{ peril:'thrust' })] },
+  chargeThrust:{ range:7, strikes:[S('thrustwind','thrust',.85,.3,.6,32,36,4.5,{ peril:'thrust' })] },
+  leapStab:    { range:5.2, strikes:[S('windup','deathblow',.5,.36,.5,20,26,3,{ leap:7 })] },
+  perilSweep:  { strikes:[S('sweepwind','sweep',.72,.16,.6,26,30,.9,{ peril:'sweep' })] },
+  spinSweep:   { strikes:[S('sweepwind','sweep',.7,.32,.55,24,28,.4,{ peril:'sweep', spin:true })] },
+  bigOverhead: { strikes:[S('windup','slash',.85,.14,.6,26,40,.8)] },
+  whirl:       { strikes:[S('sweepwind','sweep',.4,.22,.05,12,18,.6,{ spin:true }), S('sweepwind','sweep',.14,.22,.05,12,18,.6,{ spin:true }), S('windup','slash',.2,.12,.6,16,24,.6)] },
+  // boss counters, one per player attack type it has fully read
+  riposte:     { strikes:[S('lowwind','rise',.2,.12,.5,17,26,.8)] },
+  sidestepCut: { strikes:[S('windup','slash',.3,.12,.5,20,28,1.3)] },
+  skyCut:      { strikes:[S('lowwind','rise',.12,.18,.5,26,30,.5,{ hitsAir:true, extraReach:.6 })] },
+  stopThrust:  { strikes:[S('thrustwind','thrust',.2,.14,.5,22,30,1.6)] },
+};
+const COUNTER = { light:'riposte', heavy:'sidestepCut', aerial:'skyCut', dash:'stopThrust' };
+const SETS = {
+  grunt: [
+    { name:'Drill',     moves:[['slash',1],['double',.6]], guard:.3, dist:1.7, strafe:.5, cdMul:1 },
+    { name:'Pressure',  moves:[['combo3',1],['dashSlash',.7]], guard:.1, dist:1.5, strafe:.15, cdMul:.6 },
+    { name:'Desperate', moves:[['flurry',1],['perilThrust',.8]], guard:0, dist:1.6, strafe:0, cdMul:.5, low:true },
+  ],
+  spear: [
+    { name:'Keep Away', moves:[['poke',1],['spinSweep',.5]], guard:.2, dist:2.5, strafe:.5, cdMul:1 },
+    { name:'Charge',    moves:[['chargeThrust',1],['leapStab',.7]], guard:.1, dist:4.6, strafe:.25, cdMul:.8 },
+  ],
+  ronin: [
+    { name:'Heavy Hand', moves:[['bigOverhead',1],['perilSweep',.6]], guard:.35, dist:2.0, strafe:.35, cdMul:1.1 },
+    { name:'Whirlwind',  moves:[['whirl',1],['double',.5]], guard:.15, dist:1.8, strafe:.2, cdMul:.8 },
+    { name:'Last Stand', moves:[['whirl',1],['perilSweep',.8],['bigOverhead',.6]], guard:.05, dist:1.8, strafe:0, cdMul:.55, low:true },
+  ],
+  boss1: [
+    { name:'Tomoe Blade',      moves:[['combo3',1],['combo2',.8],['perilSweep',.4]], guard:.4, dist:1.9, strafe:.5, cdMul:.8 },
+    { name:'Floating Passage', moves:[['flurry',1],['dashSlash',.7],['perilThrust',.5]], guard:.3, dist:2.4, strafe:.4, cdMul:.7 },
+  ],
+  boss2: [
+    { name:'Tomoe Blade', moves:[['combo3',1],['flurry',.7],['perilSweep',.5]], guard:.45, dist:1.9, strafe:.5, cdMul:.7 },
+    { name:'Lightning',   moves:[['leapStab',1],['flurry',.8],['perilThrust',.6],['perilSweep',.6]], guard:.35, dist:2.6, strafe:.4, cdMul:.6 },
+  ],
+};
+const TPL = {
+  grunt: { name:'Ashina Soldier', maxHp:60, maxPost:60, speed:2.6, reach:1.9, wp:WP.katana, deflect:0, marks:1, hat:'jingasa', col:C.enemy, cd:[1.2,2.2], sets:'grunt' },
+  spear: { name:'Ashina Spearman', maxHp:70, maxPost:70, speed:2.4, reach:2.8, wp:WP.yari, deflect:0, marks:1, hat:'jingasa', col:C.enemy, cd:[1.4,2.4], sets:'spear' },
+  ronin: { name:'Wandering Ronin', maxHp:95, maxPost:85, speed:2.4, reach:2.35, wp:WP.nodachi, deflect:.15, marks:1, hat:'knot', col:C.ronin, cd:[1.3,2.3], sets:'ronin', sc:1.06 },
+  boss:  { name:'Genichiro Ashina', sub:'Way of Tomoe · he learns how you fight', maxHp:220, maxPost:160, speed:3.6, reach:2.2, wp:WP.tomoe, deflect:.3, marks:2, hat:'crest', col:C.boss, cd:[.6,1.3], sets:'boss1', sc:1.12, boss:true },
+};
+const SPAWNS = [['grunt',0,17],['grunt',3.5,21],['spear',-4,33],['ronin',1,49],['grunt',4,61],['spear',-3,64]];
+const BOSS_POS = [0, 108];
+const PAD_HINTS = [
+  [-99, 'RB strike  ·  LB guard, tapped as the blade lands = DEFLECT  ·  R3 lock on'],
+  [11,  'Fill the gold posture bar, then RB while the red mark shows: DEATHBLOW'],
+  [27,  '危 thrust → B toward it: MIKIRI  ·  危 sweep → A to jump it'],
+  [43,  'Enemies switch stances mid-fight. The tag over their head names the current one.'],
+  [70,  'Sculptor’s idol ahead: rest there. Y drinks from the gourd.'],
+  [84,  'The lord learns. Repeat one attack and he adapts. Mix RB, RT, air and sprint strikes.'],
+];
+const HINTS = [
+  [-99, 'Click / J strike  ·  right-click / K guard, tapped as the blade lands = DEFLECT  ·  Q lock on'],
+  [11,  'Fill the gold posture bar, then strike while the red mark shows: DEATHBLOW'],
+  [27,  '危 thrust → Shift toward it: MIKIRI  ·  危 sweep → Space to jump it'],
+  [43,  'Enemies switch stances mid-fight. The tag over their head names the current one.'],
+  [70,  'Sculptor’s idol ahead: rest there. E drinks from the gourd.'],
+  [84,  'The lord learns. Repeat one attack and he adapts to it. Mix light, heavy (F), aerial and dash strikes.'],
+];
+
+// ---------- bodies ----------
+function wbox(w, h, d, mat, y = 0, z = 0, x = 0) {
+  const m = new THREE.LineSegments(new THREE.WireframeGeometry(new THREE.BoxGeometry(w, h, d)), mat); m.position.set(x, y, z); return m;
+}
+function buildWeapon(wp) {
+  const g = new THREE.Group();
+  segs([new V3(0, 0, -wp.butt), new V3(0, 0, .05), new V3(-.06, 0, .06), new V3(.06, 0, .06), new V3(0, -.06, .06), new V3(0, .06, .06)], lm(C.bone, .9), g);
+  const bm = new THREE.MeshBasicMaterial({ map:wp.tex, transparent:true, side:THREE.DoubleSide, depthWrite:false, blending:THREE.AdditiveBlending });
+  const geo = new THREE.PlaneGeometry(wp.len, wp.len / 11); geo.rotateY(-Math.PI / 2); geo.translate(0, 0, .07 + wp.len / 2);
+  const geo2 = geo.clone(); geo2.rotateZ(Math.PI / 2);
+  g.add(new THREE.Mesh(geo, bm), new THREE.Mesh(geo2, bm));
+  segs([new V3(0, 0, .07), new V3(0, 0, .07 + wp.len)], lm(wp.color, .3), g);
+  const tipA = new THREE.Object3D(); tipA.position.z = .07 + wp.len * .3; g.add(tipA);
+  const tipB = new THREE.Object3D(); tipB.position.z = .07 + wp.len; g.add(tipB);
+  return { g, bm, tipA, tipB };
+}
+function buildBody(f) {
+  const mat = new THREE.LineBasicMaterial({ color:HEX(f.col), transparent:true, opacity:1 });
+  const matB = f.isP ? new THREE.LineBasicMaterial({ color:HEX(C.gold), transparent:true, opacity:1 }) : mat;
+  const root = new THREE.Group(); root.rotation.order = 'YXZ';
+  const hips = new THREE.Group(); hips.position.y = .9; root.add(hips);
+  hips.add(wbox(.3, .12, .18, mat));
+  const torso = new THREE.Group(); hips.add(torso);
+  torso.add(wbox(.38, .3, .21, mat, .38), wbox(.28, .22, .17, mat, .13));
+  if (!f.isP) { // hakama panels
+    torso.add(wbox(.36, .34, .24, mat, -.2));
+  }
+  const head = new THREE.Group(); head.position.y = .6; torso.add(head);
+  const hm = new THREE.LineSegments(new THREE.WireframeGeometry(new THREE.IcosahedronGeometry(.12, 1)), mat); hm.position.y = .14; head.add(hm);
+  const eye = new THREE.Mesh(new THREE.BoxGeometry(.035, .03, .03), new THREE.MeshBasicMaterial({ color:HEX(f.isP ? C.pb : C.eb) }));
+  eye.position.set(-.045, .16, .11); head.add(eye);
+  if (f.hat === 'jingasa') { const h = addWire(new THREE.ConeGeometry(.32, .14, 10, 1, true), mat, 0, .3, 0, 0, head); }
+  else if (f.hat === 'crest') {
+    const cr = new THREE.LineSegments(new THREE.WireframeGeometry(new THREE.TorusGeometry(.2, .012, 3, 14, Math.PI)), mat);
+    cr.position.set(0, .3, .04); head.add(cr);
+    addWire(new THREE.CylinderGeometry(.15, .17, .08, 8, 1, true), mat, 0, .22, 0, 0, head);
+  } else { segs([new V3(0, .26, -.04), new V3(0, .34, -.12), new V3(0, .34, -.12), new V3(0, .3, -.2)], mat, head); }
+  const arm = (x, m) => {
+    const sh = new THREE.Group(); sh.position.set(x, .5, 0); torso.add(sh); sh.add(wbox(.08, .3, .08, m, -.15));
+    const el = new THREE.Group(); el.position.y = -.3; sh.add(el); el.add(wbox(.07, .27, .07, m, -.135));
+    const hand = new THREE.Group(); hand.position.y = -.28; el.add(hand); return { sh, el, hand };
+  };
+  const aF = arm(-.23, mat), aB = arm(.23, matB);
+  const leg = x => {
+    const hp = new THREE.Group(); hp.position.set(x, -.03, 0); hips.add(hp); hp.add(wbox(.11, .42, .11, mat, -.21));
+    const kn = new THREE.Group(); kn.position.y = -.43; hp.add(kn); kn.add(wbox(.09, .42, .09, mat, -.21), wbox(.1, .05, .22, mat, -.44, .05));
+    return { hp, kn };
+  };
+  const lF = leg(-.1), lB = leg(.1);
+  const w = buildWeapon(f.wp); aF.hand.add(w.g);
+  let scarf = null;
+  if (f.isP) {
+    const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(7 * 3), 3));
+    scarf = new THREE.Line(sg, lm(C.blood, .9)); torso.add(scarf);
+  }
+  root.scale.setScalar(f.sc);
+  scene.add(root);
+  return { root, hips, torso, head, shF:aF.sh, elF:aF.el, shB:aB.sh, elB:aB.el, hipF:lF.hp, kneeF:lF.kn, hipB:lB.hp, kneeB:lB.kn,
+    weap:w.g, tipA:w.tipA, tipB:w.tipB, bm:w.bm, mat, matB, scarf };
+}
+function disposeBody(f) { if (f && f.body) scene.remove(f.body.root); }
+
+// ---------- fighters ----------
+function fighter(o) {
+  const f = Object.assign({ pos:new V3(), yaw:0, vel:new V3(), vy:0, air:false, state:'idle', st:0, post:0, postCool:0,
+    hitFlash:0, sc:1, alive:true, walkPh:0, pose:Object.assign({}, D), fall:0, spin:0, col:C.bone, trailK:0 }, o);
+  f.hpLag = f.hp; f.body = buildBody(f); return f;
+}
+function newPlayer(x, z) {
+  const p = fighter({ isP:true, maxHp:100, hp:100, maxPost:100, wp:WP.kusabimaru, reach:2.05, rez:1, gourd:3, combo:0,
+    ph:'wind', atkId:0, lastAtkEnd:-9, guardPress:-9, atkBuf:0, hvyBuf:0, dgBuf:0, rollBuf:0, rlDir:{ x:0, z:1 }, jBuf:0, dgHeld:0, dgDir:{ x:0, z:1 }, A:null, atkType:'light', lock:null });
+  p.pos.set(x, 0, z); return p;
+}
+function mkEnemy(type, x, z) {
+  const t = TPL[type];
+  const e = fighter({ type, name:t.name, sub:t.sub, maxHp:t.maxHp, hp:t.maxHp, maxPost:t.maxPost, speed:t.speed, reach:t.reach,
+    wp:t.wp, deflect:t.deflect, marks:t.marks, maxMarks:t.marks, hat:t.hat, col:t.col, sc:t.sc || 1, boss:!!t.boss,
+    cdR:t.cd, cd:rand(...t.cd), tm:1, guardBias:0, aggro:false, seenAtk:-1, guardHits:0, phase:1, peril:0,
+    sets:SETS[t.sets], setIdx:0, setT:rand(5, 9), setFlash:0, strafeDir:0, strafeT:0, evadeT:0, counterType:null,
+    forceDeflect:false, adapt:{ light:0, heavy:0, aerial:0, dash:0 }, adaptFlash:{}, yaw:Math.PI });
+  e.pos.set(x, 0, z); return e;
+}
+
+let game, player, enemies = [], pops = [], T = 0, hitstop = 0;
+const cam = { yaw:0, pitch:.28, shake:0, pos:new V3(0, 3, -5) };
+
+function spawnAll(onlyBoss) {
+  for (const g of ghosts) { g.pending = false; g.life = 0; } updateGhosts(0);
+  for (const e of enemies) disposeBody(e);
+  enemies = onlyBoss ? [] : SPAWNS.map(([t, x, z]) => mkEnemy(t, x, z));
+  enemies.push(mkEnemy('boss', ...BOSS_POS));
+}
+function resetAll(mode) {
+  game = { mode, checkpoint:0, lit:[true, false], locked:false, introT:0, banner:null, big:null, deadT:0, winT:0 };
+  spawnAll(false);
+  disposeBody(player); player = newPlayer(IDOLS[0].x, IDOLS[0].z + 1.5);
+  pops = []; cam.yaw = 0;
+}
+function respawn() {
+  const cp = game.checkpoint;
+  spawnAll(cp === 1);
+  disposeBody(player); player = newPlayer(IDOLS[cp].x, IDOLS[cp].z + 1.5);
+  game.locked = false; game.mode = 'play'; game.deadT = 0; game.banner = null; game.big = null; game.winT = 0;
+  pops = []; cam.yaw = 0;
+}
+function startGame() { if (game.mode !== 'title') return; game.mode = 'play'; cam.yaw = player.yaw; cam.pitch = .28; for (const k in pressed) delete pressed[k]; }
+
+// ---------- helpers ----------
+const fwd = f => [Math.sin(f.yaw), Math.cos(f.yaw)];
+function flat(a, b) { const dx = b.pos.x - a.pos.x, dz = b.pos.z - a.pos.z, d = Math.hypot(dx, dz) || 1e-6; return { dx, dz, d, nx:dx / d, nz:dz / d }; }
+function facing(a, b) { const r = flat(a, b), [fx, fz] = fwd(a); return fx * r.nx + fz * r.nz; }
+const yawTo = (a, b) => { const r = flat(a, b); return Math.atan2(r.dx, r.dz); };
+function turnTo(f, target, rate, dt) { const d = angDiff(target, f.yaw), m = rate * dt; f.yaw += clamp(d, -m, m); }
+const mid = (a, b, y = 1.3) => new V3((a.pos.x + b.pos.x) / 2, Math.max(a.pos.y, b.pos.y) + y, (a.pos.z + b.pos.z) / 2);
+const chest = f => new V3(f.pos.x, f.pos.y + 1.25 * f.sc, f.pos.z);
+function pop(pos, txt, color, size = 13, dur = 1.1) { pops.push({ pos:pos.clone(), txt, color, size, t:0, dur }); }
+function big(txt, color, sub) { game.big = { txt, color, sub, t:0, dur:1.5 }; }
+function shake(v) { rumble(Math.min(1, v * 3), Math.min(1, v * 5), 80 + v * 400); if (!reduceMotion) cam.shake = Math.max(cam.shake, v); }
+const adaptLvl = (e, t) => clamp(Math.floor(e.adapt[t]) - 1, 0, 3);
+
+// ---------- combat ----------
+function breakEnemy(e, byHp) {
+  e.state = 'broken'; e.st = 0; e.vel.set(0, 0, 0); e.peril = 0; e.spin = 0;
+  e.brokenDur = byHp ? 1e9 : (e.boss ? 3 : 2.6); e.post = e.maxPost;
+  sfx.brk(); burst(chest(e), e.wp.codes, C.gold, 14, 3);
+}
+function checkBreak(e) { if (e.post >= e.maxPost && e.state !== 'broken' && e.state !== 'dead') breakEnemy(e, false); }
+function killPlayer() { const p = player; p.hp = 0; p.state = 'dead'; p.st = 0; p.vel.set(0, 0, 0); game.mode = 'dead'; game.deadT = 0; sfx.die(); shake(.25); }
+function breakPlayer(dmg) {
+  const p = player; p.state = 'broken'; p.st = 0; p.post = p.maxPost; p.hp -= dmg; p.hitFlash = .2;
+  sfx.brk(); shake(.15); pop(chest(p).setY(2.3), 'POSTURE BROKEN', C.gold, 12);
+  if (p.hp <= 0) killPlayer();
+}
+function adaptHit(e, t) {
+  const before = adaptLvl(e, t);
+  e.adapt[t] = Math.min(4, e.adapt[t] + (t === 'light' ? .5 : 1));
+  for (const k of ATYPES) if (k !== t) e.adapt[k] = Math.max(0, e.adapt[k] - .5);
+  const after = adaptLvl(e, t);
+  if (after > before) {
+    e.adaptFlash[t] = 1.2; sfx.adapt();
+    const msg = after === 3 ? `HE READS YOUR ${ALABEL[t]}` : `ADAPTING TO ${ALABEL[t]} · LV ${after}`;
+    pop(new V3(e.pos.x, e.pos.y + 2.9 * e.sc, e.pos.z), msg, after === 3 ? C.blood : C.boss, 13, 1.6);
+  }
+}
+function strikeEnemy(e, A) {
+  if (e.state === 'dead' || e.state === 'broken') return;
+  const p = player, c = mid(p, e);
+  if (e.boss && e.evadeT > 0 && e.counterType === A.type) {  // the boss saw this coming
+    if (A.type === 'light' || A.type === 'aerial') {
+      sfx.clang(); burst(c, e.wp.codes, C.gold, 10, 3); hitstop = .05; p.post += 16; p.postCool = 1;
+      if (p.post >= p.maxPost) breakPlayer(6);
+    } else pop(c.clone().setY(c.y + .9), 'EVADED', C.boss, 12, .8);
+    return;
+  }
+  const lvl = e.boss ? adaptLvl(e, A.type) : 0;
+  const fb = p.focusT > 0 ? 1.6 : 1;
+  if (fb > 1) { p.focusT = 0; pop(c.clone().setY(c.y + 1), 'COUNTER', C.pb, 13, .9); burst(c, p.wp.codes, C.pb, 8, 3); }
+  if (e.state === 'guard' && facing(e, p) > .3) {
+    if (e.forceDeflect || Math.random() < e.deflect) {
+      sfx.clang(); burst(c, e.wp.codes, C.gold, 10, 3); hitstop = .05; shake(.06);
+      p.post += 14; p.postCool = 1; e.post += 2; e.state = 'idle'; e.st = 0; e.cd = Math.min(e.cd, .12);
+      if (p.post >= p.maxPost) breakPlayer(6);
+    } else {
+      sfx.block(); burst(c, p.wp.codes, C.gold, 5, 2);
+      e.post += A.post * fb * (A.guardBreak || 1) * (e.boss ? .9 : 1.3); e.postCool = 1.2;
+      const [fx, fz] = fwd(p); e.vel.set(fx * 2, 0, fz * 2);
+      if (++e.guardHits >= 2) { e.guardHits = 0; e.state = 'idle'; e.cd = 0; }
+    }
+    if (e.boss) adaptHit(e, A.type);
+    checkBreak(e); return;
+  }
+  const dmg = A.dmg * (lvl ? Math.max(.3, 1 - .22 * lvl) : 1);
+  e.hp -= dmg; e.post += A.post * fb; e.postCool = 1.2; e.hitFlash = .12; e.guardHits = 0;
+  sfx.hit(); burst(c, codes('BLOOD'), C.blood, 8, 2.5); shake(.05);
+  if (e.boss) {
+    adaptHit(e, A.type);
+    e.guardBias = Math.min(.35, e.guardBias + .1);
+    if ((e.state === 'idle' || e.state === 'walk') && Math.random() < .5) { e.state = 'hurt'; e.st = .14; }
+  } else if (!(e.state === 'attack' && e.mv.strikes[e.si].peril)) {
+    e.state = 'hurt'; e.st = 0; const [fx, fz] = fwd(p); e.vel.set(fx * 2.5, 0, fz * 2.5);
+  }
+  if (e.hp <= 0) { e.hp = 0; breakEnemy(e, true); return; }
+  checkBreak(e);
+}
+function execute(e) {
+  const p = player;
+  p.state = 'execute'; p.st = 0; p.yaw = yawTo(p, e); p.vel.set(0, 0, 0);
+  e.marks--; hitstop = .14; shake(.3); sfx.exec();
+  burst(chest(e), e.wp.codes, C.blood, 26, 4); burst(chest(e), p.wp.codes, C.pb, 12, 3);
+  big('忍殺', C.blood, 'SHINOBI EXECUTION');
+  const [fx, fz] = fwd(p);
+  if (e.marks <= 0) { e.state = 'dead'; e.st = 0; e.alive = false; e.hp = 0; e.vel.set(fx * 3, 0, fz * 3); e.peril = 0; if (p.lock === e) p.lock = null; }
+  else {
+    e.hp = e.maxHp; e.hpLag = e.hp; e.post = 0; e.state = 'recoil'; e.st = 0; e.recoilDur = 1.8; e.vel.set(fx * 5, 0, fz * 5);
+    e.phase = 2; e.tm = .82; e.speed *= 1.15; e.sets = SETS.boss2; e.setIdx = 1; e.setT = rand(7, 10); e.setFlash = 2.5;
+    for (const k of ATYPES) e.adapt[k] = Math.max(0, e.adapt[k] - 1);
+    game.banner = { title:e.name, sub:'Lightning answers. He still remembers how you fight.', t:0, dur:2.6 };
+  }
+}
+function mikiri(e) {
+  const p = player; sfx.mikiri(); hitstop = .08; shake(.12);
+  e.post += e.boss ? 45 : 60; e.postCool = 1.5; e.state = 'recoil'; e.st = 0; e.recoilDur = .8; e.peril = 0;
+  const [fx, fz] = fwd(e); e.vel.set(-fx * 3, 0, -fz * 3);
+  p.state = 'mikiri'; p.st = 0; p.vel.set(0, 0, 0); p.air = true; p.vy = 3.5; p.yaw = yawTo(p, e);
+  burst(mid(p, e, .4), e.wp.codes, C.gold, 12, 3);
+  pop(chest(p).setY(2.4), 'MIKIRI COUNTER', C.pb, 13);
+  checkBreak(e);
+}
+// where the two blades meet: between the Wolf's blade and the attacker's edge (last rendered frame)
+function bladeContact(p, e) {
+  p.body.tipA.getWorldPosition(_v); p.body.tipB.getWorldPosition(_v2);
+  const a = _v.clone().lerp(_v2, .45);
+  e.body.tipA.getWorldPosition(_v); e.body.tipB.getWorldPosition(_v2);
+  const b = _v.clone().lerp(_v2, .6);
+  const c = a.lerp(b, .5), m = mid(p, e);
+  return c.distanceTo(m) < 1.4 ? c : m;
+}
+function playerDeflect(e, s) {
+  const p = player, rapid = T - clash.last < .3;
+  clash.last = T;
+  const c = bladeContact(p, e);
+  // everything below fires on this frame: sound, flash, sparks, glow, and the pose snap
+  sfx.parry(rapid ? .8 : 1);
+  clash.flashT = .06; clash.flashA = (reduceMotion ? .05 : .13) * (rapid ? .6 : 1);
+  spawnSparks(c, rapid ? 9 : 14, 7);
+  glow.position.copy(c); clash.glowT = .09; glow.visible = true; glow.material.opacity = 1; glow.scale.setScalar(.5);
+  burst(c, e.wp.codes, C.gold, rapid ? 4 : 7, 2.6, 1.5);
+  hitstop = .06; shake(.05);
+  p.parrySide = !p.parrySide; p.parryT = .3;
+  const pp = p.parrySide ? P.parryB : P.parryA;
+  for (const k of PK) p.pose[k] += (pp[k] - p.pose[k]) * .7;
+  for (const k of ['sFx','eFx','sBx','eBx','wx','tx']) e.pose[k] += (P.hurt[k] - e.pose[k]) * .45;
+  p.post = Math.min(p.maxPost - 1, p.post + s.post * .22); p.postCool = .6;
+  e.post += s.post * (e.boss ? .95 : 1.3) + (s.peril ? 12 : 0); e.postCool = 1.4;
+  checkBreak(e);
+}
+function perfectDodge(e) {
+  const p = player; e.hitDone = true;
+  const g = p.startGhost; p.startGhost = null;
+  if (g && g.pending) { g.pending = false; g.perfect = true; g.obj.visible = true; g.life = g.max = .8; g.base = .95; }
+  game.slowT = .42; p.focusT = 1.5; p.post = Math.max(0, p.post - 25); clash.dodgeT = .55;
+  sfx.perfect(); pop(chest(p).setY(2.5), 'PERFECT DODGE', C.pb, 14, 1.2);
+}
+function tryEnemyHit(e, s) {
+  const p = player; if (p.state === 'dead') return;
+  const r = flat(e, p), reach = e.reach * e.sc + (s.extraReach || 0);
+  if (r.d > reach + .3) return;
+  if (!s.spin && r.d > .8 && facing(e, p) < .5) return;
+  const h = p.pos.y - e.pos.y;
+  if (h > (s.hitsAir ? 3 : 1.2)) return;
+  if (s.peril === 'sweep' && h > .35) return;
+  const toward = p.dgDir.x * -r.nx + p.dgDir.z * -r.nz;
+  if (s.peril === 'thrust' && p.state === 'dodge' && toward > .5 && p.st < .34) { e.hitDone = true; mikiri(e); return; }
+  if ((p.state === 'dodge' && p.st > .02 && p.st < .24) || (p.state === 'roll' && p.st > .04 && p.st < .22)) { perfectDodge(e); return; }
+  if (p.state === 'roll' && p.st > .04 && p.st < .4) return;
+  if (p.state === 'execute' || p.state === 'mikiri') return;
+  e.hitDone = true;
+  const c = mid(p, e), faces = facing(p, e) > .3;
+  if (p.state === 'guard' && faces && s.peril !== 'sweep') {
+    if (T - p.guardPress < .2) { playerDeflect(e, s); return; }
+    if (!s.peril) {
+      sfx.block(); burst(c, e.wp.codes, C.gold, 5, 2);
+      p.post += s.post * .85; p.postCool = .9; p.vel.set(r.nx * 3, 0, r.nz * 3);
+      if (p.post >= p.maxPost) breakPlayer(s.dmg * .5);
+      return;
+    }
+  }
+  const dmg = s.hitsAir && p.air ? s.dmg * 1.3 : s.dmg;
+  p.hp -= dmg; p.post += s.post * .5; p.postCool = .9; p.hitFlash = .15;
+  p.state = 'hurt'; p.st = 0; p.vel.set(r.nx * 3.5, 0, r.nz * 3.5);
+  sfx.hit(); shake(.12); burst(chest(p), codes('WOLF'), C.blood, 9, 2.5);
+  if (p.hp <= 0) killPlayer(); else if (p.post >= p.maxPost) breakPlayer(0);
+}
+
+// ---------- player ----------
+const toIdle = f => { f.state = 'idle'; f.st = 0; };
+function aliveFoes() { return enemies.filter(e => e.alive && e.state !== 'dead'); }
+function executable() {
+  for (const e of aliveFoes()) if (e.state === 'broken' && flat(player, e).d < 2.4 && Math.abs(e.pos.y - player.pos.y) < 1) return e;
+  return null;
+}
+function startPlayerAttack(type) {
+  const p = player;
+  if (type === 'light') {
+    const chain = T - p.lastAtkEnd < .32 && p.atkType === 'light';
+    p.combo = chain ? (p.combo + 1) % 3 : 0; p.A = PATK.light[p.combo];
+  } else p.A = PATK[type];
+  p.atkType = type;
+  let tgt = p.lock;
+  if (!tgt) { let bd = 3.8; for (const e of aliveFoes()) { const r = flat(p, e); if (r.d < bd && facing(p, e) > -.25) { bd = r.d; tgt = e; } } }
+  if (tgt) p.yaw = yawTo(p, tgt);
+  p.aim = tgt;
+  p.state = 'attack'; p.st = 0; p.ph = 'wind'; p.atkId++; p.atkBuf = p.hvyBuf = 0;
+  if (type === 'aerial') p.vy = Math.max(p.vy, 1.5);
+}
+function playerHit(A) {
+  const p = player, reach = p.reach * (A.reach || 1);
+  for (const e of aliveFoes()) {
+    const r = flat(p, e);
+    if (r.d > reach + .25 * e.sc) continue;
+    if (r.d > 1 && facing(p, e) < .4) continue;
+    if (Math.abs(e.pos.y - p.pos.y) > 1.5) continue;
+    strikeEnemy(e, A);
+  }
+}
+function updPlayer(dt) {
+  const p = player; p.st += dt;
+  if (p.hitFlash > 0) p.hitFlash -= dt;
+  if (p.focusT > 0) p.focusT -= dt;
+  p.hpLag += (p.hp - p.hpLag) * (1 - Math.exp(-3 * dt));
+  if (pressed.atk) p.atkBuf = .22; else if (p.atkBuf > 0) p.atkBuf -= dt;
+  if (pressed.hvy) p.hvyBuf = .22; else if (p.hvyBuf > 0) p.hvyBuf -= dt;
+  if (pressed.dge) p.dgBuf = .15; else if (p.dgBuf > 0) p.dgBuf -= dt;
+  if (pressed.roll) p.rollBuf = .15; else if (p.rollBuf > 0) p.rollBuf -= dt;
+  if (pressed.jump) p.jBuf = .12; else if (p.jBuf > 0) p.jBuf -= dt;
+  if (pressed.grd) p.guardPress = T;
+  p.dgHeld = keys.dge ? p.dgHeld + dt : 0;
+  if (p.postCool > 0) p.postCool -= dt;
+  else if (p.state !== 'broken') p.post = Math.max(0, p.post - dt * (p.state === 'guard' ? 10 : 24) * (.35 + .65 * p.hp / p.maxHp));
+
+  // lock-on
+  if (p.lock && (!p.lock.alive || p.lock.state === 'dead' || flat(p, p.lock).d > 22)) p.lock = null;
+  if (pressed.lock) {
+    if (p.lock) p.lock = null;
+    else {
+      let best = null, bs = 1e9;
+      for (const e of aliveFoes()) {
+        const r = flat(p, e); if (r.d > 20) continue;
+        const cf = Math.sin(cam.yaw) * r.nx + Math.cos(cam.yaw) * r.nz, sc = r.d * (1.6 - cf);
+        if (sc < bs) { bs = sc; best = e; }
+      }
+      p.lock = best;
+    }
+  }
+  // movement relative to camera
+  let ix = (keys.rt ? 1 : 0) - (keys.lf ? 1 : 0) + joy.x + padStick.x, iz = (keys.fw ? 1 : 0) - (keys.bk ? 1 : 0) + joy.y + padStick.y;
+  const il = Math.hypot(ix, iz); if (il > 1) { ix /= il; iz /= il; }
+  const cfx = Math.sin(cam.yaw), cfz = Math.cos(cam.yaw), crx = -Math.cos(cam.yaw), crz = Math.sin(cam.yaw);
+  const mx = cfx * iz + crx * ix, mz = cfz * iz + crz * ix, moving = Math.hypot(mx, mz) > .12;
+  const fr = k => { const m = Math.exp(-k * dt); p.vel.x *= m; p.vel.z *= m; };
+
+  const free = p.state === 'idle' || p.state === 'walk' || p.state === 'run' || p.state === 'guard';
+  if (p.state === 'dead') { fr(6); p.fall += (1 - p.fall) * (1 - Math.exp(-4 * dt)); }
+  else if (free) {
+    const want = p.atkBuf > 0 ? (p.air ? 'aerial' : p.state === 'run' ? 'dash' : 'light') : p.hvyBuf > 0 ? (p.air ? 'aerial' : 'heavy') : null;
+    const ex = want && !p.air ? executable() : null;
+    if (ex) { p.atkBuf = p.hvyBuf = 0; execute(ex); }
+    else if (want) startPlayerAttack(want);
+    else if (p.dgBuf > 0 && !p.air) {
+      p.dgBuf = 0; let dx = mx, dz = mz;
+      if (!moving) { const [fx, fz] = fwd(p); dx = -fx; dz = -fz; }
+      const l = Math.hypot(dx, dz) || 1; p.dgDir = { x:dx / l, z:dz / l };
+      beginEvade(p); p.vel.set(p.dgDir.x * 11, 0, p.dgDir.z * 11); p.state = 'dodge'; p.st = 0; sfx.swing();
+    } else if (p.rollBuf > 0 && !p.air) {
+      // roll: travels further than a step with longer i-frames, but a slower recovery
+      p.rollBuf = 0; let dx = mx, dz = mz;
+      if (!moving) { const [fx, fz] = fwd(p); dx = fx; dz = fz; }
+      const l = Math.hypot(dx, dz) || 1; p.rlDir = { x:dx / l, z:dz / l }; p.dgDir = p.rlDir;
+      beginEvade(p); p.yaw = Math.atan2(p.rlDir.x, p.rlDir.z); p.state = 'roll'; p.st = 0; sfx.roll();
+    } else if (pressed.heal && p.gourd > 0 && !p.air) { p.state = 'heal'; p.st = 0; p.vel.set(0, 0, 0); p.healed = false; }
+    else {
+      if (p.jBuf > 0 && !p.air) { p.vy = 7.2; p.air = true; p.jBuf = 0; sfx.jump(); }
+      const sprint = keys.dge && moving && p.dgHeld > .3 && !keys.grd;
+      p.state = keys.grd ? 'guard' : sprint ? 'run' : moving ? 'walk' : 'idle';
+      const spd = p.state === 'guard' ? 1.7 : sprint ? 7.4 : 4.3;
+      p.vel.set(mx * spd, 0, mz * spd);
+      if (p.lock && p.state !== 'run') turnTo(p, yawTo(p, p.lock), 14, dt);
+      else if (moving) turnTo(p, Math.atan2(mx, mz), 12, dt);
+    }
+  } else if (p.state === 'attack') {
+    const A = p.A; fr(10);
+    if (p.ph === 'wind') {
+      if (pressed.grd) { p.state = 'guard'; p.st = 0; }
+      else if (p.st >= A.wind) {
+        p.ph = 'act'; p.st = 0; const [fx, fz] = fwd(p); p.vel.set(fx * A.lunge * 10, 0, fz * A.lunge * 10);
+        sfx.swing(); playerHit(A);
+      }
+    } else if (p.ph === 'act') {
+      if (p.aim && flat(p, p.aim).d < 1.05) { p.vel.x = 0; p.vel.z = 0; }
+      if (p.st >= A.act) { p.ph = 'rec'; p.st = 0; }
+    } else {
+      if (pressed.grd) { p.state = 'guard'; p.st = 0; p.lastAtkEnd = T; }
+      else if ((p.atkBuf > 0 || p.hvyBuf > 0) && p.st > .06) {
+        p.lastAtkEnd = T; const ex = !p.air && executable();
+        if (ex) { p.atkBuf = p.hvyBuf = 0; execute(ex); }
+        else startPlayerAttack(p.air ? 'aerial' : p.hvyBuf > 0 ? 'heavy' : 'light');
+      } else if (p.st >= A.rec) { p.lastAtkEnd = T; toIdle(p); }
+    }
+  } else if (p.state === 'dodge') { fr(6); if (p.st > .34) toIdle(p); }
+  else if (p.state === 'roll') {
+    const k = p.st < .42 ? 1 : Math.exp(-12 * (p.st - .42));
+    p.vel.set(p.rlDir.x * 8.2 * k, 0, p.rlDir.z * 8.2 * k);
+    if (p.st > .5 && (p.atkBuf > 0 || p.hvyBuf > 0)) startPlayerAttack(p.hvyBuf > 0 ? 'heavy' : 'light');
+    else if (p.st > .62) toIdle(p);
+  }
+  else if (p.state === 'hurt') { fr(8); if (p.st > .32) toIdle(p); }
+  else if (p.state === 'broken') { fr(8); if (p.st > 1) { toIdle(p); p.post = p.maxPost * .3; } }
+  else if (p.state === 'execute') { p.vel.set(0, 0, 0); if (p.st > .6) toIdle(p); }
+  else if (p.state === 'mikiri') { fr(6); if (p.st > .42) toIdle(p); }
+  else if (p.state === 'heal') {
+    p.vel.set(0, 0, 0);
+    if (!p.healed && p.st > .45) { p.healed = true; p.gourd--; p.hp = Math.min(p.maxHp, p.hp + 45); sfx.heal(); burst(chest(p), codes('HEAL'), C.pb, 8, 1, 2); }
+    if (p.st > .85) toIdle(p);
+  }
+  if (p.state === 'dodge' || p.state === 'roll') {
+    p.ghostT -= dt;
+    if (p.ghostT <= 0 && p.st > .03) { makeGhost(p, C.pb, .3, .3); p.ghostT = .045; }
+  } else if (p.startGhost) { p.startGhost.pending = false; p.startGhost.life = 0; p.startGhost = null; }
+  physics(p, dt);
+}
+function physics(f, dt) {
+  if (f.air || f.pos.y > 0) { f.vy -= 22 * dt; f.pos.y += f.vy * dt; if (f.pos.y <= 0) { f.pos.y = 0; f.vy = 0; f.air = false; } }
+  f.pos.x += f.vel.x * dt; f.pos.z += f.vel.z * dt;
+  // bounds: fenced path, then the round arena
+  if (game.locked && (f.isP || f.boss)) {
+    const dx = f.pos.x - ARENA.x, dz = f.pos.z - ARENA.z, d = Math.hypot(dx, dz), R = ARENA.r - .4;
+    if (d > R) { f.pos.x = ARENA.x + dx / d * R; f.pos.z = ARENA.z + dz / d * R; }
+  } else {
+    f.pos.z = clamp(f.pos.z, -5.4, ARENA.z + ARENA.r - .4);
+    f.pos.x = clamp(f.pos.x, f.pos.z < 86 ? -12.4 : -ARENA.r, f.pos.z < 86 ? 12.4 : ARENA.r);
+  }
+}
+
+// ---------- enemies ----------
+function switchSet(e, i) { e.setIdx = i; e.setT = rand(6, 10); e.setFlash = 2; }
+function pickMove(e, set, d) {
+  const ok = set.moves.filter(([m]) => d <= (MOVES[m].range || e.reach * e.sc + .45));
+  if (!ok.length) return null;
+  let tot = 0; for (const [, w] of ok) tot += w;
+  let r = Math.random() * tot;
+  for (const [m, w] of ok) if ((r -= w) <= 0) return m;
+  return ok[0][0];
+}
+function beginStrike(e) {
+  const s = e.mv.strikes[e.si]; e.ph = 'wind'; e.st = 0; e.hitDone = false; e.spin = 0;
+  if (s.peril) { e.peril = .95; e.perilKind = s.peril; sfx.peril(); }
+}
+function startMove(e, name) { e.mv = MOVES[name]; e.mvName = name; e.si = 0; e.state = 'attack'; e.vel.set(0, 0, 0); beginStrike(e); }
+function bossCounter(e, t) {
+  e.counterType = t; e.evadeT = .75; startMove(e, COUNTER[t]); sfx.read();
+  pop(new V3(e.pos.x, e.pos.y + 2.9 * e.sc, e.pos.z), `READ: ${ALABEL[t]}`, C.blood, 14, 1.1);
+  if (t === 'heavy' || t === 'dash') {
+    const r = flat(e, player), side = Math.random() < .5 ? -1 : 1;
+    e.vel.set(-r.nz * side * 11, 0, r.nx * side * 11);
+  }
+}
+function aiFree(e, dt, r) {
+  const p = player, set = e.sets[e.setIdx];
+  if (!e.aggro) {
+    if (r.d < 14 && p.state !== 'dead' && (!e.boss || game.locked)) { e.aggro = true; e.cd = rand(...e.cdR); }
+    else { e.vel.set(0, 0, 0); e.state = 'idle'; return; }
+  }
+  if (p.state === 'dead' || (e.boss && game.introT > 0)) { e.vel.set(0, 0, 0); e.state = 'idle'; return; }
+  turnTo(e, Math.atan2(r.dx, r.dz), 7, dt);
+  // stance changes
+  e.setT -= dt;
+  const low = e.sets.findIndex(s => s.low);
+  if (low >= 0 && e.setIdx !== low && e.hp < e.maxHp * .4) switchSet(e, low);
+  else if (e.setT <= 0) {
+    const opts = e.sets.map((s, i) => i).filter(i => i !== e.setIdx && !e.sets[i].low);
+    if (opts.length && !(low >= 0 && e.setIdx === low)) switchSet(e, opts[(Math.random() * opts.length) | 0]); else e.setT = rand(6, 10);
+  }
+  // read the player's wind-up
+  if (p.state === 'attack' && p.ph === 'wind' && e.seenAtk !== p.atkId && r.d < 3.4) {
+    e.seenAtk = p.atkId; const t = p.atkType, lvl = e.boss ? adaptLvl(e, t) : 0;
+    if (lvl >= 3 && Math.random() < .85) { bossCounter(e, t); return; }
+    if (Math.random() < set.guard + e.guardBias + lvl * .2) { e.state = 'guard'; e.st = 0; e.guardDur = rand(.45, .8); e.forceDeflect = lvl >= 2; e.vel.set(0, 0, 0); return; }
+  }
+  e.cd -= dt;
+  const want = set.dist * e.sc;
+  let vx = 0, vz = 0, spd = e.speed, run = false;
+  if (r.d > want + .5) { vx = r.nx; vz = r.nz; if (r.d > 7) { spd *= 1.7; run = true; } }
+  else if (r.d < want - .6) { vx = -r.nx * .7; vz = -r.nz * .7; }
+  else {
+    e.strafeT -= dt;
+    if (e.strafeT <= 0) { e.strafeT = rand(1, 2.5); e.strafeDir = Math.random() < set.strafe ? (Math.random() < .5 ? -1 : 1) : 0; }
+    vx = -r.nz * e.strafeDir * .45; vz = r.nx * e.strafeDir * .45;
+  }
+  e.vel.set(vx * spd, 0, vz * spd);
+  e.state = vx || vz ? (run ? 'run' : 'walk') : 'idle';
+  if (e.cd <= 0) { const m = pickMove(e, set, r.d); if (m) startMove(e, m); }
+}
+function updEnemy(e, dt) {
+  e.st += dt;
+  if (e.hitFlash > 0) e.hitFlash -= dt;
+  if (e.peril > 0) e.peril -= dt;
+  if (e.setFlash > 0) e.setFlash -= dt;
+  if (e.evadeT > 0) { e.evadeT -= dt; if (e.evadeT <= 0) e.counterType = null; }
+  for (const k in e.adaptFlash) e.adaptFlash[k] = Math.max(0, e.adaptFlash[k] - dt);
+  e.hpLag += (e.hp - e.hpLag) * (1 - Math.exp(-3 * dt));
+  e.guardBias = Math.max(0, e.guardBias - dt * .12);
+  if (e.postCool > 0) e.postCool -= dt;
+  else if (e.state !== 'broken' && e.state !== 'dead') e.post = Math.max(0, e.post - dt * (5 + 14 * e.hp / e.maxHp));
+  const p = player, r = flat(e, p);
+  const fr = k => { const m = Math.exp(-k * dt); e.vel.x *= m; e.vel.z *= m; };
+  switch (e.state) {
+    case 'idle': case 'walk': case 'run': aiFree(e, dt, r); break;
+    case 'attack': {
+      const s = e.mv.strikes[e.si];
+      fr(e.ph === 'wind' && e.counterType ? 9 : 10);
+      if (e.ph === 'wind') {
+        turnTo(e, Math.atan2(r.dx, r.dz), e.boss ? 9 : 6, dt);
+        if (e.st >= s.wind * e.tm) {
+          e.ph = 'act'; e.st = 0; e.hitDone = false; const [fx, fz] = fwd(e);
+          e.vel.set(fx * s.lunge * 10, 0, fz * s.lunge * 10);
+          if (s.leap) { e.vy = s.leap; e.air = true; e.vel.multiplyScalar(.45); }
+          sfx.swing();
+        }
+      } else if (e.ph === 'act') {
+        if (r.d < 1 && facing(e, p) > .5) { e.vel.x = 0; e.vel.z = 0; }
+        if (s.spin) e.spin = e.st / s.act * TAU;
+        if (!e.hitDone && (!s.leap || e.st > .2)) tryEnemyHit(e, s);
+        if (e.state !== 'attack') break;
+        if (e.st >= s.act) {
+          e.spin = 0;
+          if (!e.hitDone && s.peril === 'sweep' && p.air && r.d < e.reach + 1) {
+            e.post += 25; e.postCool = 1.2; pop(chest(p).setY(2.4), 'JUMP COUNTER', C.pb, 12, .9); checkBreak(e);
+            if (e.state !== 'attack') break;
+          }
+          e.ph = 'rec'; e.st = 0;
+        }
+      } else if (e.st >= s.rec * e.tm) {
+        e.si++;
+        if (e.si < e.mv.strikes.length) beginStrike(e);
+        else { e.state = 'idle'; e.st = 0; e.cd = rand(...e.cdR) * e.sets[e.setIdx].cdMul * e.tm; }
+      }
+      break;
+    }
+    case 'guard': e.vel.set(0, 0, 0); turnTo(e, Math.atan2(r.dx, r.dz), 10, dt); if (e.st > e.guardDur) { toIdle(e); e.forceDeflect = false; } break;
+    case 'hurt': fr(8); if (e.st > .32) { toIdle(e); e.cd = Math.min(e.cd, .5); } break;
+    case 'recoil': fr(6); if (e.st > e.recoilDur) toIdle(e); break;
+    case 'broken': fr(8); if (e.st > e.brokenDur) { toIdle(e); e.post = e.maxPost * .4; } break;
+    case 'dead': fr(5); e.fall += (1 - e.fall) * (1 - Math.exp(-4 * dt)); break;
+  }
+  physics(e, dt);
+}
+
+// ---------- animation ----------
+// small procedural layer on top of the player's stance: breathing, weight shifts, grip adjustments, eyes on the foe
+function lookTarget(f) {
+  if (f.lock) return f.lock;
+  let best = null, bd = 12;
+  for (const e of enemies) { if (!e.alive || !e.aggro || e.state === 'dead') continue; const d = flat(f, e).d; if (d < bd) { bd = d; best = e; } }
+  return best;
+}
+function wolfLayer(f, t, dt, full) {
+  const I = f.idle || (f.idle = { grip:0, gripNext:rand(2.5, 5), gripSign:1, sac:0, sacY:0, sacNext:1.5 });
+  // breathing ~0.28 Hz with a quicker inhale; kept tiny so it never reads as bobbing
+  const bp = T * 1.75, breath = Math.sin(bp) + .25 * Math.sin(2 * bp);
+  t.tx += .011 * breath; t.hy += .004 * breath; t.sFx -= .014 * breath; t.sBx -= .014 * breath; t.hx -= .007 * breath;
+  // eyes on the enemy, with occasional small re-fixations
+  I.sacNext -= dt;
+  if (I.sacNext <= 0) { I.sac = rand(-.1, .1); I.sacY = rand(-.04, .04); I.sacNext = rand(1.2, 3); }
+  const tg = lookTarget(f);
+  const rel = tg ? clamp(angDiff(yawTo(f, tg), f.yaw), -.7, .7) : 0;
+  t.hdy += rel * .75 + I.sac * (tg ? .5 : 1); t.ty += rel * .12; t.hx += I.sacY;
+  if (!full) return;
+  // slow weight transfer between the legs
+  const w = Math.sin(T * .8) * .6 + Math.sin(T * .37 + 1.3) * .4;
+  t.hxo = .016 * w; t.hr = -.022 * w; t.tz = .018 * w; t.kFx += .05 * w; t.kBx -= .05 * w; t.hy -= .005 * Math.abs(w);
+  t.sFz += .014 * Math.sin(T * 1.3 + .5); t.sBz += .011 * Math.sin(T * 1.1 + 2);
+  // re-settle the grip every few seconds
+  I.gripNext -= dt;
+  if (I.gripNext <= 0) { I.grip = 1; I.gripNext = rand(3, 6); I.gripSign = Math.random() < .5 ? -1 : 1; }
+  I.grip = Math.max(0, I.grip - dt * 2.2);
+  const g = Math.sin(I.grip * Math.PI);
+  t.wx += .1 * g * I.gripSign; t.wz += .07 * g; t.eFx -= .04 * g;
+  // sink a little lower when a foe is close
+  if (tg && flat(f, tg).d < 6) { t.hy -= .025; t.kFx += .05; t.kBx += .04; }
+}
+function targetPose(f, dt) {
+  let b = f.isP ? P.wolf : P.idle, rate = f.isP ? 12 : 14;
+  switch (f.state) {
+    case 'guard': b = P.guard; rate = 30; break;
+    case 'run': b = P.sprint; rate = 14; break;
+    case 'attack': {
+      const s = f.isP ? f.A : f.mv.strikes[f.si];
+      if (f.ph === 'wind') { b = P[s.w]; rate = f.isP ? 30 : 10; } else { b = P[s.s]; rate = f.ph === 'act' ? 42 : 9; }
+      break;
+    }
+    case 'dodge': b = P.dodge; rate = 30; break;
+    case 'roll': b = f.st < .45 ? P.roll : P.idle; rate = 24; break;
+    case 'hurt': case 'recoil': b = P.hurt; rate = 26; break;
+    case 'broken': case 'dead': b = P.broken; rate = 9; break;
+    case 'execute': b = P.deathblow; rate = 30; break;
+    case 'heal': b = P.drink; rate = 14; break;
+    case 'mikiri': b = P.mikiri; rate = 30; break;
+  }
+  if (f.air && (f.state === 'idle' || f.state === 'walk' || f.state === 'run')) b = P.jump;
+  const t = Object.assign({}, b);
+  if (f.isP && f.state === 'walk' && !f.air) { t.hy = -.06; t.kFx += .1; t.kBx += .1; }
+  const spd = Math.hypot(f.vel.x, f.vel.z);
+  if ((f.state === 'walk' || f.state === 'run' || f.state === 'guard') && !f.air && spd > .3) {
+    const A = f.state === 'run' ? .95 : .5, ph = f.walkPh;
+    t.lFx = -Math.sin(ph) * A; t.kFx = .15 + Math.max(0, Math.cos(ph)) * A * 1.2;
+    t.lBx = Math.sin(ph) * A; t.kBx = .15 + Math.max(0, -Math.cos(ph)) * A * 1.2;
+    rate = 22;
+  } else if (!f.isP && (f.state === 'idle' || f.state === 'guard')) {
+    const br = Math.sin(T * 2.3 + f.pos.x) * .04; t.tx += br; t.sFx -= br;
+  }
+  if (f.isP && !f.air && (f.state === 'idle' || f.state === 'guard' || f.state === 'walk')) wolfLayer(f, t, dt, f.state === 'idle');
+  // deflect reaction fades back into whatever stance the state wants, without taking control away from input
+  if (f.parryT > 0) {
+    f.parryT -= dt;
+    const w = clamp(f.parryT / .3, 0, 1), e = w * w * (3 - 2 * w), pp = f.parrySide ? P.parryB : P.parryA;
+    for (const k of PK) t[k] += (pp[k] - t[k]) * e;
+    rate = Math.max(rate, 24);
+  }
+  return [t, rate];
+}
+function animate(f, dt) {
+  const spd = Math.hypot(f.vel.x, f.vel.z);
+  if (spd > .3) { const [fx, fz] = fwd(f); const dir = (f.vel.x * fx + f.vel.z * fz) >= -.1 ? 1 : -1; f.walkPh += dt * spd * 2.3 * dir; }
+  const [t, rate] = targetPose(f, dt), a = 1 - Math.exp(-rate * dt), p = f.pose;
+  for (const k of PK) p[k] += (t[k] - p[k]) * a;
+  const B = f.body;
+  // a roll pivots the whole body around the hips instead of the feet
+  const rolling = f.state === 'roll', lift = rolling ? .45 : 0;
+  const rp = clamp(f.st / .5, 0, 1), roll = rolling ? rp * rp * (3 - 2 * rp) * TAU : 0;
+  B.root.position.set(f.pos.x, f.pos.y + lift * f.sc, f.pos.z);
+  B.root.rotation.y = f.yaw + f.spin;
+  B.root.rotation.x = rolling ? roll : -f.fall * 1.45;
+  B.hips.position.set(p.hxo, .9 + p.hy - lift, 0);
+  B.hips.rotation.z = p.hr;
+  B.torso.rotation.set(p.tx, p.ty, p.tz);
+  B.head.rotation.set(p.hx, p.hdy, 0);
+  B.shF.rotation.set(p.sFx, 0, p.sFz); B.elF.rotation.x = p.eFx;
+  B.shB.rotation.set(p.sBx, 0, -p.sBz); B.elB.rotation.x = p.eBx;
+  B.hipF.rotation.x = p.lFx; B.kneeF.rotation.x = p.kFx;
+  B.hipB.rotation.x = p.lBx; B.kneeB.rotation.x = p.kBx;
+  B.weap.rotation.set(p.wx, 0, p.wz);
+  // colour + fade
+  const flash = f.hitFlash > 0;
+  B.mat.color.setHex(flash ? HEX(C.blood) : HEX(f.col));
+  let alpha = 1;
+  if (f.state === 'dead' && !f.isP) { alpha = Math.max(0, 1 - (f.st - 1.6) / 1.4); B.root.visible = alpha > 0; }
+  B.mat.opacity = alpha; B.matB.opacity = alpha; B.bm.opacity = alpha;
+  const hot = (f.state === 'attack' && f.ph === 'act') || f.state === 'execute';
+  B.bm.color.setScalar(hot ? 1.6 : f.focusT > 0 ? 1.35 + .25 * Math.sin(T * 12) : 1);
+  if (B.scarf) {
+    const arr = B.scarf.geometry.attributes.position.array, still = spd < 1 ? 1 : 0;
+    for (let i = 0; i < 7; i++) {
+      arr[i * 3] = Math.sin(T * 7 - i * .8) * .025 * i;
+      arr[i * 3 + 1] = .52 - i * .02 - still * i * .06;
+      arr[i * 3 + 2] = -.11 - i * (.1 + (1 - still) * .03);
+    }
+    B.scarf.geometry.attributes.position.needsUpdate = true;
+  }
+  // blade trail: the weapon leaves its own ASCII codes hanging in the air
+  if (hot && alpha > 0 && (f.state !== 'execute' || f.st < .15)) {
+    B.root.updateMatrixWorld(true);
+    B.tipA.getWorldPosition(_v); B.tipB.getWorldPosition(_v2);
+    for (let i = 0; i < 3; i++) {
+      const pos = _v.clone().lerp(_v2, i / 2), code = f.wp.codes[f.trailK++ % f.wp.codes.length];
+      spawnNum(pos, code, f.wp.color, new V3(0, .15, 0), .26, .11, 0);
+    }
+  }
+}
+
+// ---------- update ----------
+function separate(a, b) {
+  const r = flat(a, b), min = .45 * (a.sc + b.sc);
+  if (r.d >= min || Math.abs(a.pos.y - b.pos.y) > 1) return;
+  const o = (min - r.d) / 2; a.pos.x -= r.nx * o; a.pos.z -= r.nz * o; b.pos.x += r.nx * o; b.pos.z += r.nz * o;
+}
+function update(dt) {
+  if (game.mode === 'title') {
+    animate(player, dt); for (const e of enemies) animate(e, dt);
+    cam.yaw = Math.PI * .85 + T * .12;
+  } else {
+    updPlayer(dt);
+    for (const e of enemies) updEnemy(e, dt);
+    const live = aliveFoes();
+    if (player.state !== 'dead' && player.state !== 'roll') for (const e of live) separate(player, e);
+    for (let i = 0; i < live.length; i++) for (let j = i + 1; j < live.length; j++) separate(live[i], live[j]);
+    animate(player, dt); for (const e of enemies) animate(e, dt);
+
+    IDOLS.forEach((id, i) => {
+      if (i > game.checkpoint && player.state !== 'dead' && Math.hypot(player.pos.x - id.pos.x, player.pos.z - id.pos.z) < 2.2) {
+        game.checkpoint = i; game.lit[i] = true;
+        player.hp = player.maxHp; player.gourd = 3; player.rez = 1; player.post = 0;
+        sfx.idol(); pop(id.pos.clone().setY(2.3), 'SCULPTOR’S IDOL · RESTED', C.gold, 12, 1.8);
+      }
+    });
+    const boss = enemies.find(e => e.boss);
+    if (!game.locked && boss && boss.alive && game.mode === 'play' && Math.hypot(player.pos.x - ARENA.x, player.pos.z - ARENA.z) < ARENA.r - 2) {
+      game.locked = true; game.introT = 1.6; game.banner = { title:boss.name, sub:boss.sub, t:0, dur:2.8 };
+    }
+    if (game.introT > 0) game.introT -= dt;
+    if (boss && !boss.alive && game.mode === 'play') { game.winT += dt; if (game.winT > 2.4) { game.mode = 'win'; game.locked = false; } }
+
+    for (const q of pops) q.t += dt; pops = pops.filter(q => q.t < q.dur);
+    updateGhosts(dt);
+    if (game.big) { game.big.t += dt; if (game.big.t > game.big.dur) game.big = null; }
+    if (game.banner) { game.banner.t += dt; if (game.banner.t > game.banner.dur) game.banner = null; }
+
+    if (game.mode === 'dead') {
+      game.deadT += dt;
+      if (game.deadT > 1.1) {
+        if (pressed.atk && player.rez > 0) {
+          const p = player; p.rez--; p.hp = p.maxHp * .5; p.hpLag = p.hp; p.post = 0; p.fall = 0; toIdle(p);
+          game.mode = 'play'; big('回生', C.blood, 'RESURRECTION');
+          for (const e of aliveFoes()) if (flat(e, p).d < 9 && e.state !== 'broken') { e.state = 'recoil'; e.st = 0; e.recoilDur = 1.2; e.peril = 0; }
+        } else if (pressed.grd || pressed.rst) respawn();
+      }
+    } else if (game.mode === 'win' && (pressed.rst || pressed.atk)) resetAll('play');
+
+    // camera steering
+    const p = player;
+    cam.yaw += ((keys.camL ? 1 : 0) - (keys.camR ? 1 : 0)) * 2.4 * dt;
+    if (p.lock) {
+      cam.yaw += angDiff(yawTo(p, p.lock), cam.yaw) * (1 - Math.exp(-6 * dt));
+      cam.pitch += (.26 - cam.pitch) * (1 - Math.exp(-3 * dt));
+    } else if ((isTouch || inputMode === 'pad') && drag.id === null && !padStick.x && (p.state === 'walk' || p.state === 'run')) {
+      cam.yaw += angDiff(p.yaw, cam.yaw) * (1 - Math.exp(-1.2 * dt));
+    }
+  }
+  for (const q of POOL) {
+    if (!q.s.visible) continue;
+    q.life -= dt; if (q.life <= 0) { q.s.visible = false; continue; }
+    q.vel.y -= q.grav * dt; q.s.position.addScaledVector(q.vel, dt);
+    q.m.opacity = clamp(q.life / q.max, 0, 1);
+  }
+  cam.shake *= Math.exp(-10 * dt);
+  // petals drift around the player
+  const pa = petals.geometry.attributes.position.array, px = player.pos.x, pz = player.pos.z;
+  for (let i = 0; i < pa.length; i += 3) {
+    pa[i] += (Math.sin(T + i) * .3 - .4) * dt; pa[i + 1] -= .7 * dt; pa[i + 2] += Math.cos(T * .7 + i) * .3 * dt;
+    if (pa[i + 1] < 0) pa[i + 1] = 14;
+    if (pa[i] < px - 25) pa[i] += 50; else if (pa[i] > px + 25) pa[i] -= 50;
+    if (pa[i + 2] < pz - 25) pa[i + 2] += 50; else if (pa[i + 2] > pz + 25) pa[i + 2] -= 50;
+  }
+  petals.geometry.attributes.position.needsUpdate = true;
+  moon.rotation.y += dt * .05;
+  idolMats.forEach((m, i) => m.color.setHex(HEX(game.lit[i] ? C.gold : C.dim)));
+  arenaFence.visible = game.locked;
+}
+function placeCamera(dt) {
+  const p = player, dist = 4.6, cp = Math.cos(cam.pitch);
+  const target = new V3(p.pos.x - Math.sin(cam.yaw) * dist * cp, p.pos.y + 1.55 + dist * Math.sin(cam.pitch), p.pos.z - Math.cos(cam.yaw) * dist * cp);
+  cam.pos.lerp(target, 1 - Math.exp(-14 * dt));
+  camera.position.copy(cam.pos);
+  if (cam.shake > .005) camera.position.add(new V3(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(cam.shake));
+  const look = new V3(p.pos.x, p.pos.y + 1.25, p.pos.z);
+  if (p.lock) look.lerp(chest(p.lock), .3);
+  camera.lookAt(look);
+}
+
+// ---------- HUD ----------
+const _pv = new V3();
+function toScreen(v) { _pv.copy(v).project(camera); if (_pv.z > 1) return null; return [(_pv.x + 1) / 2 * W, (1 - _pv.y) / 2 * H]; }
+function hpBar(x, y, w, h, e) {
+  hx.fillStyle = 'rgba(233,227,209,.08)'; hx.fillRect(x, y, w, h);
+  hx.fillStyle = 'rgba(233,227,209,.55)'; hx.fillRect(x, y, w * clamp(e.hpLag / e.maxHp, 0, 1), h);
+  hx.fillStyle = C.blood; hx.fillRect(x, y, w * clamp(e.hp / e.maxHp, 0, 1), h);
+  hx.strokeStyle = 'rgba(233,227,209,.45)'; hx.lineWidth = 1; hx.strokeRect(x + .5, y + .5, w, h);
+}
+function postBar(cx, y, w, e, h = 5) {
+  const f = clamp(e.post / e.maxPost, 0, 1);
+  hx.strokeStyle = 'rgba(233,227,209,.3)'; hx.lineWidth = 1; hx.strokeRect(cx - w / 2 + .5, y + .5, w, h - 1);
+  hx.fillStyle = f > .8 ? '#ff6a2a' : C.gold; hx.fillRect(cx - w * f / 2, y, w * f, h);
+  hx.fillStyle = C.bone; hx.fillRect(cx - .5, y - 2, 1, h + 4);
+}
+function drawEnemyUI(e) {
+  if (!e.alive) return;
+  const s = toScreen(new V3(e.pos.x, e.pos.y + 2.3 * e.sc, e.pos.z)); if (!s) return;
+  const d = camera.position.distanceTo(e.pos); if (d > 30) return;
+  const k = clamp(9 / d, .6, 1.25), [x, y] = s;
+  hx.textAlign = 'center'; hx.textBaseline = 'alphabetic';
+  if (e.aggro && (e.post > 1 || e.state === 'broken')) postBar(x, y, 64 * k, e, 4);
+  if (!e.boss && e.aggro && e.hp < e.maxHp) {
+    hx.fillStyle = 'rgba(233,227,209,.15)'; hx.fillRect(x - 26 * k, y - 8, 52 * k, 3);
+    hx.fillStyle = C.blood; hx.fillRect(x - 26 * k, y - 8, 52 * k * e.hp / e.maxHp, 3);
+  }
+  if (e.aggro && (e.setFlash > 0 || player.lock === e)) {
+    hx.globalAlpha = e.setFlash > 0 ? Math.min(1, e.setFlash) : .6;
+    hx.font = `600 ${Math.round(10 * k)}px ${MONO}`; hx.fillStyle = e.boss ? C.boss : C.eb;
+    hx.fillText(`STANCE · ${e.sets[e.setIdx].name.toUpperCase()}`, x, y - 14);
+    hx.globalAlpha = 1;
+  }
+  if (e.state === 'broken') {
+    const c = toScreen(chest(e)); if (c) {
+      const pulse = 1 + Math.sin(T * 10) * .15;
+      hx.strokeStyle = C.blood; hx.fillStyle = C.blood; hx.shadowColor = C.blood; hx.shadowBlur = 14; hx.lineWidth = 1.5;
+      hx.beginPath(); hx.arc(c[0], c[1], 12 * k * pulse, 0, TAU); hx.stroke();
+      hx.beginPath(); hx.arc(c[0], c[1], 4 * k, 0, TAU); hx.fill(); hx.shadowBlur = 0;
+    }
+  }
+  if (e.peril > 0) {
+    hx.globalAlpha = Math.min(1, e.peril / .25); hx.fillStyle = C.blood; hx.shadowColor = C.blood; hx.shadowBlur = 18;
+    hx.font = `800 ${Math.round(40 * k)}px ${SERIF}`; hx.fillText('危', x, y - 26 * k);
+    hx.shadowBlur = 0; hx.globalAlpha = 1;
+  }
+}
+function drawHUD() {
+  const p = player;
+  hx.textBaseline = 'alphabetic'; hx.textAlign = 'left';
+  const x = 20, y = 26;
+  hx.font = `600 10px ${MONO}`; hx.fillStyle = C.dim; hx.fillText('WOLF · VITALITY', x, y);
+  hpBar(x, y + 6, 240, 9, p);
+  hx.fillText('POSTURE', x, y + 34);
+  postBar(x + 160, y + 27, 150, p);
+  hx.strokeStyle = C.blood; hx.fillStyle = C.blood; hx.beginPath(); hx.arc(x + 254, y + 10, 5, 0, TAU); hx.stroke();
+  if (p.rez > 0) { hx.beginPath(); hx.arc(x + 254, y + 10, 2.6, 0, TAU); hx.fill(); }
+  hx.fillStyle = C.pb; hx.fillText(`GOURD ${'o'.repeat(p.gourd)}${'.'.repeat(3 - p.gourd)}`, x, y + 54);
+  if (p.lock) { const c = toScreen(chest(p.lock)); if (c) {
+    hx.strokeStyle = C.bone; hx.lineWidth = 1.2; hx.beginPath();
+    hx.moveTo(c[0], c[1] - 7); hx.lineTo(c[0] + 7, c[1]); hx.lineTo(c[0], c[1] + 7); hx.lineTo(c[0] - 7, c[1]); hx.closePath(); hx.stroke();
+  } }
+  // boss panel with the adaptation read-out
+  const boss = enemies.find(e => e.boss);
+  if (boss && game.locked && boss.alive) {
+    const bw = Math.min(320, W * .42), bx = W - bw - 20;
+    hx.textAlign = 'right'; hx.fillStyle = C.boss; hx.font = `800 18px ${SERIF}`;
+    hx.fillText(boss.name, W - 20, y + 2);
+    hpBar(bx, y + 10, bw, 8, boss);
+    for (let i = 0; i < boss.maxMarks; i++) {
+      const mx = bx - 12 - i * 14; hx.strokeStyle = C.blood; hx.fillStyle = C.blood;
+      hx.beginPath(); hx.arc(mx, y + 14, 4.5, 0, TAU); hx.stroke();
+      if (i < boss.marks) { hx.beginPath(); hx.arc(mx, y + 14, 2.3, 0, TAU); hx.fill(); }
+    }
+    hx.font = `600 9px ${MONO}`; hx.fillStyle = C.dim; hx.textAlign = 'left';
+    hx.fillText('HOW WELL HE KNOWS YOUR ATTACKS', bx, y + 36);
+    const cw = bw / 4;
+    ATYPES.forEach((t, i) => {
+      const cx = bx + i * cw, lvl = adaptLvl(boss, t), fl = boss.adaptFlash[t] || 0;
+      hx.fillStyle = lvl === 3 ? C.blood : fl > 0 ? C.boss : C.bone; hx.globalAlpha = .6 + .4 * Math.min(1, fl + (lvl ? .5 : 0));
+      hx.fillText(ALABEL[t], cx, y + 51);
+      for (let j = 0; j < 3; j++) {
+        hx.strokeStyle = lvl === 3 ? C.blood : C.boss; hx.lineWidth = 1; hx.strokeRect(cx + j * 11 + .5, y + 56.5, 8, 5);
+        if (j < lvl) { hx.fillStyle = lvl === 3 ? C.blood : C.boss; hx.fillRect(cx + j * 11 + .5, y + 56.5, 8, 5); }
+      }
+      hx.globalAlpha = 1;
+    });
+  }
+  // context hint + weapon legend
+  if (game.mode === 'play' && W > 700) {
+    let hint = ''; for (const [z, h] of (inputMode === 'pad' ? PAD_HINTS : HINTS)) if (p.pos.z > z) hint = h;
+    if (boss && game.locked) hint = inputMode === 'pad' ? 'Vary your attacks: RB light, RT heavy, RB in the air, RB while sprinting.' : 'Vary your attacks: light, heavy (F), aerial (strike in the air), dash (strike while sprinting).';
+    hx.textAlign = 'center'; hx.font = `400 11px ${MONO}`; hx.fillStyle = C.dim;
+    hx.fillText(hint, W / 2, H - 22);
+    if (inputMode === 'kb' && document.pointerLockElement !== cv3) { hx.fillStyle = C.gold; hx.fillText('Click the view to capture the mouse for camera control', W / 2, H - 40); }
+    hx.textAlign = 'right'; hx.font = `600 10px ${MONO}`;
+    hx.fillStyle = C.dim; hx.fillText('KUSABIMARU =', W - 20, H - 70);
+    hx.fillStyle = C.pb; hx.fillText(WP.kusabimaru.codes.join(' '), W - 20, H - 56);
+  }
+  for (const q of pops) {
+    const s = toScreen(q.pos); if (!s) continue;
+    hx.globalAlpha = clamp(1 - q.t / q.dur, 0, 1); hx.textAlign = 'center';
+    hx.fillStyle = q.color; hx.font = `600 ${q.size}px ${MONO}`; hx.fillText(q.txt, s[0], s[1] - q.t * 26);
+  }
+  hx.globalAlpha = 1;
+}
+function drawOverlays() {
+  const cx = W / 2, my = H * .42;
+  hx.textAlign = 'center'; hx.textBaseline = 'alphabetic';
+  if (game.banner) {
+    const b = game.banner, a = Math.min(1, b.t / .3, (b.dur - b.t) / .5);
+    hx.globalAlpha = a * .4; hx.strokeStyle = C.bone; hx.beginPath(); hx.moveTo(cx - 180, my - 64); hx.lineTo(cx + 180, my - 64); hx.stroke();
+    hx.globalAlpha = a; hx.fillStyle = C.boss; hx.font = `800 36px ${SERIF}`; hx.fillText(b.title, cx, my - 80);
+    hx.fillStyle = C.dim; hx.font = `600 11px ${MONO}`; hx.fillText(b.sub.toUpperCase(), cx, my - 44);
+    hx.globalAlpha = 1;
+  }
+  if (game.big) {
+    const b = game.big, k = b.t / b.dur, a = Math.min(1, b.t / .08, (1 - k) / .35), sz = 130 * (1.25 - .25 * Math.min(1, b.t / .15));
+    hx.globalAlpha = a; hx.fillStyle = b.color; hx.shadowColor = b.color; hx.shadowBlur = 24;
+    hx.font = `800 ${sz}px ${SERIF}`; hx.fillText(b.txt, cx, my + 30);
+    hx.shadowBlur = 0; hx.fillStyle = C.bone; hx.font = `600 12px ${MONO}`; hx.fillText(b.sub, cx, my + 62);
+    hx.globalAlpha = 1;
+  }
+  if (game.mode === 'dead') {
+    const a = Math.min(1, game.deadT / .9);
+    hx.fillStyle = `rgba(10,12,19,${.72 * a})`; hx.fillRect(0, 0, W, H);
+    hx.globalAlpha = a; hx.fillStyle = C.blood; hx.shadowColor = C.blood; hx.shadowBlur = 30;
+    hx.font = `800 210px ${SERIF}`; hx.fillText('死', cx, my + 70);
+    hx.shadowBlur = 0; hx.font = `600 12px ${MONO}`; hx.fillStyle = C.bone;
+    if (game.deadT > 1.1) {
+      if (player.rez > 0) hx.fillText(inputMode === 'pad' ? 'RB  resurrect   (1 left)' : isTouch ? 'STRIKE  resurrect' : 'Click / J  resurrect   (1 left)', cx, my + 120);
+      hx.fillStyle = C.dim; hx.fillText(inputMode === 'pad' ? 'Start  return to the sculptor’s idol' : isTouch ? 'GUARD  return to the idol' : 'R  return to the sculptor’s idol', cx, my + 142);
+    }
+    hx.globalAlpha = 1;
+  }
+  if (game.mode === 'win') {
+    hx.fillStyle = 'rgba(10,12,19,.6)'; hx.fillRect(0, 0, W, H);
+    hx.fillStyle = C.bone; hx.font = `800 40px ${SERIF}`; hx.fillText('Genichiro Ashina has fallen', cx, my);
+    hx.fillStyle = C.pb; hx.font = `600 12px ${MONO}`; hx.fillText(codes('SHINOBI').join(' ') + '  ·  ' + codes('WINS').join(' '), cx, my + 32);
+    hx.fillStyle = C.dim; hx.fillText(inputMode === 'pad' ? 'RB / Start  play again' : isTouch ? 'STRIKE  play again' : 'R  play again', cx, my + 60);
+  }
+  if (game.mode === 'title') {
+    const g = hx.createLinearGradient(0, 0, W, 0);
+    g.addColorStop(0, 'rgba(10,12,19,.86)'); g.addColorStop(.6, 'rgba(10,12,19,.45)'); g.addColorStop(1, 'rgba(10,12,19,.1)');
+    hx.fillStyle = g; hx.fillRect(0, 0, W, H);
+    const lx = Math.max(20, Math.min(80, W * .06)), ty = Math.max(90, H * .16);
+    hx.textAlign = 'left';
+    hx.fillStyle = C.blood; hx.font = `800 64px ${SERIF}`; hx.fillText('隻狼', lx, ty);
+    hx.fillStyle = C.bone; hx.font = `800 ${W < 520 ? 28 : 38}px ${SERIF}`; hx.fillText('Shadows Wired Twice', lx, ty + 48);
+    hx.fillStyle = C.dim; hx.font = `600 10px ${MONO}`;
+    hx.fillText('THIRD PERSON · WIREFRAME BODIES · BLADES FORGED FROM ASCII CODES', lx, ty + 72);
+    hx.fillStyle = C.pb; hx.fillText('KUSABIMARU  =  ' + WP.kusabimaru.codes.join(' '), lx, ty + 90);
+    hx.fillStyle = C.boss; hx.fillText('The lord of the keep learns: hit him the same way twice and he adapts.', lx, ty + 108);
+    const rows = inputMode === 'pad'
+      ? [['Left stick', 'move'], ['Right stick', 'camera'], ['A', 'jump · clears a 危 sweep'], ['B', 'tap: step · hold: sprint · step into a 危 thrust = Mikiri'], ['X', 'roll'],
+         ['RB', 'strike · in the air = aerial · while sprinting = dash strike'], ['RT', 'heavy thrust'], ['LB / LT', 'guard · tap as the blow lands to deflect'], ['R3', 'lock on'], ['Y', 'healing gourd']]
+      : isTouch
+      ? [['Stick', 'move · drag the view to turn the camera'], ['STRIKE', 'attack · in the air = aerial · sprinting = dash'], ['HEAVY', 'thrust'], ['GUARD', 'block · tap on impact to deflect'], ['STEP', 'tap: dodge · hold: sprint'], ['ROLL', 'long roll · more i-frames, slower recovery'], ['LOCK', 'lock on'], ['GOURD', 'heal']]
+      : [['WASD', 'move'], ['Mouse', 'camera (click to capture) · arrow keys also turn'], ['Space', 'jump · clears a 危 sweep'], ['Shift', 'tap: step · hold: sprint · step into a 危 thrust = Mikiri'], ['C', 'roll · goes further, more i-frames, slower to recover'],
+         ['Click / J', 'strike · in the air = aerial · while sprinting = dash strike'], ['F', 'heavy thrust'], ['Right-click / K', 'guard · tap as the blow lands to deflect'], ['Q / Tab / middle', 'lock on'], ['E', 'healing gourd']];
+    hx.font = `600 11px ${MONO}`;
+    rows.forEach(([k, v], i) => {
+      const yy = ty + 142 + i * 20;
+      hx.fillStyle = C.bone; hx.fillText(k, lx, yy);
+      hx.fillStyle = C.dim; hx.fillText(v, lx + 140, yy);
+    });
+    hx.globalAlpha = .55 + .45 * Math.sin(T * 3);
+    hx.fillStyle = C.gold; hx.fillText(inputMode === 'pad' ? 'PRESS ANY BUTTON' : isTouch ? 'TAP TO BEGIN' : 'CLICK, PRESS ANY KEY, OR PRESS A CONTROLLER BUTTON', lx, ty + 142 + rows.length * 20 + 22);
+    hx.globalAlpha = 1;
+  }
+}
+function render(dt) {
+  placeCamera(dt);
+  updateClash(dt);
+  renderer.render(scene, camera);
+  hx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  hx.clearRect(0, 0, W, H);
+  if (clash.dodgeT > 0) {  // cool vignette while time is slowed
+    const k = clash.dodgeT / .55, v = hx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .25, W / 2, H / 2, Math.max(W, H) * .7);
+    v.addColorStop(0, 'rgba(143,230,242,0)'); v.addColorStop(1, `rgba(143,230,242,${(reduceMotion ? .08 : .2) * k})`);
+    hx.fillStyle = v; hx.fillRect(0, 0, W, H);
+  }
+  if (clash.flashT > 0) {
+    hx.fillStyle = `rgba(255,238,205,${clash.flashA * clash.flashT / .06})`; hx.fillRect(0, 0, W, H);
+  }
+  if (game.mode !== 'title') { for (const e of enemies) drawEnemyUI(e); drawHUD(); }
+  drawOverlays();
+}
+
+// ---------- loop ----------
+resetAll('title');
+cam.pos.set(3, 3, -3);
+let last = performance.now();
+function frame(now) {
+  let dt = Math.min(.033, (now - last) / 1000); last = now;
+  const rdt = dt; T += dt;
+  pollPad(rdt);
+  if (game.slowT > 0) { game.slowT -= rdt; dt *= .3; }
+  if (hitstop > 0) { hitstop -= dt; dt *= .08; }
+  update(dt);
+  render(rdt);
+  for (const k in pressed) delete pressed[k];
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>

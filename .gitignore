@@ -13,3 +13,6 @@ out_simple.png
 *.swp
 *~
 .DS_Store
+
+# Copyrighted music for personal play only: never commit or publish
+haze-vs-rip/assets/music/
