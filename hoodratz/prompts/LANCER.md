@@ -6,7 +6,7 @@ Copy everything below the line into the AI model that will build the character.
 
 ---
 
-You are adding a new playable character, **Lancer**, to **Hoodratz**, a real-time 2D stickman fighting game inspired by YOMI Hustle. The project is in `haze-vs-rip/` (the folder still has the game's old name; don't rename it). Read `README.md` first: it documents every system and the full controls. Then read the files listed under "How a character plugs in" before writing code.
+You are adding a new playable character, **Lancer**, to **Hoodratz**, a real-time 2D stickman fighting game inspired by YOMI Hustle. The project is in `hoodratz/`. Read `README.md` first: it documents every system and the full controls. Then read the files listed under "How a character plugs in" before writing code.
 
 ## Ground rules
 

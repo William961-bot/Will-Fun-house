@@ -13,7 +13,7 @@ Run them in order, because each milestone builds on the one before.
 ## Shared context (paste this first every time)
 
 ```text
-You're working on "Hoodratz", a real-time 2D stickman fighting game in haze-vs-rip/.
+You're working on "Hoodratz", a real-time 2D stickman fighting game in hoodratz/.
 It's plain JavaScript on an HTML5 Canvas, using classic <script> tags (no modules, no build step),
 so the game runs by opening index.html directly. Read README.md and every file in src/ before changing anything.
 

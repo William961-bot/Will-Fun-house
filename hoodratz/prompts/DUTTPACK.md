@@ -13,7 +13,7 @@ Copy everything below the line into the AI model that will build the character.
 
 You are adding a new playable character, **Duttpack**, to **Hoodratz**. Hoodratz is a real-time 2D stickman fighting game inspired by YOMI Hustle.
 
-The project is in `haze-vs-rip/`. The folder still has the game's old name; don't rename it.
+The project is in `hoodratz/`.
 
 **Read before you write code:**
 

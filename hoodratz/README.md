@@ -2,7 +2,7 @@
 
 Real-time 2D stickman fighter inspired by YOMI Hustle: directional parries, grabs, unblockable heavies with strict parry timing, momentum movement. Local 1v1 and three-player free-for-all.
 
-The roster is **Haze, Rip, GoonerPrime, YittyMack, Lancer, Blue Cheese, Teo1910, Null, Somhack, Curtis, Siglarp, Kinkade and Brainlag**. Albino Rino is left out. The project folder keeps its old name, `haze-vs-rip`.
+The roster is **Haze, Rip, GoonerPrime, YittyMack, Lancer, Blue Cheese, Teo1910, Null, Somhack, Curtis, Siglarp, Kinkade and Brainlag**. Albino Rino is left out.
 
 Rounds have unlimited time (∞ on the HUD) and end by knockout.
 
