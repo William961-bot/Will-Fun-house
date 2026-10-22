@@ -87,7 +87,7 @@ Attacks, hit/hurt volumes per frame, damage formulas, blocking/parry, resources 
 cooldowns, status effects, projectiles; custom mechanics as extension modules over generic building blocks.
 Gate: attacks plus one nontrivial special mechanic reconstructed and validated.
 
-## Stage 8: first cross-engine port
+## Stage 8: first cross-engine port (done: `docs/stages/stage-8.md`, ADR 0006)
 
 Source adapter → UCS → target adapter for one controlled pairing. Proposed: a Hoodratz character (scripted JS
 source, full ground truth) into a Godot 4 test project (headless Godot for automated replay), or the native toy into

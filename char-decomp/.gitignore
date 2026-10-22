@@ -4,3 +4,4 @@ __pycache__/
 # workspaces hold decompiled code and traces: keep them out of git
 W/
 work/
+build/

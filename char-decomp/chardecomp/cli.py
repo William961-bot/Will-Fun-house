@@ -387,6 +387,35 @@ def cmd_ucs_validate(a):
         sys.exit(1)
 
 
+def cmd_port(a):
+    from .assets import combine
+    from .assets.gltf import write_glb
+    from . import ucs
+    from .port import godot, plan, report as port_report, scenario
+    doc = ucs.build_workspace(Path(a.work)).to_json()
+    spec = plan.extract(doc)
+    compat = plan.compatibility(doc, spec)
+    out_dir = Path(a.out) if a.out else Path(a.work) / "port" / "godot"
+    with _led(a) as led:
+        glb = None
+        if a.model:
+            asset = led.decoded(a.model)
+            glb = write_glb(combine(asset, led.decoded(a.anim)) if a.anim else asset)
+        proj = godot.write_project(out_dir, spec, compat, glb)
+        assets_seen, results = None, {}
+        if a.scenario:
+            run_dir = out_dir.parent / (out_dir.name + "_runs")
+            assets_seen = godot.asset_check(proj, run_dir) if glb else None
+            for label in a.scenario:
+                t = led.trace(label)
+                results[label] = scenario.compare(t, spec, godot.replay(proj, scenario.build(t, spec, a.opponent),
+                                                                        run_dir / label), a.opponent)
+    (out_dir / "PORT.md").write_text(port_report.markdown(spec, compat, assets_seen, results), encoding="utf-8")
+    out({"project": str(proj), "compatibility": compat["counts"], "manual": spec["manual"], "missing": spec["missing"],
+         "replays": {k: {"ticks": r["ticks"], "differing": r["differing"]} for k, r in results.items()},
+         "unexplained": port_report.unexplained(spec, results)})
+
+
 def cmd_agent(a):
     from . import agent
     agent.run(Path(a.work), goal=a.goal, model=a.model, effort=a.effort, interactive=not a.no_capture,
@@ -506,6 +535,13 @@ def main(argv=None):
     s.add_argument("--out", help="output file (default W/ucs/character.ucs.json)")
     s = sub.add_parser("ucs-validate", help="validate (and migrate) a UCS JSON file")
     s.add_argument("file"), s.set_defaults(fn=cmd_ucs_validate)
+
+    s = cmd("port", cmd_port, "generate a Godot 4 project from the UCS and replay recordings in it (GODOT_BIN)")
+    s.add_argument("--target", default="godot", choices=["godot"])
+    s.add_argument("--out", help="project directory (default W/port/godot)")
+    s.add_argument("--model", help="artifact with the mesh/skeleton to export"), s.add_argument("--anim")
+    s.add_argument("--scenario", action="append", help="recording to replay in the port and compare (repeatable)")
+    s.add_argument("--opponent", type=int, default=1, help="snapshot object of the opponent in those recordings")
 
     s = cmd("agent", cmd_agent, "let Claude drive the loop until everything observed is explained")
     s.add_argument("--goal", default="")

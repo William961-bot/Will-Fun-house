@@ -287,7 +287,8 @@ def _effects(c: dict) -> dict:
             out.append({"trace": ch["trace"], "condition": Fact(ch.get("when"), e) if ch.get("when") else
                         Unknown("no condition: every trigger event"),
                         "deltas": [{"object": "self" if d.get("obj", 0) == 0 else f"snapshot object {d['obj']}",
-                                    "offset": hex(_off(d["offset"])), "delta": Fact(d["delta"], e)}
+                                    "offset": hex(_off(d["offset"])),
+                                    **({"set": Fact(d["eq"], e)} if "eq" in d else {"delta": Fact(d["delta"], e)})}
                                    for d in ch["deltas"]]})
     return {"name": c["name"], "statement": c["statement"], "events": out, "evidence": [c["id"]]}
 
@@ -299,12 +300,20 @@ def _ability(led: Ledger, c: dict, damage: dict | None) -> dict:
     speed = next((ch for ch in c["checks"] if ch["check"] == "motion_fit" and ch["param"] == "speed"), None)
     hit = next((ch for ch in c["checks"] if ch["check"] == "hit_outcome" and ch.get("rule") == "overlap"), None)
     proj = Unknown("no projectile checks in this ability claim")
+    launch = next((ch for ch in c["checks"] if ch["check"] == "rle" and ch.get("where", {}).get("eq") == g["to"]), None)
     if speed or hit:
         proj = {"speed": Fact(speed["expect"], e, "units/tick") if speed else Unknown("speed not claimed"),
                 "hit_radius": Fact(hit["reach"], e, "units") if hit else Unknown("hit rule not claimed"),
                 "hit_radius_proven_range": _reach_range(led, [hit], e) if hit else Unknown("hit rule not claimed"),
                 "rule": Fact("hits on the first frame within hit_radius of the defender, then disappears", e)
-                if hit else Unknown("hit rule not claimed")}
+                if hit else Unknown("hit rule not claimed"),
+                "launch_frame": Fact(launch["expect"][0][1] + 1, e, "ticks", "first frame of the ability state in "
+                                     "which the projectile is active (rle check)")
+                if launch and launch["expect"] and launch["expect"][0][0] == 0
+                else Unknown("no rle check on the projectile's active flag during the ability"),
+                "object": Fact({"obj": hit["attacker"], "x_offset": hit.get("attacker_x_offset", "0x4"),
+                                "active_offset": hit.get("active_offset", "0x0")}, e) if hit
+                else Unknown("hit rule not claimed")}
     return {"name": c["name"], "statement": c["statement"],
             "input": {"function": g["func"], "argument": g["arg"], "value": g["value"]},
             "gate": {"resource": f"{g['resource'].get('obj', 0)}:{hex(_off(g['resource']['offset']))}",
@@ -325,6 +334,7 @@ def _inputs(claims: list) -> list:
         for ch in c["checks"]:
             if ch["check"] == "arg_precedes":
                 out.append({"name": c["name"], "function": ch["func"], "argument": ch["arg"], "value": ch["value"],
+                            "only_from": bool(ch.get("only_from")),
                             "effect": f"{_off(ch['offset']):#x}: {ch['from']} -> {ch['to']}",
                             "lag": Fact(ch.get("lag", 1), (c["id"],), "ticks"), "evidence": [c["id"]]})
     return out

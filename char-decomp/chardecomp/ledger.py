@@ -421,10 +421,14 @@ class Ledger:
                 return summary[prop] == c["eq"], f"{prop} = {summary[prop]!r}, wanted {c['eq']!r}"
             if kind == "arg_precedes":
                 t = self.trace(c["trace"])
+                pts = self._points(t, c)
                 calls = [tk for tk, args in T.call_args(t, c["func"]) if T.signed32(args[c["arg"]]) == c["value"]]
+                if c.get("only_from"):  # held inputs: only calls made while the field is in `from` count
+                    now = dict(pts)
+                    calls = [tk for tk in calls if now.get(tk) == c["from"]]
                 if not calls:
                     return False, f"no calls of {c['func']} with argument {c['arg']} = {c['value']} (record with --capture-args)"
-                changes = set(T.change_ticks(self._points(t, c), c["from"], c["to"]))
+                changes = set(T.change_ticks(pts, c["from"], c["to"]))
                 lag = c.get("lag", 1)
                 missing = [tk for tk in calls if tk + lag not in changes]
                 return not missing, (f"{len(calls) - len(missing)}/{len(calls)} calls with arg{c['arg']} = {c['value']} "
@@ -588,9 +592,13 @@ class Ledger:
         if not events:
             return False, "no trigger events in this trace"
         bad = []
-        for d in c["deltas"]:
+        for d in c["deltas"]:  # {"delta": change over the tick} or {"eq": value right after the event}
             s = col(d)
             for tk in events:
+                if "eq" in d:
+                    if s.get(tk) != d["eq"]:
+                        bad.append(f"{d.get('obj', 0)}:{d['offset']} = {s.get(tk)} at tick {tk}, wanted {d['eq']}")
+                    continue
                 got = None if None in (s.get(tk), s.get(tk - 1)) else s[tk] - s[tk - 1]
                 if got is None or abs(got - d["delta"]) > d.get("tolerance", 0):
                     bad.append(f"{d.get('obj', 0)}:{d['offset']} changed by {got} at tick {tk}, wanted {d['delta']}")

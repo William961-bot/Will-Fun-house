@@ -240,6 +240,17 @@ document where every value is a fact citing the claims that prove it, or an expl
 are kept in source ticks and in seconds derived from the measured tick rate. `chardecomp ucs-validate FILE` checks
 any UCS file. See `chardecomp/ucs/model.py` and ADR 0004.
 
+## Porting to Godot 4
+
+```
+GODOT_BIN=/path/to/godot chardecomp port W --model ryo_model --anim ryo_anim --scenario super --scenario walk
+```
+
+Writes a Godot 4 project (default `W/port/godot`) whose generic runtime executes the character's UCS rules, replays
+each named recording in Godot headless from its first snapshot and recorded inputs, and compares every field every
+tick. `PORT.md` lists the compatibility report, the port's assumptions, manual items, what Godot sees of the
+exported model, and each difference with a tested explanation or "UNEXPLAINED" (ADR 0006).
+
 ## Configuration
 
 `chardecomp set W KEY=VALUE ...` validates every pair before saving any: `char_base` (address expression),
