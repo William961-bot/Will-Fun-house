@@ -34,6 +34,7 @@ class Target:
 class Features:
     coverage: bool = True
     hooks: list[str] = field(default_factory=list)  # "module+0xRVA"
+    capture_args: list[str] = field(default_factory=list)  # hooked functions whose argument values are recorded
     char_base: str | None = None                    # address expression of the character object
     snap_tick: str | None = None                    # per-frame function ("module+0xRVA")
     snap_bases: list[str] = field(default_factory=list)
@@ -48,6 +49,11 @@ class Features:
             cfg["char_base"] = self.char_base
         if self.hooks:
             cfg["hooks"] = self.hooks
+        if self.capture_args:
+            missing = [f for f in self.capture_args if f not in self.hooks]
+            if missing:
+                raise ValueError(f"capture_args must also be hooked: {missing}")
+            cfg["capture_args"] = self.capture_args
         if self.snap_tick:
             bases = self.snap_bases or ([self.char_base] if self.char_base else [])
             if not bases:

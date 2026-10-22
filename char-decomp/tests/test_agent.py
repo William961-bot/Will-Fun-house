@@ -24,7 +24,7 @@ def call(tools, tool, **kw):
 
 
 def test_every_tool_has_a_valid_schema(tools):
-    assert len(tools) == 22
+    assert len(tools) == 23
     for t in tools.values():
         d = t.to_dict()
         assert d["input_schema"]["type"] == "object" and d["description"]
@@ -122,7 +122,7 @@ def test_run_builds_the_documented_request_and_writes_a_report(fresh_work, capsy
     assert kw["fallbacks"] == "default"
     assert set(kw["betas"]) == {"server-side-fallback-2026-07-01", "context-management-2025-06-27"}
     assert kw["context_management"]["edits"][0]["type"] == "clear_tool_uses_20250919"
-    assert len(kw["tools"]) == 22 and "frame data" in kw["messages"][0]["content"]
+    assert len(kw["tools"]) == 23 and "frame data" in kw["messages"][0]["content"]
     assert "identity claim" in kw["system"]
     out = capsys.readouterr().out
     assert "-> overview" in out and "Done: nothing verified yet." in out

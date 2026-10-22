@@ -60,7 +60,8 @@ Addresses are `module+0xRVA`, so recordings from different runs line up despite 
 
 Minimum evidence: a **function** needs `executed`/`called_with_char`/`writes`; a **field** needs a
 dynamic check on that same offset; a **move** needs `rle`; an **asset** needs `opens_file`; an **identity**
-needs `tick_rate` plus an anchor on object 0; a **component** needs `graph_resolves`; a **transition** needs `transition`. Static checks
+needs `tick_rate` plus an anchor on object 0; a **component** needs `graph_resolves`; a **transition** needs `transition`. An **input** needs `arg_precedes`, **physics**
+needs `motion_fit` or `trajectory_matches`, a **collision** needs `hit_outcome`. Static checks
 back names up but never stand alone. A window
 clipped by the start or end of a recording is ignored.
 
@@ -214,6 +215,18 @@ reproduce the poses the running game produced (`notify_aligns` ties notifies lik
 `chardecomp export-gltf W ryo_model --anim ryo_anim` exports the skin with its clips.
 Format plugins: `tfmd` (the toy's test format) and `gltf`. Engine formats need their own plugins (ADR 0005).
 
+## Movement, input and collision
+
+```
+chardecomp record W jump --snap --hooks Fighter.exe+0x41f00 --capture-args Fighter.exe+0x41f00   # tick + its args
+chardecomp physics W jump --air-state 4                  # gravity, jump impulse, friction (and --walk-state N)
+```
+
+Parameters are measured from what positions do, not read from velocity fields. `motion_fit` claims one parameter
+within a tolerance; `trajectory_matches` replays the whole recording with the model and the captured inputs and
+fails with the tick of the worst error; `arg_precedes` ties an input argument value to the state change it causes;
+`hit_outcome` must predict exactly which attacks connected (record both sides of the reach boundary).
+
 ## Universal Character Specification
 
 `chardecomp ucs W` turns the verified claims into `W/ucs/character.ucs.json`: an engine-independent, versioned
@@ -242,7 +255,7 @@ Tested here (Linux x86-64, Frida 17.24, Ghidra 11.4.2, zig 0.17, `pytest`; see `
 - coverage diff, value and pointer scan, hooks, per-frame snapshots with timestamps, watchpoints, file tracing
 - the ledger: verified, rejected and tampered evidence, identity claims and strict mode
 - both Ghidra scripts, headless, against the toy's symbols
-- the agent's 16 tools against real recordings, and `agent.run` with a fake client (request shape, refusal stop)
+- the agent's 23 tools against real recordings, and `agent.run` with a fake client (request shape, refusal stop)
 
 Not tested here:
 - **Windows.** The Frida agent's Windows paths (`CreateFileW`, `ReadFile`) and Frida on Windows were not run.

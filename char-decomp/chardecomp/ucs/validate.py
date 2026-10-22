@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from .model import UCS_VERSION
 
-UNITS = {None, "ticks", "frames", "s", "Hz", "bytes", "deg"}
+UNITS = {None, "ticks", "frames", "s", "Hz", "bytes", "deg", "units", "units/tick", "units/tick^2", "units/s",
+         "units/s^2"}  # "units": source distance units (uncalibrated)
 TOP_LEVEL = ("version", "source", "time_base", "conventions", "object", "components", "controller", "moves",
              "functions", "assets", "mesh", "skeleton", "materials", "animation", "physics", "abilities", "camera",
              "audio", "dependencies", "evidence", "rejected", "completeness")
@@ -20,6 +21,9 @@ MIGRATIONS: dict[str, tuple[str, callable]] = {
     "0.1": ("0.2", lambda doc: dict(doc)),
     # 0.2 -> 0.3: animation may now be an object; 0.2 documents (animation Unknown) are valid 0.3.
     "0.2": ("0.3", lambda doc: dict(doc)),
+    # 0.3 -> 0.4: physics and controller.input_mapping may now be objects/lists; 0.3 documents (both Unknown)
+    # are valid 0.4.
+    "0.3": ("0.4", lambda doc: dict(doc)),
 }
 
 

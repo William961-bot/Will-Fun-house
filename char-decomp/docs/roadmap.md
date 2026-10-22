@@ -74,7 +74,7 @@ parameters (e.g. Hoodratz keyframe timelines, shinobi spring constants), notifie
 comparison checks with tolerances.
 Gate: source animation reconstructed and compared against recorded observations.
 
-## Stage 6: physics and controller
+## Stage 6: physics and controller (done: `docs/stages/stage-6.md`)
 
 Collision volumes, measured movement parameters (gravity, acceleration, friction, jump impulse, air control) versus
 source constants; typed controller graphs (states, transitions with conditions/actions/timing; hierarchical and

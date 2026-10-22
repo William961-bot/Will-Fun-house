@@ -162,6 +162,11 @@ def _record(a, w, cfg, led):
             feats.hooks = [check_location(h) for h in a.hooks.split(",")]
         if not feats.char_base:
             print("note: no char_base set, hooks will count calls but can't spot the character argument")
+        if a.capture_args:
+            feats.capture_args = [check_location(f) for f in a.capture_args.split(",")]
+            feats.hooks = list(dict.fromkeys(feats.hooks + feats.capture_args))
+    elif a.capture_args:
+        sys.exit("--capture-args needs --hooks")
     for spec in a.watch or []:
         expr, _, size = spec.rpartition(":")
         if size not in ("1", "2", "4", "8"):
@@ -234,6 +239,17 @@ def cmd_transitions(a):
         pts = (T.graph_series(t, a.path, _off(a.offset), a.type) if a.path
                else T.series(t, _off(a.offset), a.type, a.obj, _where(a.where)))
         out(T.transitions(pts))
+
+
+def cmd_physics(a):
+    from . import physics
+    o = physics.Offsets(*(_off(v) for v in (a.x, a.y, a.vx, a.vy, a.state)))
+    with _led(a) as led:
+        t = led.trace(a.label)
+        res = {p: physics.estimate(t, p, o, a.air_state) for p in ("gravity", "jump_impulse", "friction")}
+        if a.walk_state is not None:
+            res["walk_speed"] = physics.estimate(t, "walk_speed", o, a.air_state, a.walk_state)
+        out({"model": physics.MODEL, "estimates": res})
 
 
 def cmd_callers(a):
@@ -407,6 +423,7 @@ def main(argv=None):
     s.add_argument("--no-coverage", action="store_true")
     s.add_argument("--hooks", help="auto | comma list of module+0xRVA | @file")
     s.add_argument("--max-hooks", type=int, default=4000)
+    s.add_argument("--capture-args", help="comma list of hooked functions whose argument values are recorded")
     s.add_argument("--snap", action="store_true", help="snapshot the character every frame")
     s.add_argument("--snap-base", action="append", help="extra objects to snapshot (e.g. the opponent)")
     s.add_argument("--char-base"), s.add_argument("--tick")
@@ -442,6 +459,10 @@ def main(argv=None):
     s.add_argument("label"), s.add_argument("offset"), s.add_argument("--type", default="i32")
     s.add_argument("--obj", type=int, default=0), s.add_argument("--path", help="field in a followed object")
     s.add_argument("--where", help="OFF:TYPE:VALUE")
+    s = cmd("physics", cmd_physics, "measure gravity, jump impulse, friction and walk speed from snapshots")
+    s.add_argument("label"), s.add_argument("--air-state", type=int), s.add_argument("--walk-state", type=int)
+    for k, d in (("x", "0x8"), ("y", "0xc"), ("vx", "0x10"), ("vy", "0x14"), ("state", "0x18")):
+        s.add_argument(f"--{k}", default=d, help=f"offset of {k} (default {d})")
     s = cmd("callers", cmd_callers, "observed call sites of a hooked function (incl. virtual/indirect calls)")
     s.add_argument("label"), s.add_argument("func")
     s = cmd("watch", cmd_watch, "watchpoint hits with the functions that wrote")
@@ -455,7 +476,8 @@ def main(argv=None):
 
     s = cmd("claim", cmd_claim, "add a claim; it is verified only if every check passes")
     s.add_argument("--kind", required=True, choices=["function", "field", "move", "asset", "identity", "component",
-                                                       "transition", "skeleton", "mesh", "animation", "note"])
+                                                       "transition", "skeleton", "mesh", "animation", "input", "physics",
+                                                       "collision", "note"])
     s.add_argument("--subject", required=True,
                    help="module+0xRVA, field offset (or PATH@OFFSET in a component), move name, file path, "
                         "component path, transition name, or (identity) the base expression")

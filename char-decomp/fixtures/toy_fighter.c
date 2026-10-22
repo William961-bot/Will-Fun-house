@@ -4,9 +4,10 @@
 // a second, unstripped copy and uses its symbols as ground truth: every finding has to land on the
 // function or struct field this source says it should.
 //
-// usage: toy_fighter <assets_dir> <script> [frames] [far]
-//   script: idle | jab | heavy | sweep | walk   (player 1 repeats that action)
-//   far:    put player 2 out of reach, so attacks whiff
+// usage: toy_fighter <assets_dir> <script> [frames] [far | DISTANCE]
+//   script: idle | jab | heavy | sweep | walk | jump   (player 1 repeats that action)
+//           walk: walk for 30 frames, stop for 30; jump: jump every 60 frames
+//   far:    put player 2 out of reach (500 units), so attacks whiff; a number puts player 2 that far away
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -70,7 +71,7 @@ static const Move MOVES[] = {
     {"sweep", 9, 3, 16, 60, 55.0f},
 };
 
-enum { ST_IDLE, ST_ATTACK, ST_HITSTUN, ST_WALK };
+enum { ST_IDLE, ST_ATTACK, ST_HITSTUN, ST_WALK, ST_AIR };
 
 Fighter *g_fighters[2];
 
@@ -206,10 +207,23 @@ NOINLINE static void walk(Fighter *f, float dir) {
     if (f->state == ST_WALK) f->vx = 2.5f * dir;
 }
 
+NOINLINE static void jump(Fighter *f) {
+    if (f->state != ST_IDLE && f->state != ST_WALK) return;
+    f->state = ST_AIR;
+    f->state_frame = 0;
+    f->vy = 6.0f;
+}
+
 NOINLINE static void apply_physics(Fighter *f) {
     f->x += f->vx;
     f->y += f->vy;
     f->vx *= 0.8f;
+    if (f->y > 0.0f || f->vy > 0.0f) f->vy -= 0.5f;  // gravity only while airborne
+    if (f->state == ST_AIR && f->y <= 0.0f) {         // landing
+        f->y = 0.0f;
+        f->vy = 0.0f;
+        f->state = ST_IDLE;
+    }
     if (f->state == ST_WALK && f->vx < 0.05f && f->vx > -0.05f) f->state = ST_IDLE;
 }
 
@@ -228,6 +242,7 @@ NOINLINE static void check_hit(Fighter *a, Fighter *d) {
 NOINLINE static void game_tick(Fighter *p1, Fighter *p2, int cmd) {
     if (cmd >= 0 && cmd < 3) start_move(p1, cmd);
     if (cmd == 3) walk(p1, 1.0f);
+    if (cmd == 4) jump(p1);
     for (int i = 0; i < 2; i++) {
         Fighter *f = i ? p2 : p1;
         if (f->state == ST_ATTACK) update_move(f);
@@ -256,17 +271,19 @@ int main(int argc, char **argv) {
     else if (!strcmp(script, "heavy")) action = 1;
     else if (!strcmp(script, "sweep")) action = 2;
     else if (!strcmp(script, "walk")) action = 3;
+    else if (!strcmp(script, "jump")) action = 4;
 
     g_fighters[0] = load_character(argv[1], "ryo", 1337, 0.0f, 1);
     load_clips(argv[1], "ryo", 0);
-    float p2x = argc > 4 && !strcmp(argv[4], "far") ? 500.0f : 50.0f;
+    float p2x = 50.0f;
+    if (argc > 4) p2x = !strcmp(argv[4], "far") ? 500.0f : (float)atof(argv[4]);
     g_fighters[1] = load_character(argv[1], "ken", 1000, p2x, -1);
     load_clips(argv[1], "ken", 1);
     if (getenv("TOY_DEBUG")) fprintf(stderr, "P1 %p\n", (void *)g_fighters[0]);
 
     for (int frame = 0; frame < frames; frame++) {
         int cmd = -1;
-        if (action == 3) cmd = 3;
+        if (action == 3) cmd = frame % 60 < 30 ? 3 : -1;
         else if (action >= 0 && frame % 60 == 10) cmd = action;
         game_tick(g_fighters[0], g_fighters[1], cmd);
         usleep(4000);

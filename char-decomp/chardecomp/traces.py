@@ -269,3 +269,17 @@ def call_ticks(t: Trace, func: str) -> list[int]:
 def callers(t: Trace, func: str) -> dict[str, int]:
     """Observed call sites (return addresses) of a hooked function, with counts."""
     return dict(((t.hooks or {}).get(func) or {}).get("callers", {}))
+
+
+def call_args(t: Trace, func: str) -> list[tuple[int, list[int]]]:
+    """(tick, argument values) for each recorded call of a function hooked with capture_args."""
+    out = []
+    for row in t.hook_seq or []:
+        if row[1] == func and len(row) > 4:
+            out.append((row[0], [int(v, 16) if str(v).startswith("0x") else int(v) for v in row[4]]))
+    return out
+
+
+def signed32(v: int) -> int:
+    v &= 0xFFFFFFFF
+    return v - (1 << 32) if v & 0x80000000 else v

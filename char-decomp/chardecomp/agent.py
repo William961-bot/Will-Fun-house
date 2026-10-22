@@ -74,6 +74,21 @@ Check shapes for record_claim (checks_json is a JSON list)
    "pose_offset":"0xc","tolerance_deg":0.01}   (decoded clips evaluated at each recorded frame vs the recorded pose)
   {"check":"notify_aligns","artifact":A,"clip":"attack","notify":"hit_on","trace":T,"path":"0x68",
    "offset":"0x38","from":0,"to":1,"lag":0}    (a gameplay change happens at the notify's frame)
+  {"check":"arg_precedes","trace":T,"func":F,"arg":2,"value":4,"offset":"0x18","from":0,"to":4,"lag":1}
+     (every call of F with that argument value is followed, lag ticks later, by the state change; record with
+      capture_args F)
+  {"check":"motion_fit","trace":T,"param":"gravity","expect":0.5,"tolerance":0.001,"air_state":4}
+     (param: gravity | jump_impulse | friction | walk_speed (needs walk_state); measured from x/y/vx/vy at
+      x_offset/y_offset/vx_offset/vy_offset/state_offset, default 0x8/0xc/0x10/0x14/0x18)
+  {"check":"trajectory_matches","trace":T,"input_func":F,"input_arg":2,"inputs":{"3":"walk","4":"jump"},
+   "params":{"gravity":0.5,"jump_impulse":6,"friction":0.8,"walk_speed":2.5},"tolerance":0.01}
+     (the movement model replays every recorded position from the first snapshot and the captured inputs)
+  {"check":"hit_outcome","trace":T,"attack_state":1,"active_from":13,"reach":70,"defender":1}
+     (an attack connects on its first active frame iff |x_defender - x_attacker| <= reach: predicted hits
+      must equal the ticks where the defender's HP dropped; record with --snap-base for the defender)
+Input claims need arg_precedes; physics claims need motion_fit or trajectory_matches (claim the parameters
+with motion_fit and the model with trajectory_matches); collision claims need hit_outcome. Test a reach at the
+boundary from both sides (a recording at exactly the reach and one a unit beyond).
 Skeleton, mesh and animation claims (subject = artifact label) need asset_decodes and artifact_loaded on that
 artifact; animation claims also need anim_matches.
 Component fields are claimed as kind field with subject "PATH@OFFSET" (e.g. "0x68@0x4") and checks with "path".
@@ -239,6 +254,32 @@ def build_tools(work: Path, interactive: bool):
             return dump(T.transitions(pts))
 
     @beta_tool
+    def movement_estimates(trace: str, air_state: int = -1, walk_state: int = -1, x_offset: str = "0x8",
+                           y_offset: str = "0xc", vx_offset: str = "0x10", vy_offset: str = "0x14",
+                           state_offset: str = "0x18") -> str:
+        """Measure gravity, jump impulse, friction and walk speed from per-frame positions and velocities.
+
+        Args:
+            trace: Trace label with snapshots of the moving character.
+            air_state: Value of the state field while airborne (-1 = use y > 0 only).
+            walk_state: Value of the state field while walking (-1 = skip walk_speed).
+            x_offset: Offset of x (f32). y_offset, vx_offset, vy_offset, state_offset: the other fields.
+            y_offset: Offset of y (f32).
+            vx_offset: Offset of the horizontal velocity (f32).
+            vy_offset: Offset of the vertical velocity (f32).
+            state_offset: Offset of the state field (i32).
+        """
+        from . import physics
+        o = physics.Offsets(*(_off(v) for v in (x_offset, y_offset, vx_offset, vy_offset, state_offset)))
+        air = None if air_state < 0 else air_state
+        with led() as lg:
+            t = lg.trace(trace)
+            res = {p: physics.estimate(t, p, o, air) for p in ("gravity", "jump_impulse", "friction")}
+            if walk_state >= 0:
+                res["walk_speed"] = physics.estimate(t, "walk_speed", o, air, walk_state)
+            return dump({"model": physics.MODEL, "estimates": res})
+
+    @beta_tool
     def call_sites(trace: str, func: str) -> str:
         """Observed call sites of a hooked function (return addresses), including virtual and indirect calls.
 
@@ -349,7 +390,8 @@ def build_tools(work: Path, interactive: bool):
         """State a finding. Its checks run now; it is stored as verified only if all pass, otherwise as rejected.
 
         Args:
-            kind: function, field, move, asset, identity, component, transition, skeleton, mesh, animation or note.
+            kind: function, field, move, asset, identity, component, transition, skeleton, mesh, animation, input,
+                physics, collision or note.
             subject: function location, field offset (0x1c), move name, file path, or (identity) the base expression.
             name: Short identifier (function or field name, move name).
             statement: What it is or does, in one or two sentences, consistent with the checks.
@@ -431,7 +473,7 @@ def build_tools(work: Path, interactive: bool):
         return dump({"written": str(path), "domains": doc["completeness"]["domains"]})
 
     return [overview, coverage_diff, char_methods, frame_rate_functions, function_info, search_static,
-            changing_fields, field_runs, object_graph, state_transitions, call_sites, watch_hits, file_events, request_recording, set_config, record_claim,
+            changing_fields, field_runs, object_graph, state_transitions, movement_estimates, call_sites, watch_hits, file_events, request_recording, set_config, record_claim,
             list_claims, retract_claim, write_report, write_ucs, import_asset, asset_info]
 
 

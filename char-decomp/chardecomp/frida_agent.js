@@ -108,7 +108,8 @@ function currentCharBase() {
   return charBase;
 }
 
-function hooksStart(funcs, argCount) {
+function hooksStart(funcs, argCount, captureArgs) {
+  const capture = new Set(captureArgs || []);
   hookStats = {};
   hookSeq = [];
   let ok = 0;
@@ -130,7 +131,12 @@ function hooksStart(funcs, argCount) {
               if (args[i].equals(base)) { st.char_args[i]++; hit = i; }
             }
           }
-          if (hookSeq.length < SEQ_LIMIT) hookSeq.push([tick, f, hit, now()]);
+          if (hookSeq.length < SEQ_LIMIT) {
+            const row = [tick, f, hit, now()];
+            // Argument values (as signed 32-bit and full pointer) for functions whose inputs we correlate.
+            if (capture.has(f)) row.push(Array.from({ length: argCount }, (_, i) => args[i].toString()));
+            hookSeq.push(row);
+          }
         },
       }));
       ok++;
@@ -399,7 +405,7 @@ rpc.exports = {
     const started = {};
     if (cfg.char_base) charBaseExpr = cfg.char_base;
     if (cfg.snap) { snapStart(cfg.snap); started.snap = true; }
-    if (cfg.hooks && cfg.hooks.length) started.hooks = hooksStart(cfg.hooks, cfg.hook_args || 4);
+    if (cfg.hooks && cfg.hooks.length) started.hooks = hooksStart(cfg.hooks, cfg.hook_args || 4, cfg.capture_args);
     if (cfg.files) { filesStart(); started.files = true; }
     if (cfg.watch && cfg.watch.length) started.watch = watchStart(cfg.watch);
     if (cfg.coverage) started.coverage_threads = covStart();

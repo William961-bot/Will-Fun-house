@@ -11,6 +11,10 @@ Policy (what each kind of claim must be backed by):
             rle / changes / value_change / field_equals / transition / writes
   move      at least one rle check (frame data comes from per-frame measurements)
   asset     at least one opens_file check
+  input     a captured argument value of an input function causes a state change (arg_precedes)
+  physics   a movement parameter measured from snapshots (motion_fit) or a model that replays them
+            (trajectory_matches)
+  collision a hit rule that predicts exactly which attacks connected (hit_outcome)
   animation  imported clips that decode, that the character loads, and whose evaluation matches the poses
             recorded in the running game (anim_matches)
   skeleton, mesh  an imported file (artifact) that decodes and validates (asset_decodes) and that the character
@@ -51,12 +55,16 @@ REQUIRED = {
     "skeleton": {"asset_decodes"},
     "mesh": {"asset_decodes"},
     "animation": {"anim_matches"},
+    "input": {"arg_precedes"},
+    "physics": {"motion_fit", "trajectory_matches"},
+    "collision": {"hit_outcome"},
     "transition": {"transition"},
     "note": set(),
 }
 IDENTITY_ANCHORS = {"field_equals", "value_change"}
 SNAPSHOT_CHECKS = {"rle", "changes", "value_change", "field_equals", "base_resolves", "transition", "precedes",
-                   "graph_resolves", "anim_matches", "notify_aligns"}
+                   "graph_resolves", "anim_matches", "notify_aligns", "arg_precedes", "motion_fit",
+                   "trajectory_matches", "hit_outcome"}
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS traces (label TEXT PRIMARY KEY, path TEXT, sha256 TEXT, recorded_at TEXT);
@@ -407,6 +415,45 @@ class Ledger:
                 if prop not in summary:
                     raise CheckError(f"unknown asset property {prop!r}; have {sorted(summary)}")
                 return summary[prop] == c["eq"], f"{prop} = {summary[prop]!r}, wanted {c['eq']!r}"
+            if kind == "arg_precedes":
+                t = self.trace(c["trace"])
+                calls = [tk for tk, args in T.call_args(t, c["func"]) if T.signed32(args[c["arg"]]) == c["value"]]
+                if not calls:
+                    return False, f"no calls of {c['func']} with argument {c['arg']} = {c['value']} (record with --capture-args)"
+                changes = set(T.change_ticks(self._points(t, c), c["from"], c["to"]))
+                lag = c.get("lag", 1)
+                missing = [tk for tk in calls if tk + lag not in changes]
+                return not missing, (f"{len(calls) - len(missing)}/{len(calls)} calls with arg{c['arg']} = {c['value']} "
+                                     f"were followed {lag} tick(s) later by {c['from']} -> {c['to']}"
+                                     + (f"; not after calls at ticks {missing[:6]}" if missing else ""))
+            if kind == "motion_fit":
+                from . import physics
+                t = self.trace(c["trace"])
+                r = physics.estimate(t, c["param"], physics.Offsets.from_check(c), c.get("air_state"), c.get("walk_state"))
+                if not r["n"]:
+                    return False, f"{c['param']} not measurable in {c['trace']}" + (f" ({r['note']})" if r.get("note") else "")
+                ok = abs(r["value"] - c["expect"]) <= c.get("tolerance", 1e-3)
+                return ok, (f"{c['param']} measured {r['value']:.6g} (stdev {r['stdev']:.3g}, n={r['n']}), "
+                            f"claimed {c['expect']} +/- {c.get('tolerance', 1e-3)}")
+            if kind == "trajectory_matches":
+                from . import physics
+                t = self.trace(c["trace"])
+                names = {int(k): v for k, v in c["inputs"].items()}
+                inputs = {tk + 1: names[T.signed32(a[c["input_arg"]])] for tk, a in T.call_args(t, c["input_func"])
+                          if T.signed32(a[c["input_arg"]]) in names}
+                r = physics.replay_error(t, physics.Offsets.from_check(c), inputs, c["params"])
+                if not r["frames"]:
+                    return False, f"nothing to replay in {c['trace']}"
+                ok = r["max_error"] <= c.get("tolerance", 0.01)
+                return ok, (f"replayed {r['frames']} ticks with {len(inputs)} inputs: max position error "
+                            f"{r['max_error']:.6g} (tolerance {c.get('tolerance', 0.01)})"
+                            + ("" if ok else f", worst at tick {r['first_bad_tick']}"))
+            if kind == "hit_outcome":
+                from . import physics
+                r = physics.predicted_hits(self.trace(c["trace"]), c)
+                ok = r["attacks"] > 0 and r["predicted"] == r["observed"]
+                return ok, (f"{r['attacks']} attacks reached their first active frame; predicted hits at "
+                            f"{r['predicted'][:8]}, observed HP drops at {r['observed'][:8]} (reach {c['reach']})")
             if kind == "anim_matches":
                 return self._anim_matches(c)
             if kind == "notify_aligns":

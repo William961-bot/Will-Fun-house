@@ -16,7 +16,7 @@ NOT_YET = {
     "skeleton": "no verified skeleton claim",
     "materials": "no verified mesh claim with materials",
     "animation": "no verified animation claim",
-    "physics": "physics parameters not recovered yet (Stage 6)",
+    "physics": "no verified physics claim",
     "abilities": "ability system not recovered yet (Stage 7)",
     "camera": "camera behaviour not recovered",
     "audio": "audio and gameplay events not recovered",
@@ -125,6 +125,12 @@ def build(led: Ledger, cfg: dict) -> UCS:
         if cause:
             deps.append(Dependency("caused_by", c["name"], cause["func"], ev(c)))
     controller = Controller(state_fields=sorted({t.field for t in transitions}), transitions=transitions)
+    inputs = _inputs(by("input"))
+    if inputs:
+        controller.input_mapping = inputs
+        for i in inputs:
+            deps.append(Dependency("input", i["function"], i["effect"], tuple(i["evidence"])))
+    physics = _physics(by("physics"), by("collision"), round(hz, 3) if hz else None, ev(ident) if ident else ())
 
     # --- combat (frame data from rle claims)
     moves = []
@@ -160,7 +166,7 @@ def build(led: Ledger, cfg: dict) -> UCS:
         "components": _ratio(comp["components"]),
         "component_fields": _ratio(comp["component_fields"]),
         "code": _ratio(comp["functions"]),
-        "controller": "partial" if transitions else "unknown",
+        "controller": "partial" if transitions or inputs else "unknown",
         "combat": "partial" if moves else "unknown",
         "assets": "partial" if assets else "unknown",
         **{k: "unknown" for k in NOT_YET},
@@ -168,6 +174,10 @@ def build(led: Ledger, cfg: dict) -> UCS:
         "mesh": "known" if isinstance(mesh, dict) else "unknown",
         "materials": "known" if isinstance(materials, list) and materials else "unknown",
         "animation": "known" if isinstance(animation, dict) else "unknown",
+        "physics": "known" if isinstance(physics, dict) and isinstance(physics["replay"], dict) else
+        "partial" if isinstance(physics, dict) else "unknown",
+        "collision": "known" if isinstance(physics, dict) and isinstance(physics["collision"], list) else "unknown",
+        "input": "partial" if inputs else "unknown",
     }
     completeness_doc = {"domains": domains, "observed_vs_explained": {
         k: {"observed": comp[k]["observed"], "explained": comp[k]["explained"]}
@@ -175,8 +185,8 @@ def build(led: Ledger, cfg: dict) -> UCS:
         "note": "Explained counts cover only what the recordings exercised; unrecorded behaviour is not counted."}
 
     return UCS(UCS_VERSION, source, time_base, conventions, obj, components, controller, moves, functions, assets,
-               mesh, skeleton, materials, animation,
-               *(Unknown(NOT_YET[k]) for k in ("physics", "abilities", "camera", "audio")),
+               mesh, skeleton, materials, animation, physics,
+               *(Unknown(NOT_YET[k]) for k in ("abilities", "camera", "audio")),
                deps, evidence, rejected, completeness_doc)
 
 
@@ -256,6 +266,67 @@ def _animation(led: Ledger, claims: list):
         "clips": clips,
         **{k.replace(" ", "_"): Unknown(f"{k}: not present in the {a.decoder} format") for k in a.missing},
     }
+
+
+def _inputs(claims: list) -> list:
+    """Input mapping: which captured argument value of which function causes which state change."""
+    out = []
+    for c in claims:
+        for ch in c["checks"]:
+            if ch["check"] == "arg_precedes":
+                out.append({"name": c["name"], "function": ch["func"], "argument": ch["arg"], "value": ch["value"],
+                            "effect": f"{_off(ch['offset']):#x}: {ch['from']} -> {ch['to']}",
+                            "lag": Fact(ch.get("lag", 1), (c["id"],), "ticks"), "evidence": [c["id"]]})
+    return out
+
+
+PARAM_UNITS = {"gravity": "units/tick^2", "jump_impulse": "units/tick", "walk_speed": "units/tick", "friction": None}
+
+
+def _physics(claims: list, collisions: list, hz: float | None, ident_ev: tuple):
+    """Movement parameters (motion_fit), the model that replays recordings (trajectory_matches) and hit rules."""
+    if not claims and not collisions:
+        return Unknown(NOT_YET["physics"])
+    from ..physics import MODEL
+    params, replay, model = {}, Unknown("no trajectory_matches check replays a recording"), Unknown("no replay")
+    for c in claims:
+        e = (c["id"],)
+        for ch in c["checks"]:
+            if ch["check"] == "motion_fit":
+                params[ch["param"]] = Fact(ch["expect"], e, PARAM_UNITS[ch["param"]],
+                                           f"measured from snapshots, within {ch.get('tolerance', 1e-3)}")
+            if ch["check"] == "trajectory_matches":
+                model = Fact(MODEL, e, None, "replays every recorded position from the first snapshot and inputs")
+                replay = {"trace": Fact(ch["trace"], e), "tolerance": Fact(ch.get("tolerance", 0.01), e, "units"),
+                          "inputs": Fact(ch["inputs"], e)}
+                for k, v in ch["params"].items():
+                    params.setdefault(k, Fact(v, e, PARAM_UNITS.get(k), "the value the replay used"))
+    per_second = {}
+    if hz:
+        for k, f in params.items():
+            if f.unit == "units/tick":
+                per_second[k] = Fact(round(f.value * hz, 6), f.evidence + ident_ev, "units/s", f"{f.value} * {hz:.3f} Hz")
+            elif f.unit == "units/tick^2":
+                per_second[k] = Fact(round(f.value * hz * hz, 6), f.evidence + ident_ev, "units/s^2",
+                                     f"{f.value} * ({hz:.3f} Hz)^2")
+    for k in PARAM_UNITS:
+        params.setdefault(k, Unknown(f"no verified claim measures {k}"))
+    collision = []
+    for c in collisions:
+        for ch in c["checks"]:
+            if ch["check"] == "hit_outcome":
+                e = (c["id"],)
+                collision.append({"name": c["name"], "rule": Fact("|x_defender - x_attacker| <= reach on the first "
+                                                                   "active frame", e),
+                                  "reach": Fact(ch["reach"], e, "units"),
+                                  "attack_state": Fact(ch["attack_state"], e),
+                                  "active_from": Fact(ch["active_from"], e, "ticks"),
+                                  "boundary_tested": Fact(sorted({x["trace"] for x in c["checks"]
+                                                                  if x["check"] == "hit_outcome"}), e)})
+                break
+    return {"model": model, "parameters": params, "per_second": per_second or Unknown("tick rate unknown"),
+            "replay": replay, "collision": collision or Unknown("no verified collision claim"),
+            "units": Unknown("source distance units are not calibrated to metres")}
 
 
 def _ratio(d: dict) -> str:

@@ -14,7 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Union
 
-UCS_VERSION = "0.3"  # 0.2: mesh/skeleton/materials may be known; 0.3: animation may be known
+UCS_VERSION = "0.4"  # 0.2: mesh/skeleton/materials; 0.3: animation; 0.4: physics, collision, input mapping
 
 
 @dataclass(frozen=True)
@@ -134,7 +134,7 @@ class TransitionSpec:
 class Controller:
     state_fields: list[str]
     transitions: list[TransitionSpec] = field(default_factory=list)
-    input_mapping: Value = field(default_factory=lambda: Unknown("input mapping not recovered (Stage 6)"))
+    input_mapping: Any = field(default_factory=lambda: Unknown("no verified input claim"))
 
 
 @dataclass
@@ -203,7 +203,7 @@ class UCS:
     skeleton: Any             # {"artifact", "sha256", "format", "bones": [...], ...} or Unknown
     materials: Any            # list of {"name", "base_color", "texture"} or Unknown
     animation: Any            # {"artifact", "sample_rate", "interpolation", "clips": [...], ...} or Unknown
-    physics: Value
+    physics: Any              # {"model", "parameters", "per_second", "replay", "collision"} or Unknown
     abilities: Value
     camera: Value
     audio: Value
