@@ -124,3 +124,10 @@ def stage2_claims(toy):
             {"check": "called_with_char", "trace": "whiff", "func": L["update_move"]},
             {"check": "called_from", "trace": "whiff", "func": L["update_move"], "caller": L["game_tick"]}], ""),
     ]
+
+
+@pytest.fixture(scope="session")
+def claimed(toy, tmp_path_factory):
+    """A workspace where every UCS fact the ports need comes from a verified claim (tests/portkit.py)."""
+    import portkit
+    return portkit.build(tmp_path_factory.mktemp("claimed") / "W", toy["dir"], toy["syms"])

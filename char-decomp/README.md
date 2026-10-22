@@ -251,6 +251,17 @@ each named recording in Godot headless from its first snapshot and recorded inpu
 tick. `PORT.md` lists the compatibility report, the port's assumptions, manual items, what Godot sees of the
 exported model, and each difference with a tested explanation or "UNEXPLAINED" (ADR 0006).
 
+## A mod for Minetest / Luanti
+
+```
+chardecomp mod W --model ryo_model --package ryo.zip --world ~/.minetest/worlds/test --scenario super --scenario walk
+```
+
+Builds a mod from the same port spec (Lua runtime, entity, OBJ mesh), packages it with a SHA-256 manifest,
+installs it into the world's `worldmods`, runs the game's headless server to replay the recordings in the game and
+spawn the character, and rolls back to the previous version if the mod fails to load or disagrees with the source
+in a way no tested explanation covers. Tested with Minetest 5.6.1 (`docs/stages/stage-9.md`).
+
 ## Configuration
 
 `chardecomp set W KEY=VALUE ...` validates every pair before saving any: `char_base` (address expression),

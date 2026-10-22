@@ -11,7 +11,6 @@ import os
 
 import pytest
 
-import portkit
 from chardecomp import ucs
 from chardecomp.assets import combine
 from chardecomp.assets.gltf import write_glb
@@ -22,11 +21,6 @@ from conftest import run_cli
 
 needs_godot = pytest.mark.skipif(not os.environ.get("GODOT_BIN"), reason="set GODOT_BIN to a Godot 4 binary")
 SCENARIOS = ("jump", "walk", "whiff", "super", "at70", "at71")
-
-
-@pytest.fixture(scope="module")
-def claimed(toy, tmp_path_factory):
-    return portkit.build(tmp_path_factory.mktemp("s8") / "W", toy["dir"], toy["syms"])
 
 
 @pytest.fixture(scope="module")

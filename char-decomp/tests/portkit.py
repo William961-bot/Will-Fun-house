@@ -94,6 +94,9 @@ def build(work: Path, toy_dir: Path, syms: dict) -> Path:
         claims.append(("transition", "state:4->0", "land", "", [tr("jump", 4, 0, n)], ""))
         led.import_artifact("ryo_model", assets / "ryo" / "model.tfmd")
         led.import_artifact("ryo_anim", assets / "ryo" / "model.tfan")
+        claims.append(("mesh", "ryo_model", "ryo_mesh", "", [
+            ch(check="asset_decodes", artifact="ryo_model"), ch(check="artifact_loaded", artifact="ryo_model",
+                                                                   trace="load")], ""))
         for a in ("ryo_model", "ryo_anim"):
             claims.append(("skeleton" if a == "ryo_model" else "animation", a, a, "", [
                 ch(check="asset_decodes", artifact=a), ch(check="artifact_loaded", artifact=a, trace="load")]

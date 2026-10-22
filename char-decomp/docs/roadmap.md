@@ -95,7 +95,7 @@ Godot. Compatibility report (transferable / convertible / reimplementable / manu
 dependency-aware port plan, retargeting, retiming, controller and combat implementation in GDScript.
 Gate: the character plays in Godot; target traces compared with source traces; discrepancies reported.
 
-## Stage 9: real game mod integration
+## Stage 9: real game mod integration (done: `docs/stages/stage-9.md`, Minetest 5.6.1)
 
 One moddable offline target game with a documented mod interface; packaging, install validation, failure recovery.
 Gate: a mod built and tested in that environment.

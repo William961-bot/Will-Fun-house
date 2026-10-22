@@ -21,4 +21,4 @@ packages = ["chardecomp", "chardecomp.ucs", "chardecomp.assets", "chardecomp.por
 
 [tool.setuptools.package-data]
 chardecomp = ["frida_agent.js", "ghidra/*.java"]
-"chardecomp.port" = ["godot_runtime/*.gd"]
+"chardecomp.port" = ["godot_runtime/*.gd", "minetest_runtime/*.lua"]

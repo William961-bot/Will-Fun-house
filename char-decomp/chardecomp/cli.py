@@ -21,6 +21,7 @@ import argparse
 import json
 import os
 import shlex
+import shutil
 import sys
 from pathlib import Path
 
@@ -416,6 +417,36 @@ def cmd_port(a):
          "unexplained": port_report.unexplained(spec, results)})
 
 
+def cmd_mod(a):
+    from . import ucs
+    from .port import minetest as mt, plan, report as port_report, scenario
+    doc = ucs.build_workspace(Path(a.work)).to_json()
+    spec = plan.extract(doc)
+    compat = plan.compatibility(doc, spec, target="minetest")
+    build_dir = Path(a.work) / "port" / "minetest"
+    if build_dir.exists():
+        shutil.rmtree(build_dir)
+    with _led(a) as led:
+        asset = led.decoded(a.model) if a.model else None
+        scens = {label: scenario.build(led.trace(label), spec, a.opponent) for label in a.scenario or []}
+        first = next(iter(scens.values()), None)
+        mod = mt.write_mod(build_dir, spec, port_report.markdown(spec, compat, None, {}), asset, first)
+        man = mt.package(mod, Path(a.package)) if a.package else mt.manifest(mod)
+        result = {"mod": str(mod), "files": len(man["files"]), "package": a.package}
+        if a.world:
+            traces = {label: led.trace(label) for label in scens}
+
+            def check(res):
+                comps = {k: scenario.compare(traces[k], spec, res["traces"][k], a.opponent) for k in scens}
+                res["comparison"] = {k: {"ticks": c["ticks"], "differing": c["differing"]} for k, c in comps.items()}
+                return [f"unexplained difference: {u}" for u in port_report.unexplained(spec, comps)]
+
+            r = mt.install(Path(a.world), mod, scens, a.gameid, check)
+            result.update({k: r.get(k) for k in ("installed", "rolled_back", "restored_ok", "problems", "entity",
+                                                 "comparison", "seconds")})
+    out(result)
+
+
 def cmd_agent(a):
     from . import agent
     agent.run(Path(a.work), goal=a.goal, model=a.model, effort=a.effort, interactive=not a.no_capture,
@@ -542,6 +573,15 @@ def main(argv=None):
     s.add_argument("--model", help="artifact with the mesh/skeleton to export"), s.add_argument("--anim")
     s.add_argument("--scenario", action="append", help="recording to replay in the port and compare (repeatable)")
     s.add_argument("--opponent", type=int, default=1, help="snapshot object of the opponent in those recordings")
+
+    s = cmd("mod", cmd_mod, "build a Minetest/Luanti mod from the UCS; with --world install, validate, roll back on failure")
+    s.add_argument("--target", default="minetest", choices=["minetest"])
+    s.add_argument("--model", help="artifact with the mesh (exported as OBJ: bind pose, no skin)")
+    s.add_argument("--package", help="write a zip with a SHA-256 manifest here")
+    s.add_argument("--world", help="world directory to install into (created if missing)")
+    s.add_argument("--gameid", default="minetest_game")
+    s.add_argument("--scenario", action="append", help="recording replayed in the game and compared (repeatable)")
+    s.add_argument("--opponent", type=int, default=1)
 
     s = cmd("agent", cmd_agent, "let Claude drive the loop until everything observed is explained")
     s.add_argument("--goal", default="")

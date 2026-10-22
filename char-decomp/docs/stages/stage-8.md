@@ -19,7 +19,7 @@ Environment: Linux x86-64, Python 3.13, Frida 17.24.3, Ghidra 11.4.2, Khronos gl
 ## Verification
 
 Full suite (Godot + Ghidra + glTF validator): **103 passed**, 0 skipped. `tests/test_port.py` (7) on a workspace
-where every UCS fact comes from a verified claim (`tests/portkit.py`: 24 claims over 8 recordings):
+where every UCS fact comes from a verified claim (`tests/portkit.py`: 25 claims over 8 recordings):
 - the spec equals the UCS facts (physics, heavy frame data / reach / effects, super gate / cost / projectile,
   timed transitions 37 / 18 / 29 and the landing); nothing missing; 3 manual items;
 - a UCS without physics lists the gap instead of porting it;

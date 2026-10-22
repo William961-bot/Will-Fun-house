@@ -138,8 +138,8 @@ def extract(doc: dict) -> dict:
             manual.append(f"{a['name']} projectile lifetime when it misses: never observed (Unknown in the UCS); "
                           "the port keeps it flying")
     if _domain(doc["animation"]) and _v(doc["animation"]["interpolation"]) == "nlerp":
-        manual.append("animation rotation blending: the source uses nlerp, Godot's animation tracks use slerp "
-                      "(bounded difference, see the UCS animation runtime match)")
+        manual.append("animation rotation blending: the source uses nlerp; targets that blend rotations with slerp "
+                      "differ by a bounded amount (see the UCS animation runtime match)")
     return {"source_ucs_version": doc["version"], "character": _v(doc["source"]["character"]),
             "tick_rate": _v(doc["time_base"]["tick_rate"]), "fields": fields, "types": types, "physics": physics,
             "input": input_fn, "actions": {str(k): v for k, v in actions.items()}, "moves": moves,
@@ -183,14 +183,23 @@ def compatibility(doc: dict, spec: dict | None = None, target: str = "godot4") -
     def add(cat, item, why):
         items.append({"category": cat, "item": item, "why": why})
 
+    gltf = target.startswith("godot")
     for k in ("skeleton", "mesh", "materials"):
-        if (_domain(doc[k]) if isinstance(doc[k], dict) else doc[k]):
-            add("transferable", k, "exported as glTF 2.0 and imported by the target")
-        else:
+        if not (_domain(doc[k]) if isinstance(doc[k], dict) else doc[k]):
             add("unknown", k, doc[k].get("unknown", "") if isinstance(doc[k], dict) else "")
-    if _domain(doc["animation"]):
+        elif gltf:
+            add("transferable", k, "exported as glTF 2.0 and imported by the target")
+        elif k == "skeleton":
+            add("manual", k, "Minetest 5.6 loads skinned meshes as B3D or X only; chardecomp has no B3D writer")
+        elif k == "mesh":
+            add("convertible", k, "exported as OBJ in the bind pose (no skin weights)")
+        else:
+            add("convertible", k, "base colour baked into a 1x1 texture")
+    if _domain(doc["animation"]) and gltf:
         add("transferable", "animation clips", "glTF animations (keys, sample rate, notifies in extras)")
         add("convertible", "animation interpolation", "nlerp in the source; the target blends with slerp")
+    elif _domain(doc["animation"]):
+        add("manual", "animation clips", "needs a skinned B3D/X export for Minetest 5.6 (not implemented)")
     else:
         add("unknown", "animation", doc["animation"].get("unknown", ""))
     add("convertible", "time base", f"source ticks at {spec['tick_rate']} Hz; the port steps one source tick per "
