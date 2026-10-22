@@ -17,8 +17,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["chardecomp", "chardecomp.ucs", "chardecomp.assets", "chardecomp.port"]
+packages = ["chardecomp", "chardecomp.ucs", "chardecomp.assets", "chardecomp.port", "chardecomp.toolchain"]
 
 [tool.setuptools.package-data]
 chardecomp = ["frida_agent.js", "ghidra/*.java"]
 "chardecomp.port" = ["godot_runtime/*.gd", "minetest_runtime/*.lua"]
+"chardecomp.toolchain" = ["blender_scripts/*.py"]

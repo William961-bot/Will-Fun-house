@@ -291,6 +291,24 @@ situation (a distance, a meter value). The schedule is stored in the trace. `sca
 finds a stable base for an object the game passes to a function (a C++ `this`), when no value is visible on screen.
 Offline, single-player games only.
 
+## Modding tools
+
+```
+chardecomp tools W                                   # what is installed: Blender, Mod Engine 2, WitchyBND, .NET, ...
+chardecomp set W tools.modengine2="C:\\Mods\\ModEngine2" tools.witchybnd="C:\\Tools\\WitchyBND\\WitchyBND.exe"
+chardecomp model-inspect W jesse.glb                 # bones, animations, meshes as Blender sees them (headless)
+chardecomp model-convert W jesse.glb jesse_er.fbx --rename bonemap.json --scale 0.01
+chardecomp skeleton-match W jesse.glb c0000.fbx --rename bonemap.json   # what still doesn't line up
+chardecomp unpack W artifacts/c0000.chrbnd.dcx       # WitchyBND, files inside the workspace only
+chardecomp er-mod W install --name chardecomp_jesse --folder build/jesse   # Mod Engine 2, backup + rollback
+chardecomp er-mod W launch                           # Elden Ring offline (Easy Anti-Cheat off): never play online
+```
+
+The agent has the same operations as tools (`toolchain_status`, `model_inspect`, `skeleton_match`,
+`er_install_mod`); they work on files inside the workspace, and installs ask first unless the agent runs with
+`--autonomous`. Blender is tested here headless; Mod Engine 2 and WitchyBND are Windows programs and were tested
+with stand-ins only.
+
 ## Configuration
 
 `chardecomp set W KEY=VALUE ...` validates every pair before saving any: `char_base` (address expression),

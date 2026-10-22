@@ -484,6 +484,54 @@ def cmd_regress(a):
         sys.exit(1)
 
 
+def cmd_tools(a):
+    from . import toolchain
+    out(toolchain.status(load_config(Path(a.work))))
+
+
+def cmd_model_inspect(a):
+    from .toolchain import blender
+    out(blender.inspect(Path(a.file), load_config(Path(a.work))))
+
+
+def cmd_model_convert(a):
+    from .toolchain import blender
+    rename = json.loads(Path(a.rename).read_text(encoding="utf-8")) if a.rename else None
+    out(blender.convert(Path(a.src), Path(a.dst), rename, a.scale, load_config(Path(a.work))))
+
+
+def cmd_skeleton_match(a):
+    from .toolchain import blender
+    cfg = load_config(Path(a.work))
+    rename = json.loads(Path(a.rename).read_text(encoding="utf-8")) if a.rename else None
+    out(blender.skeleton_match(blender.inspect(Path(a.source), cfg), blender.inspect(Path(a.target), cfg), rename))
+
+
+def cmd_er_mod(a):
+    from . import toolchain
+    from .toolchain import modengine
+    me2 = toolchain.require("modengine2", load_config(Path(a.work)))
+    if a.action == "install":
+        out(modengine.install(me2, a.name, Path(a.folder), a.dll))
+    elif a.action == "rollback":
+        out(modengine.rollback(me2, a.name))
+    elif a.action == "status":
+        out(modengine.report(me2))
+    else:
+        ok, why = modengine.can_launch()
+        if not ok:
+            raise SystemExit(f"error: {why}")
+        import subprocess
+        cmd = modengine.launch_command(me2)
+        print("launching offline (Easy Anti-Cheat off): " + " ".join(cmd))
+        subprocess.Popen(cmd, cwd=str(me2))
+
+
+def cmd_unpack(a):
+    from .toolchain import witchy
+    out(witchy.run(Path(a.file), Path(a.work), load_config(Path(a.work))))
+
+
 def cmd_agent(a):
     from . import agent
     agent.run(Path(a.work), goal=a.goal, model=a.model, effort=a.effort, interactive=not a.no_capture,
@@ -632,6 +680,19 @@ def main(argv=None):
     s.add_argument("--baseline", help="default W/port/regression_baseline.json")
     s.add_argument("--write-baseline", action="store_true")
     s.add_argument("--opponent", type=int, default=1)
+
+    cmd("tools", cmd_tools, "which modding tools are found and runnable (set paths with set W tools.NAME=PATH)")
+    s = cmd("model-inspect", cmd_model_inspect, "what Blender sees in a model file: bones, actions, meshes")
+    s.add_argument("file")
+    s = cmd("model-convert", cmd_model_convert, "rename bones by a JSON map, scale, export .glb/.fbx (Blender)")
+    s.add_argument("src"), s.add_argument("dst"), s.add_argument("--rename"), s.add_argument("--scale", type=float, default=1.0)
+    s = cmd("skeleton-match", cmd_skeleton_match, "compare two skeletons for retargeting (after an optional rename map)")
+    s.add_argument("source"), s.add_argument("target"), s.add_argument("--rename")
+    s = cmd("er-mod", cmd_er_mod, "Elden Ring via Mod Engine 2: install (with rollback), rollback, status, launch offline")
+    s.add_argument("action", choices=["install", "rollback", "status", "launch"])
+    s.add_argument("--name", default="chardecomp"), s.add_argument("--folder"), s.add_argument("--dll")
+    s = cmd("unpack", cmd_unpack, "unpack (or repack) a FromSoftware archive in the workspace with WitchyBND")
+    s.add_argument("file")
 
     s = cmd("agent", cmd_agent, "let Claude drive the loop until everything observed is explained")
     s.add_argument("--goal", default="")

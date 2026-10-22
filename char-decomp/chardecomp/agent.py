@@ -322,6 +322,62 @@ def build_tools(work: Path, interactive: bool, autonomous: bool = False):
         return dump(regress.run(work, [x for x in scenarios.split(",") if x],
                                 [x for x in targets.split(",") if x] or None))
 
+    def inside(path: str) -> Path:
+        p = (work / path).resolve()
+        if work.resolve() not in p.parents:
+            raise ValueError("paths are relative to the workspace and must stay inside it")
+        return p
+
+    @beta_tool
+    def toolchain_status() -> str:
+        """Which modding tools are installed and runnable (Blender, Mod Engine 2, WitchyBND, .NET, Smithbox,
+        DSAnimStudio), with what each is for and how to point chardecomp at a missing one."""
+        from . import toolchain
+        return dump(toolchain.status(load_config(work)))
+
+    @beta_tool
+    def model_inspect(path: str) -> str:
+        """What Blender sees in a model file (bones with parents and rest positions, actions with frame ranges,
+        meshes with vertex groups).
+
+        Args:
+            path: Workspace-relative path of a .glb, .gltf or .fbx file (e.g. artifacts/... or port/...).
+        """
+        from .toolchain import blender
+        return dump(blender.inspect(inside(path), load_config(work)))
+
+    @beta_tool
+    def skeleton_match(source: str, target: str, rename_json: str = "") -> str:
+        """Compare two skeletons for retargeting: bones matched after renaming, bones only on one side, matched
+        bones whose parent differs.
+
+        Args:
+            source: Workspace-relative model file with the source skeleton.
+            target: Workspace-relative model file with the target skeleton.
+            rename_json: Optional JSON object mapping source bone names to target bone names.
+        """
+        from .toolchain import blender
+        c = load_config(work)
+        return dump(blender.skeleton_match(blender.inspect(inside(source), c), blender.inspect(inside(target), c),
+                                           json.loads(rename_json) if rename_json else None))
+
+    @beta_tool
+    def er_install_mod(folder: str, name: str = "chardecomp", dll: str = "") -> str:
+        """Install a workspace folder as an Elden Ring mod through Mod Engine 2 (a backup is kept; a failed
+        install is rolled back). Offline play only.
+
+        Args:
+            folder: Workspace-relative folder laid out like the game's data (chr/, parts/, regulation.bin, ...).
+            name: Mod folder name inside Mod Engine 2.
+            dll: Optional DLL path inside the folder to load as an external DLL.
+        """
+        from . import toolchain
+        from .toolchain import modengine
+        if not autonomous and input(f"\n[agent] install mod '{name}' into Mod Engine 2? [y/N] ").strip().lower() != "y":
+            return "The user declined the install."
+        return dump(modengine.install(toolchain.require("modengine2", load_config(work)), name, inside(folder),
+                                      dll or None))
+
     @beta_tool
     def call_sites(trace: str, func: str) -> str:
         """Observed call sites of a hooked function (return addresses), including virtual and indirect calls.
@@ -532,7 +588,7 @@ def build_tools(work: Path, interactive: bool, autonomous: bool = False):
         return dump({"written": str(path), "domains": doc["completeness"]["domains"]})
 
     return [overview, coverage_diff, char_methods, frame_rate_functions, function_info, search_static,
-            changing_fields, field_runs, object_graph, state_transitions, movement_estimates, domain_status, port_regression, call_sites, watch_hits, file_events, request_recording, set_config, record_claim,
+            changing_fields, field_runs, object_graph, state_transitions, movement_estimates, domain_status, port_regression, toolchain_status, model_inspect, skeleton_match, er_install_mod, call_sites, watch_hits, file_events, request_recording, set_config, record_claim,
             list_claims, retract_claim, write_report, write_ucs, import_asset, asset_info]
 
 

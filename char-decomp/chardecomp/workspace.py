@@ -30,6 +30,7 @@ DEFAULT_CONFIG = {
     "snap_size": 512,
     "character": "",          # the character's name, for the report
     "require_identity": False,  # True: snapshot checks fail unless the trace's identity is verified (ADR 0003)
+    "tools": {},              # paths of external modding tools: tools.blender=..., see chardecomp/toolchain
 }
 
 
@@ -93,6 +94,15 @@ def apply_setting(cfg: dict, key: str, raw: str, work: Path) -> object:
     if key == "target":
         raise ConfigError("set the target's parts individually: target.spawn, target.attach, target.cwd, "
                           "target.modules")
+    if key.startswith("tools."):
+        from .toolchain import TOOLS
+        name = key.split(".", 1)[1]
+        if name not in TOOLS:
+            raise ConfigError(f"unknown tool {name!r}; tools: {', '.join(sorted(TOOLS))}")
+        if raw and not Path(raw).exists():
+            raise ConfigError(f"{key}: {raw} does not exist")
+        cfg.setdefault("tools", {})[name] = raw or None
+        return raw or None
     if key not in SETTABLE:
         raise ConfigError(f"unknown key {key!r}; keys: {', '.join(SETTABLE)}")
     try:
