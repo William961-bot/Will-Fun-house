@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from .model import UCS_VERSION
 
-UNITS = {None, "ticks", "s", "Hz", "bytes"}
+UNITS = {None, "ticks", "frames", "s", "Hz", "bytes", "deg"}
 TOP_LEVEL = ("version", "source", "time_base", "conventions", "object", "components", "controller", "moves",
              "functions", "assets", "mesh", "skeleton", "materials", "animation", "physics", "abilities", "camera",
              "audio", "dependencies", "evidence", "rejected", "completeness")
@@ -18,6 +18,8 @@ DOMAIN_STATES = {"known", "complete", "partial", "unknown"}
 MIGRATIONS: dict[str, tuple[str, callable]] = {
     # 0.1 -> 0.2: mesh/skeleton/materials may now be objects; every 0.1 document (all three Unknown) is valid 0.2.
     "0.1": ("0.2", lambda doc: dict(doc)),
+    # 0.2 -> 0.3: animation may now be an object; 0.2 documents (animation Unknown) are valid 0.3.
+    "0.2": ("0.3", lambda doc: dict(doc)),
 }
 
 

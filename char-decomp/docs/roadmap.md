@@ -67,7 +67,7 @@ decode/encode round trip. glTF 2.0 as the neutral export (written by a small in-
 Gate: a permitted test character's mesh and skeleton decoded, validated and exported (candidate: a glTF/FBX-free
 fixture built for the purpose, then a real format from the first source engine).
 
-## Stage 5: animation
+## Stage 5: animation (done: `docs/stages/stage-5.md`)
 
 Clips (per-bone curves, explicit sample rate and time base), state graphs, root motion, procedural animation as
 parameters (e.g. Hoodratz keyframe timelines, shinobi spring constants), notifies/cancel windows. Pose and timing

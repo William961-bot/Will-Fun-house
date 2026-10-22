@@ -83,6 +83,24 @@ def check(a: Asset) -> dict:
                 errors.append("submesh index range past the end of the index buffer")
             if s.material >= len(a.materials):
                 errors.append(f"submesh material {s.material} does not exist")
-    if not sk and not m:
-        errors.append("asset has neither a skeleton nor a mesh")
+    an = a.animations
+    if an:
+        if an.sample_rate <= 0:
+            errors.append("animation sample rate must be positive")
+        if sk and an.bone_count != nb:
+            errors.append(f"animations have {an.bone_count} bone tracks, skeleton has {nb} bones")
+        for c in an.clips:
+            frames = [f for f, _ in c.keys]
+            if not frames:
+                errors.append(f"clip {c.name} has no keys")
+            if any(b <= x for x, b in zip(frames, frames[1:])):
+                errors.append(f"clip {c.name}: key frames are not strictly increasing")
+            if any(len(q) != an.bone_count for _, q in c.keys):
+                errors.append(f"clip {c.name}: a key does not have one rotation per bone")
+            if any(abs(math.sqrt(sum(x * x for x in q)) - 1) > TOL for _, qs in c.keys for q in qs):
+                warnings.append(f"clip {c.name}: unnormalised key rotations")
+            if any(not 0 <= f <= c.length for f, _ in c.notifies):
+                errors.append(f"clip {c.name}: notify outside the clip")
+    if not sk and not m and not an:
+        errors.append("asset has no skeleton, mesh or animations")
     return {"errors": errors, "warnings": warnings}

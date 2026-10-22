@@ -11,6 +11,8 @@ Policy (what each kind of claim must be backed by):
             rle / changes / value_change / field_equals / transition / writes
   move      at least one rle check (frame data comes from per-frame measurements)
   asset     at least one opens_file check
+  animation  imported clips that decode, that the character loads, and whose evaluation matches the poses
+            recorded in the running game (anim_matches)
   skeleton, mesh  an imported file (artifact) that decodes and validates (asset_decodes) and that the character
             was seen loading (artifact_loaded)
   component an object reached from the character through pointers: graph_resolves on that path
@@ -48,12 +50,13 @@ REQUIRED = {
     "component": {"graph_resolves"},
     "skeleton": {"asset_decodes"},
     "mesh": {"asset_decodes"},
+    "animation": {"anim_matches"},
     "transition": {"transition"},
     "note": set(),
 }
 IDENTITY_ANCHORS = {"field_equals", "value_change"}
 SNAPSHOT_CHECKS = {"rle", "changes", "value_change", "field_equals", "base_resolves", "transition", "precedes",
-                   "graph_resolves"}
+                   "graph_resolves", "anim_matches", "notify_aligns"}
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS traces (label TEXT PRIMARY KEY, path TEXT, sha256 TEXT, recorded_at TEXT);
@@ -404,6 +407,10 @@ class Ledger:
                 if prop not in summary:
                     raise CheckError(f"unknown asset property {prop!r}; have {sorted(summary)}")
                 return summary[prop] == c["eq"], f"{prop} = {summary[prop]!r}, wanted {c['eq']!r}"
+            if kind == "anim_matches":
+                return self._anim_matches(c)
+            if kind == "notify_aligns":
+                return self._notify_aligns(c)
             if kind == "artifact_loaded":
                 row, _ = self.artifact(c["artifact"])
                 t = self.trace(c["trace"])
@@ -444,6 +451,71 @@ class Ledger:
         except KeyError as e:
             return False, f"check {kind!r} is missing field {e}"
 
+    def _clips(self, c: dict):
+        a = self.decoded(c["artifact"], c.get("decoder"))
+        if not a.animations:
+            raise CheckError(f"artifact {c['artifact']!r} has no animations")
+        return a.animations
+
+    @staticmethod
+    def _anim_rows(t: T.Trace, c: dict, bones: int = 0):
+        """(tick, clip index, frame, pose) from the followed animation object at c["path"]."""
+        import struct
+        co, fo, po = _off(c.get("clip_offset", 0)), _off(c.get("frame_offset", 4)), _off(c.get("pose_offset", 12))
+        rows = []
+        for (tick, _), g in zip(t.snaps, t.graphs):
+            buf = (g or {}).get(c["path"])
+            if buf is None or len(buf) < po + 16 * bones:
+                continue
+            clip, frame = struct.unpack_from("<i", buf, co)[0], struct.unpack_from("<i", buf, fo)[0]
+            pose = [struct.unpack_from("<4f", buf, po + 16 * i) for i in range(bones)]
+            rows.append((tick, clip, frame, pose))
+        return rows
+
+    def anim_comparison(self, c: dict) -> dict:
+        """Decoded clips evaluated at every recorded (clip, frame) vs the recorded pose."""
+        from .assets.model import angle_deg
+        an = self._clips(c)
+        t = self.trace(c["trace"])
+        rows = self._anim_rows(t, c, an.bone_count)
+        if not rows:
+            raise CheckError(f"no snapshots of {c['path']} with a full pose in {c['trace']} (record with --follow "
+                             f"and a follow size covering the pose)")
+        worst, seen, outside = 0.0, set(), 0
+        for _, clip, frame, pose in rows:
+            if not 0 <= clip < len(an.clips):
+                outside += 1
+                continue
+            seen.add(an.clips[clip].name)
+            expect = an.clips[clip].evaluate(frame, c.get("interpolation", "nlerp"))
+            worst = max(worst, max(angle_deg(p, q) for p, q in zip(pose, expect)))
+        return {"snapshots": len(rows), "clips_seen": sorted(seen), "max_error_deg": worst, "outside": outside,
+                "interpolation": c.get("interpolation", "nlerp")}
+
+    def _anim_matches(self, c: dict) -> tuple[bool, str]:
+        r = self.anim_comparison(c)
+        tol = c.get("tolerance_deg", 0.01)
+        ok = r["outside"] == 0 and r["max_error_deg"] <= tol
+        return ok, (f"{r['snapshots']} recorded poses vs clips {r['clips_seen']}: max error {r['max_error_deg']:.6f}"
+                    f" deg (tolerance {tol}); {r['outside']} snapshots with a clip index outside the file")
+
+    def _notify_aligns(self, c: dict) -> tuple[bool, str]:
+        an = self._clips(c)
+        clip_index = next((i for i, x in enumerate(an.clips) if x.name == c["clip"]), None)
+        if clip_index is None:
+            raise CheckError(f"no clip named {c['clip']!r}")
+        notify = next((f for f, n in an.clips[clip_index].notifies if n == c["notify"]), None)
+        if notify is None:
+            raise CheckError(f"clip {c['clip']!r} has no notify {c['notify']!r}")
+        t = self.trace(c["trace"])
+        anim = {tick: (clip, frame) for tick, clip, frame, _ in self._anim_rows(t, c)}
+        changes = T.change_ticks(T.series(t, _off(c["offset"]), c.get("type", "i32")), c["from"], c["to"])
+        lags = [anim[k][1] - notify for k in changes if k in anim and anim[k][0] == clip_index]
+        want = c.get("lag", 0)
+        ok = bool(lags) and all(x == want for x in lags)
+        return ok, (f"{len(lags)} changes {c['from']} -> {c['to']} of {_off(c['offset']):#x} during {c['clip']}: "
+                    f"animation frame minus notify {c['notify']}@{notify} = {sorted(set(lags))} (wanted {want})")
+
     @staticmethod
     def _points(t: T.Trace, c: dict) -> list[tuple[int, object]]:
         if c.get("path"):
@@ -482,11 +554,14 @@ class Ledger:
             raise ValueError("a component claim's graph_resolves check must name the same path")
         if kind == "identity":
             subject = self._validate_identity(subject, checks)
-        if kind in ("skeleton", "mesh"):
+        if kind in ("skeleton", "mesh", "animation"):
             if not any(ch.get("check") == "artifact_loaded" and ch.get("artifact") == subject for ch in checks):
                 raise ValueError(f"a {kind} claim needs artifact_loaded: proof the character loads this exact file")
             if not any(ch.get("check") == "asset_decodes" and ch.get("artifact") == subject for ch in checks):
                 raise ValueError(f"a {kind} claim's asset_decodes check must name the same artifact")
+            if kind == "animation" and not any(ch.get("check") == "anim_matches" and ch.get("artifact") == subject
+                                               for ch in checks):
+                raise ValueError("an animation claim's anim_matches check must name the same artifact")
         gate = kind != "identity"
         results = [self.run_check(c, identity_gate=gate) for c in checks]
         status = "verified" if all(ok for ok, _ in results) else "failed"

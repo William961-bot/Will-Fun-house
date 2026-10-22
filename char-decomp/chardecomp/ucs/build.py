@@ -15,7 +15,7 @@ NOT_YET = {
     "mesh": "no verified mesh claim",
     "skeleton": "no verified skeleton claim",
     "materials": "no verified mesh claim with materials",
-    "animation": "animation clip recovery not implemented yet (Stage 5)",
+    "animation": "no verified animation claim",
     "physics": "physics parameters not recovered yet (Stage 6)",
     "abilities": "ability system not recovered yet (Stage 7)",
     "camera": "camera behaviour not recovered",
@@ -151,6 +151,7 @@ def build(led: Ledger, cfg: dict) -> UCS:
                          "; ".join(r["detail"] for r in c["results"] if not r["ok"])) for c in failed]
 
     skeleton, mesh, materials = _assets(led, by("skeleton"), by("mesh"))
+    animation = _animation(led, by("animation"))
     comp = completeness(led.work, led, cfg)
     domains = {
         "identity": "known" if ident else "unknown",
@@ -166,6 +167,7 @@ def build(led: Ledger, cfg: dict) -> UCS:
         "skeleton": "known" if isinstance(skeleton, dict) else "unknown",
         "mesh": "known" if isinstance(mesh, dict) else "unknown",
         "materials": "known" if isinstance(materials, list) and materials else "unknown",
+        "animation": "known" if isinstance(animation, dict) else "unknown",
     }
     completeness_doc = {"domains": domains, "observed_vs_explained": {
         k: {"observed": comp[k]["observed"], "explained": comp[k]["explained"]}
@@ -173,8 +175,8 @@ def build(led: Ledger, cfg: dict) -> UCS:
         "note": "Explained counts cover only what the recordings exercised; unrecorded behaviour is not counted."}
 
     return UCS(UCS_VERSION, source, time_base, conventions, obj, components, controller, moves, functions, assets,
-               mesh, skeleton, materials,
-               *(Unknown(NOT_YET[k]) for k in ("animation", "physics", "abilities", "camera", "audio")),
+               mesh, skeleton, materials, animation,
+               *(Unknown(NOT_YET[k]) for k in ("physics", "abilities", "camera", "audio")),
                deps, evidence, rejected, completeness_doc)
 
 
@@ -215,6 +217,45 @@ def _assets(led: Ledger, skel_claims: list, mesh_claims: list):
                       "texture": Fact(x.texture, e) if x.texture else Unknown("no texture reference in the source")}
                      for x in a.materials] or Unknown("the mesh has no materials")
     return skeleton, mesh, materials
+
+
+def _animation(led: Ledger, claims: list):
+    if not claims:
+        return Unknown(NOT_YET["animation"])
+    c = claims[0]
+    e = (c["id"],)
+    a = led.decoded(c["subject"])
+    an = a.animations
+    match = next(ch for ch in c["checks"] if ch["check"] == "anim_matches" and ch["artifact"] == c["subject"])
+    cmp_ = led.anim_comparison(match)
+    rate = an.sample_rate
+    notify_checks = [ch for ch in c["checks"] if ch["check"] == "notify_aligns"]
+    clips = []
+    for i, clip in enumerate(an.clips):
+        notes = []
+        for fr, name in clip.notifies:
+            aligned = [ch for ch in notify_checks if ch["clip"] == clip.name and ch["notify"] == name]
+            notes.append({"name": name, "frame": Fact(fr, e, "frames"),
+                          "seconds": Fact(round(fr / rate, 6), e, "s", f"{fr} frames / {rate} Hz sample rate"),
+                          "gameplay_event": Fact({k: aligned[0][k] for k in ("offset", "from", "to", "lag")}, e)
+                          if aligned else Unknown("no notify_aligns check ties this notify to gameplay")})
+        clips.append({"name": clip.name, "index": i, "loop": Fact(clip.loop, e),
+                      "length_frames": Fact(clip.length, e, "frames"),
+                      "length_seconds": Fact(round(clip.length / rate, 6), e, "s", f"{clip.length} frames / {rate} Hz"),
+                      "keys": Fact([f for f, _ in clip.keys], e, "frames"),
+                      "bones_animated": Fact(an.bone_count, e), "notifies": notes})
+    return {
+        "artifact": Fact(c["subject"], e), "sha256": Fact(a.sha256, e), "format": Fact(a.decoder, e),
+        "sample_rate": Fact(rate, e, "Hz"),
+        "interpolation": Fact(cmp_["interpolation"], e, None, "the interpolation that reproduced the recorded poses"),
+        "state_binding": Fact({"path": match["path"], "clip_offset": match.get("clip_offset", 0),
+                               "frame_offset": match.get("frame_offset", 4), "pose_offset": match.get("pose_offset", 12),
+                               "rule": "clip index = value at clip_offset; frame = value at frame_offset"}, e),
+        "runtime_match": {"max_error": Fact(round(cmp_["max_error_deg"], 9), e, "deg"),
+                          "snapshots": Fact(cmp_["snapshots"], e), "clips_seen": Fact(cmp_["clips_seen"], e)},
+        "clips": clips,
+        **{k.replace(" ", "_"): Unknown(f"{k}: not present in the {a.decoder} format") for k in a.missing},
+    }
 
 
 def _ratio(d: dict) -> str:

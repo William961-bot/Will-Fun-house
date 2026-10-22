@@ -14,7 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Union
 
-UCS_VERSION = "0.2"  # 0.2 (Stage 4): mesh, skeleton and materials may be known (objects), not only Unknown
+UCS_VERSION = "0.3"  # 0.2: mesh/skeleton/materials may be known; 0.3: animation may be known
 
 
 @dataclass(frozen=True)
@@ -202,7 +202,7 @@ class UCS:
     mesh: Any                 # dict of Facts/Unknowns when a mesh claim is verified, else Unknown
     skeleton: Any             # {"artifact", "sha256", "format", "bones": [...], ...} or Unknown
     materials: Any            # list of {"name", "base_color", "texture"} or Unknown
-    animation: Value
+    animation: Any            # {"artifact", "sample_rate", "interpolation", "clips": [...], ...} or Unknown
     physics: Value
     abilities: Value
     camera: Value

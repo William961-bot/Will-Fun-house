@@ -70,7 +70,12 @@ Check shapes for record_claim (checks_json is a JSON list)
   {"check":"called_from","trace":T,"func":F,"caller":G}             (runtime call edge, virtual calls included)
   {"check":"artifact_loaded","artifact":A,"trace":T}   {"check":"asset_decodes","artifact":A}
   {"check":"asset_roundtrip","artifact":A}   {"check":"asset_property","artifact":A,"property":"bones","eq":5}
-Skeleton and mesh claims (subject = artifact label) need asset_decodes and artifact_loaded on that artifact.
+  {"check":"anim_matches","artifact":A,"trace":T,"path":"0x68","clip_offset":"0x0","frame_offset":"0x4",
+   "pose_offset":"0xc","tolerance_deg":0.01}   (decoded clips evaluated at each recorded frame vs the recorded pose)
+  {"check":"notify_aligns","artifact":A,"clip":"attack","notify":"hit_on","trace":T,"path":"0x68",
+   "offset":"0x38","from":0,"to":1,"lag":0}    (a gameplay change happens at the notify's frame)
+Skeleton, mesh and animation claims (subject = artifact label) need asset_decodes and artifact_loaded on that
+artifact; animation claims also need anim_matches.
 Component fields are claimed as kind field with subject "PATH@OFFSET" (e.g. "0x68@0x4") and checks with "path".
 Snapshots read snap_size bytes and followed objects follow_size bytes: until you know an object's size, paths
 past its end show neighbouring heap objects; narrow the sizes rather than naming those as components.
@@ -344,7 +349,7 @@ def build_tools(work: Path, interactive: bool):
         """State a finding. Its checks run now; it is stored as verified only if all pass, otherwise as rejected.
 
         Args:
-            kind: function, field, move, asset, identity, component, transition, skeleton, mesh or note.
+            kind: function, field, move, asset, identity, component, transition, skeleton, mesh, animation or note.
             subject: function location, field offset (0x1c), move name, file path, or (identity) the base expression.
             name: Short identifier (function or field name, move name).
             statement: What it is or does, in one or two sentences, consistent with the checks.

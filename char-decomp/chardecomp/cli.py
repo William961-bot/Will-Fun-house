@@ -337,6 +337,8 @@ def cmd_export_gltf(a):
     from .assets.gltf import write_glb
     with _led(a) as led:
         asset = led.decoded(a.label, a.decoder)
+        if a.anim:
+            asset = assets.combine(asset, led.decoded(a.anim))
         problems = assets.check(asset)["errors"]
         if problems:
             sys.exit("asset failed validation: " + "; ".join(problems))
@@ -453,7 +455,7 @@ def main(argv=None):
 
     s = cmd("claim", cmd_claim, "add a claim; it is verified only if every check passes")
     s.add_argument("--kind", required=True, choices=["function", "field", "move", "asset", "identity", "component",
-                                                       "transition", "skeleton", "mesh", "note"])
+                                                       "transition", "skeleton", "mesh", "animation", "note"])
     s.add_argument("--subject", required=True,
                    help="module+0xRVA, field offset (or PATH@OFFSET in a component), move name, file path, "
                         "component path, transition name, or (identity) the base expression")
@@ -476,6 +478,7 @@ def main(argv=None):
     s.add_argument("label"), s.add_argument("--decoder", help="plugin name; default: detect")
     s = cmd("export-gltf", cmd_export_gltf, "export a decoded asset as glTF 2.0 binary (GLB)")
     s.add_argument("label"), s.add_argument("--decoder"), s.add_argument("--out")
+    s.add_argument("--anim", help="artifact with the clips to include as glTF animations")
 
     s = cmd("ucs", cmd_ucs, "build the Universal Character Specification from verified claims")
     s.add_argument("--out", help="output file (default W/ucs/character.ucs.json)")

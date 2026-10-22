@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import struct
 
-from .model import Asset, Bone, Material, Mesh, Skeleton, Submesh
+from .model import AnimationSet, Asset, Bone, Clip, Material, Mesh, Skeleton, Submesh
 from .registry import AssetFormatError, Plugin, register, sha256
 
 FLOAT, UBYTE, USHORT, UINT = 5126, 5121, 5123, 5125
@@ -84,6 +84,23 @@ def write_glb(a: Asset) -> bytes:
                 roots.append(i)
         ibm = add([b.inverse_bind for b in sk.bones], FLOAT, "MAT4")
         gl["skins"] = [{"joints": list(range(len(sk.bones))), "inverseBindMatrices": ibm, "skeleton": roots[0]}]
+        an = a.animations
+        if an:
+            if an.bone_count != len(sk.bones):
+                raise AssetFormatError("animation tracks do not match the skeleton")
+            gl["animations"] = []
+            for c in an.clips:
+                times = add([f / an.sample_rate for f, _ in c.keys], FLOAT, "SCALAR")
+                gl["accessors"][times]["min"] = [c.keys[0][0] / an.sample_rate]
+                gl["accessors"][times]["max"] = [c.keys[-1][0] / an.sample_rate]
+                samplers, channels = [], []
+                for b in range(an.bone_count):
+                    out = add([q[b] for _, q in c.keys], FLOAT, "VEC4")
+                    samplers.append({"input": times, "output": out, "interpolation": "LINEAR"})
+                    channels.append({"sampler": b, "target": {"node": b, "path": "rotation"}})
+                gl["animations"].append({"name": c.name, "samplers": samplers, "channels": channels, "extras": {
+                    "sample_rate": an.sample_rate, "loop": c.loop, "notifies": [[f, n] for f, n in c.notifies],
+                    "source_interpolation": "nlerp (glTF LINEAR rotation playback is slerp)"}})
     mesh_node = {"name": "character_mesh", "mesh": 0}
     if sk:
         mesh_node["skin"] = 0
@@ -161,8 +178,36 @@ def read_glb(data: bytes, source: str) -> Asset:
             missing.append("inverse bind matrices")
     else:
         missing.append("skeleton")
+    anims = None
+    if gl.get("animations") and sk:
+        clips, rate = [], None
+        for an in gl["animations"]:
+            ex = an.get("extras", {})
+            if "sample_rate" not in ex:
+                raise AssetFormatError("animations without a sample_rate in extras are not supported (no resampling)")
+            rate = ex["sample_rate"]
+            node_to_bone = {node: k for k, node in enumerate(gl["skins"][0]["joints"])}
+            times = None
+            tracks: dict[int, list] = {}
+            for ch in an["channels"]:
+                if ch["target"].get("path") != "rotation":
+                    raise AssetFormatError("only rotation channels are supported")
+                smp = an["samplers"][ch["sampler"]]
+                if smp.get("interpolation", "LINEAR") != "LINEAR":
+                    raise AssetFormatError("only LINEAR samplers are supported")
+                t = read(smp["input"])
+                if times is not None and t != times:
+                    raise AssetFormatError("channels with different key times are not supported")
+                times = t
+                tracks[node_to_bone[ch["target"]["node"]]] = read(smp["output"])
+            if sorted(tracks) != list(range(len(sk.bones))):
+                raise AssetFormatError(f"clip {an.get('name')}: not every bone has a rotation track")
+            keys = [(round(tm * rate), [tuple(tracks[b][i]) for b in range(len(sk.bones))]) for i, tm in enumerate(times)]
+            clips.append(Clip(an.get("name", f"clip_{len(clips)}"), bool(ex.get("loop", False)), keys,
+                              [(f, n) for f, n in ex.get("notifies", [])]))
+        anims = AnimationSet(rate, len(sk.bones), clips)
     extras = gl.get("asset", {}).get("extras", {})
-    return Asset("gltf", source, sha256(data), sk, mesh, mats, missing=missing + list(extras.get("missing", [])),
+    return Asset("gltf", source, sha256(data), sk, mesh, mats, anims, missing=missing + list(extras.get("missing", [])),
                  derived=list(extras.get("derived", [])))
 
 

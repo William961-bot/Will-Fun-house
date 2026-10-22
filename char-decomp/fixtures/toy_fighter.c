@@ -22,11 +22,24 @@ typedef struct {
 } Hitbox;
 
 // A separate component reached through a pointer, like the animation state of an engine character.
+#define BONES 5
 typedef struct {
-    int32_t clip;   // 0x0 mirrors the fighter's state
-    int32_t frame;  // 0x4 frames since the clip started
-    float rate;     // 0x8 playback rate
+    int32_t clip;            // 0x0 mirrors the fighter's state
+    int32_t frame;           // 0x4 frames since the clip started
+    float rate;              // 0x8 playback rate
+    float pose[BONES][4];    // 0xc evaluated bone rotations (x, y, z, w), written every frame
 } Anim;
+
+// Animation clips loaded from <name>/model.tfan (format in chardecomp/assets/toyfmt.py).
+typedef struct {
+    int16_t key_count;
+    int16_t loop;
+    int16_t key_frame[8];
+    float key_rot[8][BONES][4];
+} Clip;
+
+static Clip g_clips[2][4];   // per fighter, per state
+static int g_clip_count[2];
 
 typedef struct Fighter {
     uint32_t tag;        // 0x00 'FGHT'
@@ -94,6 +107,62 @@ NOINLINE static Fighter *load_character(const char *assets, const char *name, in
     read_file(path, &voice);
     free(voice);
     return f;
+}
+
+NOINLINE static void load_clips(const char *assets, const char *name, int who) {
+    char path[512];
+    uint8_t *data = NULL;
+    snprintf(path, sizeof path, "%s/%s/model.tfan", assets, name);
+    size_t n = read_file(path, &data);
+    g_clip_count[who] = 0;
+    if (n < 12 || memcmp(data, "TFAN", 4) != 0) { free(data); return; }
+    const uint8_t *p = data + 8;
+    uint16_t clips, bones;
+    memcpy(&clips, p, 2); memcpy(&bones, p + 2, 2); p += 8;  // + f32 sample rate
+    for (int c = 0; c < clips && c < 4 && bones == BONES; c++) {
+        Clip *cl = &g_clips[who][c];
+        p += 16;  // name
+        uint16_t keys, loop, notifies;
+        memcpy(&keys, p, 2); memcpy(&loop, p + 2, 2); memcpy(&notifies, p + 4, 2); p += 6;
+        cl->key_count = keys > 8 ? 8 : keys;
+        cl->loop = loop;
+        for (int k = 0; k < keys; k++) {
+            uint16_t fr;
+            memcpy(&fr, p, 2); p += 2;
+            if (k < 8) { cl->key_frame[k] = fr; memcpy(cl->key_rot[k], p, sizeof(float) * BONES * 4); }
+            p += sizeof(float) * BONES * 4;
+        }
+        p += notifies * 18;  // u16 frame + char[16] name: gameplay events, not used for posing
+        g_clip_count[who] = c + 1;
+    }
+    free(data);
+}
+
+// Normalised linear interpolation between the two keys around `frame` (looping clips wrap).
+NOINLINE static void evaluate_pose(Anim *a, int who) {
+    if (a->clip < 0 || a->clip >= g_clip_count[who]) return;
+    const Clip *c = &g_clips[who][a->clip];
+    if (c->key_count == 0) return;
+    int last = c->key_frame[c->key_count - 1];
+    int f = a->frame;
+    if (c->loop && last > 0) f %= last;
+    if (f >= last) f = last;
+    int k = 0;
+    while (k + 1 < c->key_count && c->key_frame[k + 1] <= f) k++;
+    int k1 = k + 1 < c->key_count ? k + 1 : k;
+    float t = k1 == k ? 0.0f : (float)(f - c->key_frame[k]) / (float)(c->key_frame[k1] - c->key_frame[k]);
+    for (int b = 0; b < BONES; b++) {
+        float q[4], len = 0.0f;
+        for (int i = 0; i < 4; i++) {
+            q[i] = c->key_rot[k][b][i] * (1.0f - t) + c->key_rot[k1][b][i] * t;
+            len += q[i] * q[i];
+        }
+        // sqrt by Newton iterations (keeps the toy free of libm); len is in [0.5, 1] for unit keys
+        float r = 1.0f;
+        for (int it = 0; it < 6; it++) r = 0.5f * (r + len / r);
+        len = r > 0.0f ? 1.0f / r : 1.0f;
+        for (int i = 0; i < 4; i++) a->pose[b][i] = q[i] * len;
+    }
 }
 
 NOINLINE static void start_move(Fighter *f, int32_t id) {
@@ -170,6 +239,7 @@ NOINLINE static void game_tick(Fighter *p1, Fighter *p2, int cmd) {
         } else {
             f->anim->frame++;
         }
+        evaluate_pose(f->anim, i);
     }
     check_hit(p1, p2);
 }
@@ -188,8 +258,10 @@ int main(int argc, char **argv) {
     else if (!strcmp(script, "walk")) action = 3;
 
     g_fighters[0] = load_character(argv[1], "ryo", 1337, 0.0f, 1);
+    load_clips(argv[1], "ryo", 0);
     float p2x = argc > 4 && !strcmp(argv[4], "far") ? 500.0f : 50.0f;
     g_fighters[1] = load_character(argv[1], "ken", 1000, p2x, -1);
+    load_clips(argv[1], "ken", 1);
     if (getenv("TOY_DEBUG")) fprintf(stderr, "P1 %p\n", (void *)g_fighters[0]);
 
     for (int frame = 0; frame < frames; frame++) {

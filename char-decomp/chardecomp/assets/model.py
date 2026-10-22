@@ -62,6 +62,41 @@ class Mesh:
 
 
 @dataclass
+class Clip:
+    """Rotation keyframes per bone (frame numbers at the set's sample rate) and gameplay notifies."""
+    name: str
+    loop: bool
+    keys: list[tuple[int, list[Quat]]]           # (frame, rotation per bone), frames strictly increasing
+    notifies: list[tuple[int, str]] = field(default_factory=list)
+
+    @property
+    def length(self) -> int:
+        return self.keys[-1][0] if self.keys else 0
+
+    def evaluate(self, frame: int, interpolation: str = "nlerp") -> list[Quat]:
+        """Pose at an integer frame: the surrounding keys blended with normalised lerp (or slerp)."""
+        last = self.length
+        f = frame % last if self.loop and last > 0 else frame
+        f = min(max(f, 0), last)
+        k = 0
+        while k + 1 < len(self.keys) and self.keys[k + 1][0] <= f:
+            k += 1
+        k1 = min(k + 1, len(self.keys) - 1)
+        f0, q0 = self.keys[k]
+        f1, q1 = self.keys[k1]
+        t = 0.0 if k1 == k else (f - f0) / (f1 - f0)
+        blend = slerp if interpolation == "slerp" else nlerp
+        return [blend(a, b, t) for a, b in zip(q0, q1)]
+
+
+@dataclass
+class AnimationSet:
+    sample_rate: float                           # frames per second of the key frame numbers
+    bone_count: int
+    clips: list[Clip]
+
+
+@dataclass
 class Asset:
     decoder: str
     source: str                      # where the bytes came from (path or artifact label)
@@ -69,6 +104,7 @@ class Asset:
     skeleton: Skeleton | None = None
     mesh: Mesh | None = None
     materials: list[Material] = field(default_factory=list)
+    animations: AnimationSet | None = None
     missing: list[str] = field(default_factory=list)   # information the format/decoder does not provide
     derived: list[str] = field(default_factory=list)   # values computed by the decoder, not stored in the file
 
@@ -80,7 +116,10 @@ class Asset:
             "parents": s.parents() if s else None,
             "vertices": len(m.positions) if m else None, "triangles": len(m.indices) // 3 if m else None,
             "attributes": [k for k in ("normals", "uvs", "joints", "weights") if m and getattr(m, k) is not None],
-            "materials": [x.name for x in self.materials], "missing": self.missing, "derived": self.derived,
+            "materials": [x.name for x in self.materials],
+            "clips": [c.name for c in self.animations.clips] if self.animations else None,
+            "sample_rate": self.animations.sample_rate if self.animations else None,
+            "missing": self.missing, "derived": self.derived,
         }
 
 
@@ -142,3 +181,30 @@ def global_transforms(sk: Skeleton) -> list[Mat4]:
 def derive_inverse_binds(sk: Skeleton) -> None:
     for b, g in zip(sk.bones, global_transforms(sk)):
         b.inverse_bind = invert(g)
+
+
+def nlerp(a: Quat, b: Quat, t: float) -> Quat:
+    if sum(x * y for x, y in zip(a, b)) < 0:  # shortest path
+        b = tuple(-x for x in b)
+    q = [x * (1 - t) + y * t for x, y in zip(a, b)]
+    n = math.sqrt(sum(x * x for x in q)) or 1.0
+    return tuple(x / n for x in q)
+
+
+def slerp(a: Quat, b: Quat, t: float) -> Quat:
+    d = sum(x * y for x, y in zip(a, b))
+    if d < 0:
+        b, d = tuple(-x for x in b), -d
+    if d > 0.9995:
+        return nlerp(a, b, t)
+    th = math.acos(min(1.0, d))
+    s0, s1 = math.sin((1 - t) * th) / math.sin(th), math.sin(t * th) / math.sin(th)
+    return tuple(s0 * x + s1 * y for x, y in zip(a, b))
+
+
+def angle_deg(a: Quat, b: Quat) -> float:
+    """Rotation angle between two orientations, in degrees."""
+    na = math.sqrt(sum(x * x for x in a)) or 1.0
+    nb = math.sqrt(sum(x * x for x in b)) or 1.0
+    d = abs(sum(x * y for x, y in zip(a, b))) / (na * nb)
+    return math.degrees(2 * math.acos(min(1.0, d)))

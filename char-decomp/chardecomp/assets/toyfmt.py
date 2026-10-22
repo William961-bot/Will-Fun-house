@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import struct
 
-from .model import Asset, Bone, Material, Mesh, Skeleton, Submesh, derive_inverse_binds
+from .model import AnimationSet, Asset, Bone, Clip, Material, Mesh, Skeleton, Submesh, derive_inverse_binds
 from .registry import AssetFormatError, Plugin, register, sha256
 
 HEADER = struct.Struct("<4sIHHII")
@@ -83,4 +83,62 @@ class TFMD(Plugin):
         out.append(struct.pack(f"<{len(m.indices)}H", *m.indices))
         mat = m.submeshes[0].material if m.submeshes else -1
         out.append(struct.pack("<H", mat if mat >= 0 else 0xFFFF))
+        return b"".join(out)
+
+
+# ------------------------------------------------------------------------------------------------ TFAN (clips)
+# "TFAN" u32 version(=1) u16 clips u16 bones f32 sample_rate
+# clip: char name[16] u16 keys u16 loop u16 notifies; key: u16 frame + bones * f32[4]; notify: u16 frame char[16]
+AN_HEADER = struct.Struct("<4sIHHf")
+CLIP = struct.Struct("<16sHHH")
+NOTIFY = struct.Struct("<H16s")
+
+
+@register
+class TFAN(Plugin):
+    name = "tfan"
+    extensions = (".tfan",)
+
+    def sniff(self, data: bytes) -> bool:
+        return data[:4] == b"TFAN"
+
+    def decode(self, data: bytes, source: str) -> Asset:
+        try:
+            magic, version, nclips, nbones, rate = AN_HEADER.unpack_from(data, 0)
+            if magic != b"TFAN" or version != 1:
+                raise AssetFormatError(f"not a TFAN v1 file (magic {magic!r}, version {version})")
+            off = AN_HEADER.size
+            key = struct.Struct(f"<H{nbones * 4}f")
+            clips = []
+            for _ in range(nclips):
+                n, nkeys, loop, nnot = CLIP.unpack_from(data, off)
+                off += CLIP.size
+                keys = []
+                for _ in range(nkeys):
+                    fr, *q = key.unpack_from(data, off)
+                    off += key.size
+                    keys.append((fr, [tuple(q[i:i + 4]) for i in range(0, len(q), 4)]))
+                notes = []
+                for _ in range(nnot):
+                    fr, nm = NOTIFY.unpack_from(data, off)
+                    off += NOTIFY.size
+                    notes.append((fr, _name(nm)))
+                clips.append(Clip(_name(n), bool(loop), keys, notes))
+        except struct.error as e:
+            raise AssetFormatError(f"TFAN truncated: {e}") from None
+        if off != len(data):
+            raise AssetFormatError(f"TFAN has {len(data) - off} trailing bytes")
+        return Asset("tfan", source, sha256(data), animations=AnimationSet(rate, nbones, clips),
+                     missing=["translation and scale tracks", "blend trees", "root motion", "IK", "additive layers"])
+
+    def encode(self, a: Asset) -> bytes:
+        an = a.animations
+        out = [AN_HEADER.pack(b"TFAN", 1, len(an.clips), an.bone_count, an.sample_rate)]
+        key = struct.Struct(f"<H{an.bone_count * 4}f")
+        for c in an.clips:
+            out.append(CLIP.pack(c.name.encode("ascii"), len(c.keys), int(c.loop), len(c.notifies)))
+            for fr, qs in c.keys:
+                out.append(key.pack(fr, *(x for q in qs for x in q)))
+            for fr, nm in c.notifies:
+                out.append(NOTIFY.pack(fr, nm.encode("ascii")))
         return b"".join(out)

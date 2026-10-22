@@ -209,6 +209,9 @@ chardecomp export-gltf W ryo_model                        # glTF 2.0 binary with
 ```
 
 A `skeleton` or `mesh` claim needs `asset_decodes` and `artifact_loaded` (the game opened that exact file).
+An `animation` claim also needs `anim_matches`: the decoded clips, evaluated at every recorded frame, must
+reproduce the poses the running game produced (`notify_aligns` ties notifies like `hit_on` to gameplay changes).
+`chardecomp export-gltf W ryo_model --anim ryo_anim` exports the skin with its clips.
 Format plugins: `tfmd` (the toy's test format) and `gltf`. Engine formats need their own plugins (ADR 0005).
 
 ## Universal Character Specification
