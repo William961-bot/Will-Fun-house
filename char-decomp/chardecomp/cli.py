@@ -145,6 +145,8 @@ def _record(a, w, cfg, led):
                             "max_bytes": a.follow_max_bytes}
     elif a.follow:
         sys.exit("--follow needs --snap")
+    if a.drive:
+        feats.drive = capture.check_drive(a.drive)
     if a.hooks:
         if a.hooks == "auto":
             seen: dict[str, int] = {}
@@ -485,7 +487,7 @@ def cmd_regress(a):
 def cmd_agent(a):
     from . import agent
     agent.run(Path(a.work), goal=a.goal, model=a.model, effort=a.effort, interactive=not a.no_capture,
-              max_iterations=a.max_iterations)
+              max_iterations=a.max_iterations, autonomous=a.autonomous)
 
 
 def main(argv=None):
@@ -524,6 +526,8 @@ def main(argv=None):
     s.add_argument("--char-base"), s.add_argument("--tick")
     s.add_argument("--watch", action="append", help="EXPR:SIZE, e.g. '[game.exe+0x2a3f10]+0x1c:4'")
     s.add_argument("--files", action="store_true", help="log file opens and reads")
+    s.add_argument("--drive", help="play the game yourself: JSON (or @file) with func, arg, default, events, repeat, "
+                                   "pokes; the input argument is replaced on every call (see README)")
     s.add_argument("--keep-alive", action="store_true", help="don't kill a spawned game afterwards")
     s.add_argument("--delay", type=float, default=0.0, help="seconds to wait after resuming a spawned game")
     s.add_argument("--follow", type=int, help="with --snap: follow pointers from the character this many levels (1-4)")
@@ -635,6 +639,8 @@ def main(argv=None):
     s.add_argument("--effort", default="high", choices=["low", "medium", "high", "xhigh", "max"])
     s.add_argument("--max-iterations", type=int, default=200)
     s.add_argument("--no-capture", action="store_true", help="don't ask the player for new recordings")
+    s.add_argument("--autonomous", action="store_true",
+                   help="let the agent launch the game and run driven recordings without asking each time")
 
     a = p.parse_args(argv)
     try:

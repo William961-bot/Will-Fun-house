@@ -12,7 +12,7 @@ import subprocess
 
 import pytest
 
-from chardecomp import autoclaim, ucs
+from chardecomp import autoclaim, traces as T, ucs
 from chardecomp.ledger import Ledger
 from chardecomp.port import plan, regress
 
@@ -178,3 +178,76 @@ def test_scan_finds_the_fighter_from_a_method_argument(brawler, tmp_path, capsys
     bases = json.loads(capsys.readouterr().out)["bases"]
     assert {"base": f"[[toy_brawler+{g:#x}]+0x8]", "field_offset": 0} in [
         {k: b[k] for k in ("base", "field_offset")} for b in bases]
+
+
+@pytest.fixture(scope="module")
+def driven(brawler, tmp_path_factory):
+    """Every recording from the idle script (the game presses nothing): actions injected with drive schedules,
+    distances set with pokes. Same profile as `measured`; no player."""
+    w = tmp_path_factory.mktemp("driven") / "W"
+    exe, g, tick = brawler["dir"] / "toy_brawler", brawler["g_game"], brawler["tick"]
+    base, opp = f"[[toy_brawler+{g:#x}]+0x8]", f"[[toy_brawler+{g:#x}]+0x10]"
+    run_cli("init", w, "--binary", exe, "--spawn", f"{exe} idle 300 600", "--character", "Bruno")
+    run_cli("static", w)
+    run_cli("set", w, f"char_base={base}", f"tick={tick}", "snap_size=0x38")
+    opts = ["--snap", "--snap-base", base, "--snap-base", opp, "--snap-base", f"[[toy_brawler+{g:#x}]+0x18]",
+            "--hooks", tick, "--capture-args", tick, "--no-coverage"]
+
+    def drive(events, dist=None):
+        d = {"func": tick, "arg": 1, "default": -1, "repeat": 60, "events": events}
+        if dist is not None:
+            d["pokes"] = [{"at": 0, "expr": f"{opp}+0x20", "type": "f32", "value": dist}]
+        return json.dumps(d)
+
+    for label, events, dist in (("jump", [{"at": 10, "value": 4}], None),
+                                ("walk", [{"from": 0, "to": 30, "value": 3}], None),
+                                ("whiff", [{"at": 10, "value": 1}], None),
+                                ("hit", [{"at": 10, "value": 1}], 45), ("miss", [{"at": 10, "value": 1}], 46),
+                                ("ability", [{"at": 10, "value": 1}, {"at": 50, "value": 5}], 40)):
+        run_cli("record", w, label, "--seconds", "3.5", *opts, "--drive", drive(events, dist))
+    profile = {"base": base, "character": "Bruno",
+               "fields": {"hp": "0x28", "x": "0x20", "y": "0x24", "vx": "0x10", "vy": "0x14", "state": "0x1c",
+                          "hitbox_active": "0x2c", "meter": "0xc"},
+               "opponent": 1, "projectile": {"obj": 2, "x": "0x0", "active": "0x8"},
+               "input": {"function": tick, "argument": 1},
+               "actions": {"jump": 4, "walk": 3, "attack": 1, "ability": 5},
+               "names": {"attack": "upper", "ability": "super"}, "traces": {k: k for k in SCENARIOS}}
+    with Ledger(w) as led:
+        return {"work": w, "res": autoclaim.run(led, profile)}
+
+
+def test_no_player_needed(driven):
+    """The driven recordings give the same measurements as the scripted ones: the same constants."""
+    r = driven["res"]
+    assert r["failed"] == [] and r["skipped"] == [] and r["verified"] == 22
+    m = r["measured"]
+    assert m["physics"] == TRUTH["physics"] and m["attack_runs"] == TRUTH["attack_runs"]
+    assert m["reach_range"] == TRUTH["reach_range"]
+    assert {s: m["timed"][s] for s in TRUTH["timed"]} == TRUTH["timed"]
+    assert m["ability"]["cost"] == TRUTH["cost"] and m["projectile"]["speed"] == TRUTH["speed"]
+    with Ledger(driven["work"]) as led:
+        meta = led.trace("hit").meta
+    assert meta["features"]["drive"]["pokes"][0]["value"] == 45  # the injection is on record in the trace
+
+
+def test_agent_drives_without_asking(brawler, driven, monkeypatch):
+    from chardecomp import agent
+
+    def no_input(*_):
+        raise AssertionError("the agent asked the player")
+
+    monkeypatch.setattr("builtins.input", no_input)
+    tools = {t.name: t for t in agent.build_tools(driven["work"], interactive=True, autonomous=True)}
+    tick = brawler["tick"]
+    out = json.loads(tools["request_recording"].call({
+        "label": "agent_jump", "instructions": "jump every second", "seconds": 2.0, "snapshots": True,
+        "coverage": False, "hook_funcs": tick, "capture_args": tick,
+        "drive": json.dumps({"func": tick, "arg": 1, "default": -1, "repeat": 60, "events": [{"at": 10, "value": 4}]})}))
+    assert out["ticks"] > 50 and "snap" in out["has"] and out["driven"]
+    with Ledger(driven["work"]) as led:
+        st = [v for _, v in T.series(led.trace("agent_jump"), 0x1c, "i32")]
+    assert 4 in st  # it jumped: state 4 (air), with nobody pressing anything
+    tools_ask = {t.name: t for t in agent.build_tools(driven["work"], interactive=True, autonomous=False)}
+    with pytest.raises(AssertionError, match="asked the player"):
+        tools_ask["request_recording"].call({"label": "x", "instructions": "x", "drive": json.dumps(
+            {"func": tick, "arg": 1, "events": []})})

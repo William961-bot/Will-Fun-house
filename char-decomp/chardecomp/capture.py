@@ -42,9 +42,12 @@ class Features:
     follow: dict | None = None  # {"depth": 2, "size": 256, "max_objects": 16, "max_bytes": 8192}
     watch: list[dict] = field(default_factory=list)  # {"expr": ..., "size": 4, "kind": "w"}
     files: bool = False
+    drive: dict | None = None  # {"func", "arg", "default", "events": [{"at"|"from","to","value"}], "repeat", "pokes"}
 
     def to_agent(self) -> dict:
         cfg: dict = {"coverage": self.coverage, "files": self.files}
+        if self.drive:
+            cfg["drive"] = self.drive
         if self.char_base:
             cfg["char_base"] = self.char_base
         if self.hooks:
@@ -64,6 +67,31 @@ class Features:
         if self.watch:
             cfg["watch"] = self.watch
         return cfg
+
+
+def check_drive(spec) -> dict:
+    """A drive schedule from JSON text, '@file' or a dict, validated before the game starts.
+
+    {"func": "game+0x120a", "arg": 1, "default": -1, "repeat": 60,
+     "events": [{"at": 10, "value": 1}, {"from": 0, "to": 30, "value": 3}],
+     "pokes": [{"at": 0, "expr": "[[game+0x4030]+0x10]+0x20", "type": "f32", "value": 45}],
+     "length": optional number of calls after which only the default is sent}"""
+    from .addr import check_expr, check_location
+    if isinstance(spec, str):
+        spec = json.loads(Path(spec[1:]).read_text(encoding="utf-8") if spec.startswith("@") else spec)
+    d = dict(spec)
+    check_location(d["func"])
+    if not isinstance(d.get("arg"), int) or d["arg"] < 0:
+        raise ValueError("drive needs 'arg': the index of the input argument")
+    for e in d.get("events", []):
+        if "value" not in e or not ("at" in e or ("from" in e and "to" in e)):
+            raise ValueError(f"drive event needs value and at, or from/to: {e}")
+    for pk in d.get("pokes", []):
+        check_expr(pk["expr"])
+        if pk.get("type", "i32") not in ("i32", "u32", "f32", "f64", "i16", "u8"):
+            raise ValueError(f"poke type {pk.get('type')!r}")
+    d.setdefault("default", None)
+    return d
 
 
 class Session:

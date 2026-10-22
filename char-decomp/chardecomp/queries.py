@@ -53,4 +53,5 @@ def trace_summary(t: T.Trace) -> dict:
             "has": [k for k, v in (("coverage", t.coverage), ("hooks", t.hooks), ("snap", t.snaps),
                                    ("watch", t.watch), ("files", t.files)) if v],
             "snap_bases": (t.meta["features"].get("snap") or {}).get("bases"),
-            "char_base": t.meta["features"].get("char_base")}
+            "char_base": t.meta["features"].get("char_base"),
+            "driven": t.meta["features"].get("drive") is not None}

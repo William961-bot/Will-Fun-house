@@ -14,7 +14,7 @@ from pathlib import Path
 
 from . import capture, queries, report, traces as T
 from .ledger import Ledger, _off
-from .addr import check_expr
+from .addr import check_expr, check_location
 from .workspace import apply_setting, completeness, load_config, save_config
 
 SYSTEM = """You are reverse engineering one character in a native PC game the user owns, offline. Your output \
@@ -38,7 +38,10 @@ watch_hits to see who writes a field, and file_events for the files the characte
 3. Before reading any per-frame data, prove the character's identity: an identity claim whose subject is the char_base expression, with a tick_rate check (the tick function runs at the game's frame rate with no gaps) and an anchor on object 0 (field_equals on a value visible in game, such as HP, or a value_change you caused). Snapshot checks report "identity ... is not verified" until then; with require_identity on they fail.
 4. Read function_info for every function you name. A name must agree with both the code and the \
 measurements.
-5. When a question can only be answered by new data, call request_recording with one change from an \
+5. Prefer driving the game yourself: once you know the per-frame function and which argument carries the
+player's input (record with capture_args on it and compare values across actions), pass request_recording a drive
+schedule that performs the action and pokes that set up the situation (a distance, a resource). Then no player is
+needed and every experiment is exact and repeatable. Otherwise, when a question can only be answered by new data, call request_recording with one change from an \
 existing recording (one move, the opponent near or far, one watched field). The player performs it.
 6. State findings only through record_claim, with checks that prove them. Kinds and their minimum \
 evidence: function needs executed / called_with_char / writes; field needs rle / changes / value_change / \
@@ -126,7 +129,7 @@ def _where(s: str):
     return {"offset": _off(off), "type": vtype, "eq": float(val) if vtype.startswith("f") else int(val, 0)}
 
 
-def build_tools(work: Path, interactive: bool):
+def build_tools(work: Path, interactive: bool, autonomous: bool = False):
     """The agent's tools, bound to one workspace."""
     from anthropic import beta_tool
 
@@ -353,10 +356,14 @@ def build_tools(work: Path, interactive: bool):
     @beta_tool
     def request_recording(label: str, instructions: str, seconds: float = 5.0, spawn: str = "",
                           snapshots: bool = False, hooks: bool = False, files: bool = False, watch: str = "",
-                          coverage: bool = True, follow: int = 0, follow_size: int = 256) -> str:
-        """Ask the player to perform something in game and record it as a new trace.
+                          coverage: bool = True, follow: int = 0, follow_size: int = 256, drive: str = "",
+                          hook_funcs: str = "", capture_args: str = "", snap_bases: str = "") -> str:
+        """Record a new trace: the player performs something, or you drive the game yourself with `drive`.
 
         Coverage is turned off automatically when watch or files is set (record those in separate passes).
+        With drive, no player is needed: the input function's argument is replaced on every call from your
+        schedule, and pokes write memory to set up a situation (a distance, full meter). The schedule is stored in
+        the trace. Driving needs the input function, found from a capture_args recording.
 
         Args:
             label: New, unique trace label, e.g. sweep_whiff.
@@ -370,19 +377,28 @@ def build_tools(work: Path, interactive: bool):
             files: Log file opens and reads.
             watch: Optional EXPR:SIZE to watch for writes, e.g. [game.exe+0x2a3f10]+0x1c:4.
             coverage: Record coverage (ignored when watch or files is set).
+            drive: Optional JSON schedule: {"func": F, "arg": N, "default": -1, "repeat": 60,
+                "events": [{"at": 10, "value": 1}, {"from": 0, "to": 30, "value": 3}],
+                "pokes": [{"at": 0, "expr": EXPR, "type": "f32", "value": 45}]}.
+            hook_funcs: Optional comma-separated functions to hook (instead of hooks=true's coverage list).
+            capture_args: Optional comma-separated hooked functions whose argument values are recorded.
+            snap_bases: Optional comma-separated base expressions to snapshot; the first must be the character.
         """
         if not interactive:
             raise RuntimeError("recording is disabled in this run (--no-capture); work with the existing traces")
         c = load_config(work)
-        print(f"\n[agent] wants a recording '{label}': {instructions}")
-        if input("    Record it now? [y/N] ").strip().lower() != "y":
+        drv = capture.check_drive(drive) if drive else None
+        print(f"\n[agent] {'drives' if drv else 'wants'} a recording '{label}': {instructions}")
+        if not (drv and autonomous) and input("    Record it now? [y/N] ").strip().lower() != "y":
             return "The player declined this recording."
         feats = capture.Features(coverage=coverage and not (watch or files), files=files, snap_size=c["snap_size"],
                                  char_base=c.get("char_base"))
+        feats.drive = drv
         if snapshots:
             if not (c.get("tick") and c.get("char_base")):
                 raise ValueError("snapshots need tick and char_base set first (set_config)")
             feats.snap_tick = c.get("tick")
+            feats.snap_bases = [check_expr(b.strip()) for b in snap_bases.split(",") if b.strip()]
             if follow:
                 if not 1 <= follow <= 4:
                     raise ValueError("follow must be 0-4")
@@ -399,11 +415,14 @@ def build_tools(work: Path, interactive: bool):
                     for k, v in (tr.coverage or {}).items():
                         seen[k] = seen.get(k, 0) + v
                 feats.hooks = sorted(seen, key=lambda k: -seen[k])[:4000]
+            if hook_funcs:
+                feats.hooks = sorted(set(feats.hooks) | {check_location(h.strip()) for h in hook_funcs.split(",")})
+            feats.capture_args = [check_location(h.strip()) for h in capture_args.split(",") if h.strip()]
             t = c["target"]
             target = capture.Target(spawn=shlex.split(spawn) if spawn else t.get("spawn"),
                                     attach=None if (spawn or t.get("spawn")) else t.get("attach"), cwd=t.get("cwd"),
                                     modules=t.get("modules") or ([c["module"]] if c.get("module") else []))
-            path = capture.record(work, label, target, feats, seconds, prompt=instructions)
+            path = capture.record(work, label, target, feats, seconds, prompt=None if drv else instructions)
             lg.register_trace(path)
             return dump(queries.trace_summary(T.load(path)))
 
@@ -518,7 +537,7 @@ def build_tools(work: Path, interactive: bool):
 
 
 def run(work: Path, goal: str = "", model: str = "claude-opus-5-5", effort: str = "high", interactive: bool = True,
-        max_iterations: int = 200, client=None):
+        max_iterations: int = 200, client=None, autonomous: bool = False):
     """Drive the loop with the Claude API. `client` defaults to anthropic.Anthropic() (tests pass a fake)."""
     if client is None:
         import anthropic
@@ -533,7 +552,7 @@ def run(work: Path, goal: str = "", model: str = "claude-opus-5-5", effort: str 
         model=model,
         max_tokens=32000,
         system=SYSTEM,
-        tools=build_tools(work, interactive),
+        tools=build_tools(work, interactive, autonomous),
         messages=[{"role": "user", "content": task}],
         thinking={"type": "adaptive", "display": "summarized"},
         output_config={"effort": effort},

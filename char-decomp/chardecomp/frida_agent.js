@@ -108,6 +108,44 @@ function currentCharBase() {
   return charBase;
 }
 
+// ---------------------------------------------------------------- driving the game (no player needed)
+// The input function's argument is replaced on every call from a schedule, and memory can be written at given
+// calls (pokes) to set up a situation. Call n counts calls of drive.func since recording started.
+let driveCalls = 0;
+
+function writeTyped(p, type, v) {
+  ({ i32: () => p.writeS32(v), u32: () => p.writeU32(v), f32: () => p.writeFloat(v), f64: () => p.writeDouble(v),
+     i16: () => p.writeS16(v), u8: () => p.writeU8(v) })[type]();
+}
+
+function driveValue(d, n) {
+  const m = d.repeat ? n % d.repeat : n;
+  if (d.length !== undefined && d.length !== null && n >= d.length) return d.default;
+  for (const e of d.events || []) {
+    if (e.at !== undefined ? e.at === m : (m >= e.from && m < e.to)) return e.value;
+  }
+  return d.default;
+}
+
+function driveStart(d) {
+  driveCalls = 0;
+  const pokes = d.pokes || [];
+  listeners.push(Interceptor.attach(resolveFunc(d.func), {
+    onEnter(args) {
+      const n = driveCalls++;
+      for (const pk of pokes) {
+        if (pk.at === n) {
+          try { writeTyped(evalExpr(pk.expr), pk.type || 'i32', pk.value); }
+          catch (e) { send({ type: 'error', where: 'poke', expr: pk.expr, message: String(e) }); }
+        }
+      }
+      const v = driveValue(d, n);
+      if (v !== null && v !== undefined) args[d.arg] = ptr(v < 0 ? (v >>> 0) : v);
+    },
+  }));
+  return true;
+}
+
 function hooksStart(funcs, argCount, captureArgs) {
   const capture = new Set(captureArgs || []);
   hookStats = {};
@@ -404,6 +442,7 @@ rpc.exports = {
   async start(cfg) {
     const started = {};
     if (cfg.char_base) charBaseExpr = cfg.char_base;
+    if (cfg.drive) started.drive = driveStart(cfg.drive);  // before the hooks, so they see the driven value
     if (cfg.snap) { snapStart(cfg.snap); started.snap = true; }
     if (cfg.hooks && cfg.hooks.length) started.hooks = hooksStart(cfg.hooks, cfg.hook_args || 4, cfg.capture_args);
     if (cfg.files) { filesStart(); started.files = true; }

@@ -274,6 +274,23 @@ chardecomp regress W --scenario jump --scenario super                    # exit 
 refines a hit rule only when a recording contradicts the plain one (ADR 0007). Tested on two different native
 characters (C and C++) ported to Godot 4 and Minetest (`docs/stages/stage-10.md`).
 
+## Driving the game (no player)
+
+Once you know the per-frame function and which argument carries the input (record with `--capture-args` on it and
+compare values across actions), recordings can play themselves:
+
+```
+chardecomp record W hit45 --snap --snap-base "$CHAR" --snap-base "$OPP" --hooks game+0x120a --capture-args game+0x120a \
+  --drive '{"func":"game+0x120a","arg":1,"default":-1,"repeat":60,"events":[{"at":10,"value":1}],
+            "pokes":[{"at":0,"expr":"[[game+0x4030]+0x10]+0x20","type":"f32","value":45}]}'
+chardecomp agent W --autonomous      # the agent runs its own driven experiments without asking
+```
+
+The input argument is replaced on every call from the schedule; pokes write memory at a given call to set up a
+situation (a distance, a meter value). The schedule is stored in the trace. `scan --from-arg FUNC:N --via FUNC:N`
+finds a stable base for an object the game passes to a function (a C++ `this`), when no value is visible on screen.
+Offline, single-player games only.
+
 ## Configuration
 
 `chardecomp set W KEY=VALUE ...` validates every pair before saving any: `char_base` (address expression),
