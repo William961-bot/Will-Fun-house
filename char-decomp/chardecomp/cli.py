@@ -186,6 +186,17 @@ def _record(a, w, cfg, led):
 
 def cmd_scan(a):
     cfg = load_config(Path(a.work))
+    if a.from_arg:
+        def fa(spec):
+            func, _, idx = spec.rpartition(":")
+            check_location(func)
+            return func, int(idx)
+        func, idx = fa(a.from_arg)
+        out(capture.scan_from_arg(_target(cfg, a), func, idx, fa(a.via) if a.via else None,
+                                  pointer_offset=_off(a.pointer_offset)))
+        return
+    if a.value is None:
+        raise SystemExit("error: scan needs --value or --from-arg")
     first = float(a.value) if a.type.startswith("f") else int(a.value, 0)
     nxt = None
     if a.next is not None:
@@ -521,7 +532,9 @@ def main(argv=None):
     s.add_argument("--follow-max-bytes", type=int, default=8192, help="bytes followed per snapshot, at most")
 
     s = cmd("scan", cmd_scan, "find a value in memory (interactive unless --next is given)")
-    s.add_argument("--type", default="i32"), s.add_argument("--value", required=True)
+    s.add_argument("--type", default="i32"), s.add_argument("--value")
+    s.add_argument("--from-arg", help="FUNC:N - the object is argument N of FUNC's first call (e.g. a this pointer)")
+    s.add_argument("--via", help="FUNC:N - an intermediate object (argument N of FUNC) for two-level bases")
     s.add_argument("--next", nargs="*"), s.add_argument("--spawn"), s.add_argument("--attach")
     s.add_argument("--pointer-offset", default="0x1000", help="max field offset for the pointer scan")
     s.add_argument("--wait", type=float, default=0.5, help="seconds to let a spawned game run first")

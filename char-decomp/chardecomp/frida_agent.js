@@ -466,6 +466,34 @@ rpc.exports = {
 
   scanHitsList() { return scanHits.map(p => p.toString()); },
 
+  // Address passed as argument `idx` to the first call of `loc` (e.g. a C++ method's this pointer).
+  async firstArg(loc, idx, timeoutMs) {
+    return await new Promise(resolve => {
+      let done = false;
+      const l = Interceptor.attach(resolveFunc(loc), {
+        onEnter(args) {
+          if (done) return;
+          done = true;
+          resolve(args[idx].toString());
+          setTimeout(() => l.detach(), 0);
+        },
+      });
+      setTimeout(() => { if (!done) { done = true; l.detach(); resolve(null); } }, timeoutMs);
+    });
+  },
+
+  // Offsets inside the object at `obj` (first `size` bytes) holding a pointer to `addr`, or up to maxOff below it.
+  fieldsPointingTo(obj, size, addr, maxOff) {
+    const hi = BigInt(ptr(addr).toString()), lo = hi - BigInt(maxOff);
+    const ps = Process.pointerSize, out = [];
+    for (let off = 0; off + ps <= size; off += ps) {
+      let v;
+      try { v = BigInt(ptr(obj).add(off).readPointer().toString()); } catch (e) { break; }
+      if (v >= lo && v <= hi) out.push({ offset: off, field_offset: Number(hi - v) });
+    }
+    return out;
+  },
+
   scanNext(type, value) {
     scanHits = scanHits.filter(p => {
       try {

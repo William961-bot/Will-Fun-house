@@ -9,6 +9,9 @@ from __future__ import annotations
 
 from ..ucs import UCSError, migrate, validate
 
+# Fields the port runtimes compute every step; other claimed fields are carried in the spec but not simulated.
+SIMULATED = ("x", "y", "vx", "vy", "state", "hp", "meter", "hitbox_active")
+
 CATEGORIES = ("transferable", "convertible", "reimplementable", "manual", "unsupported", "unknown")
 
 # Assumptions the runtime makes whenever it runs; each is tested by trace comparison, none is a UCS fact.
@@ -130,7 +133,8 @@ def extract(doc: dict) -> dict:
         if str(a["to"]) not in timed:
             missing.append(f"state {a['to']} ({a['name']}): no timed transition out of it")
     walk = [a for a in actions.values() if a["kind"] == "walk"]
-    manual = []
+    manual = [f"field {n}: claimed, but the port runtime does not simulate it" for n in sorted(fields)
+              if n not in SIMULATED]
     for a in walk:
         if str(a["to"]) not in timed:
             manual.append(f"leaving the walk state ({a['to']}): no transition out of it is claimed; the port stays in "
@@ -143,7 +147,8 @@ def extract(doc: dict) -> dict:
         manual.append("animation rotation blending: the source uses nlerp; targets that blend rotations with slerp "
                       "differ by a bounded amount (see the UCS animation runtime match)")
     return {"source_ucs_version": doc["version"], "character": _v(doc["source"]["character"]),
-            "tick_rate": _v(doc["time_base"]["tick_rate"]), "fields": fields, "types": types, "physics": physics,
+            "tick_rate": _v(doc["time_base"]["tick_rate"]), "fields": fields, "types": types,
+            "simulated_fields": [n for n in SIMULATED if n in fields], "physics": physics,
             "input": input_fn, "actions": {str(k): v for k, v in actions.items()}, "moves": moves,
             "timed": timed, "abilities": abilities, "hitstun_state": _hitstun_state(moves, abilities),
             "assumptions": ASSUMPTIONS, "manual": manual, "missing": missing, "evidence": ev}

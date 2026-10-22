@@ -163,8 +163,14 @@ function R:snapshot(tick)
 	local out = {tick = tick, fighters = {}, projectile = {active = num(self.proj.active), x = num(self.proj.x)}}
 	for i, c in ipairs(self.f) do
 		local row = {}
-		for name in pairs(self.spec.fields) do
-			if c[name] ~= nil then row[name] = c[name] end
+		if self.spec.simulated_fields then
+			for _, name in ipairs(self.spec.simulated_fields) do
+				if c[name] ~= nil then row[name] = c[name] end
+			end
+		else
+			for name in pairs(self.spec.fields) do
+				if c[name] ~= nil then row[name] = c[name] end
+			end
 		end
 		out.fighters[i] = row
 	end

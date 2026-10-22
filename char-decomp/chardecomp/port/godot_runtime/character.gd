@@ -159,7 +159,7 @@ func snapshot(tick: int) -> Dictionary:
 	var out := {"tick": tick, "fighters": [], "projectile": {"active": int(proj["active"]), "x": float(proj["x"])}}
 	for c in f:
 		var row := {}
-		for name in spec["fields"]:
+		for name in spec.get("simulated_fields", spec["fields"].keys()):
 			if c.has(name):
 				row[name] = c[name]
 		out["fighters"].append(row)

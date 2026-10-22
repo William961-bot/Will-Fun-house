@@ -161,3 +161,20 @@ def test_autoclaim_on_the_first_character_agrees_with_the_hand_claims(toy, claim
     assert m["timed"][1] == [0, 37] and m["timed"][2] == [0, 18] and m["timed"][5] == [0, 29]
     assert m["ability"]["cost"] == 50 and 38 < m["ability"]["min_allowed"] <= 57
     assert m["projectile"]["speed"] == 8.0 and m["frame_offset"] == "0x1c"
+
+
+def test_scan_finds_the_fighter_from_a_method_argument(brawler, tmp_path, capsys):
+    """scan --from-arg: the per-fighter update's this pointer, reached from a global through the game object (the
+    tick's this pointer): the two-level base the live session found, [[g_game]+0x8]."""
+    exe, g = brawler["dir"] / "toy_brawler", brawler["g_game"]
+    w = tmp_path / "W"
+    run_cli("init", w, "--binary", exe, "--spawn", f"{exe} idle 300")
+    run_cli("static", w)
+    upd = subprocess.run(["nm", "-C", brawler["dir"] / "dbg"], capture_output=True, text=True).stdout
+    update = int(re.search(r"^([0-9a-f]+) \w Brawler::update\(\)$", upd, re.M).group(1), 16)
+    capsys.readouterr()
+    run_cli("scan", w, "--from-arg", f"toy_brawler+{update:#x}:0", "--via", f"{brawler['tick']}:0",
+            "--pointer-offset", "0x40")
+    bases = json.loads(capsys.readouterr().out)["bases"]
+    assert {"base": f"[[toy_brawler+{g:#x}]+0x8]", "field_offset": 0} in [
+        {k: b[k] for k in ("base", "field_offset")} for b in bases]

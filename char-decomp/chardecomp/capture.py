@@ -181,6 +181,33 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def scan_from_arg(target: Target, func: str, idx: int, via: tuple[str, int] | None = None,
+                  pointer_offset: int = 0x1000, via_size: int = 0x400, timeout: float = 5.0) -> dict:
+    """Stable base expressions for an object the game passes to a function (e.g. a method's this pointer).
+
+    One level: globals pointing at the object. With `via` (another function argument, e.g. the game object whose
+    method is the tick), also two levels: globals pointing at that object, and its fields pointing at ours."""
+    sess = Session(target)
+    try:
+        sess.resume()
+        addr = sess.api.first_arg(func, idx, int(timeout * 1000))
+        if addr is None:
+            raise RuntimeError(f"{func} was not called within {timeout} s")
+        res = {"address": addr, "bases": [dict(c, value_at=addr) for c in sess.api.pointers_to(addr, pointer_offset)]}
+        if via:
+            mid = sess.api.first_arg(via[0], via[1], int(timeout * 1000))
+            res["via"] = mid
+            if mid is not None:
+                for outer in sess.api.pointers_to(mid, 0):
+                    for f in sess.api.fields_pointing_to(mid, via_size, addr, pointer_offset):
+                        expr = f"[{outer['base']}+{f['offset']:#x}]"
+                        res["bases"].append({"base": expr, "field_offset": f["field_offset"], "value_at": addr,
+                                             "levels": 2})
+        return res
+    finally:
+        sess.close(kill=sess.spawned)
+
+
 def scan(target: Target, vtype: str, first_value, next_values=None, pointer_offset: int = 0x1000,
          wait: float = 0.5):
     """Value scan like Cheat Engine: narrow memory down to addresses holding the character's value.
