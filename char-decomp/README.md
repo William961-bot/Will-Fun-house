@@ -295,11 +295,20 @@ Tested here (Linux x86-64, Frida 17.24, Ghidra 11.4.2, zig 0.17, `pytest`; see `
 - coverage diff, value and pointer scan, hooks, per-frame snapshots with timestamps, watchpoints, file tracing
 - the ledger: verified, rejected and tampered evidence, identity claims and strict mode
 - both Ghidra scripts, headless, against the toy's symbols
-- the agent's 23 tools against real recordings, and `agent.run` with a fake client (request shape, refusal stop)
+- assets (TFMD/TFAN, glTF export accepted by the Khronos validator), animation compared with recorded poses
+- movement, input mapping, collision, damage, resource-gated abilities: measured values equal the sources'
+  constants for two native characters (C and C++)
+- ports: Godot 4.4.1 (headless replay, runtime glTF load) and a Minetest 5.6.1 mod (packaged, installed,
+  validated by the game's server, rolled back on failure); replays match the source tick for tick except
+  differences explained by tests
+- the agent's 25 tools against real recordings, and `agent.run` with a fake client (request shape, refusal stop)
 
 Not tested here:
 - **Windows.** The Frida agent's Windows paths (`CreateFileW`, `ReadFile`) and Frida on Windows were not run.
 - **The live agent loop** against the Claude API (no key in this environment).
+- **A commercial game.** Everything ran against the two toy characters; real games add engines, anti-tamper
+  rules and assets you may not redistribute (stay offline, single-player, keep extracted data private).
+- Luanti >= 5.10 (glTF models) and a rendering client: the Minetest mod was validated server-side only.
 
 Known limits:
 - The built-in static exporter is x86/x64 only and has no decompiler (use Ghidra or REA for C).
