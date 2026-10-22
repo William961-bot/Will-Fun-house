@@ -21,6 +21,7 @@ class Trace:
     hook_seq: list | None = None
     snaps: list[tuple[int, list[bytes | None]]] = field(default_factory=list)
     snap_times: list[float | None] = field(default_factory=list)  # ms per snapshot; None in format-1 traces
+    graphs: list[dict[str, bytes] | None] = field(default_factory=list)  # pointer graph per snapshot, if followed
     watch: dict | None = None
     files: list[dict] = field(default_factory=list)
 
@@ -55,6 +56,8 @@ def load(path: Path) -> Trace:
         elif kind == "snap":
             t.snaps.append((ev["tick"], [bytes.fromhex(o) if o else None for o in ev["objs"]]))
             t.snap_times.append(ev.get("t"))
+            g = ev.get("graph")
+            t.graphs.append({k: bytes.fromhex(v) for k, v in g.items()} if g is not None else None)
         elif kind == "watch":
             t.watch = ev
         elif kind == "file":
@@ -200,3 +203,69 @@ def window_runs(t: Trace, offset: int, vtype: str, obj: int = 0, where: dict | N
     last = t.snaps[-1][0] if t.snaps else None
     return [{"start_tick": w[0][0], "end_tick": w[-1][0], "cut": w[0][0] == first or w[-1][0] == last,
              "runs": rle([v for _, v in w])} for w in wins if w]
+
+
+# ----------------------------------------------------------------------------- structure (Stage 2)
+
+
+def graph_paths(t: Trace) -> list[dict]:
+    """Objects reached from object 0 by following pointers: how often each path resolved, and which of its
+    4-byte fields changed. A path is the chain of offsets taken from the root ("0x68", "0x68/0x10")."""
+    n = len(t.graphs)
+    seen: dict[str, list[bytes]] = {}
+    for g in t.graphs:
+        for path, buf in (g or {}).items():
+            seen.setdefault(path, []).append(buf)
+    rows = []
+    for path, bufs in sorted(seen.items(), key=lambda kv: (kv[0].count("/"), kv[0])):
+        size = min(len(b) for b in bufs)
+        changing = [off for off in range(0, size - 3, 4) if len({b[off:off + 4] for b in bufs}) > 1]
+        rows.append({"path": path, "depth": path.count("/") + 1, "resolved": len(bufs), "snapshots": n,
+                     "changing_offsets": [hex(o) for o in changing]})
+    return rows
+
+
+def graph_series(t: Trace, path: str, offset: int, vtype: str) -> list[tuple[int, object]]:
+    """(tick, value) of a field inside a followed object; None where the path did not resolve."""
+    return [(tick, decode((g or {}).get(path), offset, vtype)) for (tick, _), g in zip(t.snaps, t.graphs)]
+
+
+def transitions(points: list[tuple[int, object]]) -> dict:
+    """State machine observed in a series: edges with counts and ticks, and how long each visit lasted.
+
+    Visits touching the start or end of the recording are marked clipped and left out of the durations."""
+    runs: list[list] = []  # [value, first_tick, length]
+    for tick, v in points:
+        if runs and runs[-1][0] == v and tick == runs[-1][1] + runs[-1][2]:
+            runs[-1][2] += 1
+        else:
+            runs.append([v, tick, 1])
+    edges: dict[tuple, dict] = {}
+    for a, b in zip(runs, runs[1:]):
+        e = edges.setdefault((a[0], b[0]), {"from": a[0], "to": b[0], "count": 0, "ticks": []})
+        e["count"] += 1
+        e["ticks"].append(b[1])
+    states: dict = {}
+    for i, (v, first, length) in enumerate(runs):
+        st = states.setdefault(v, {"value": v, "visits": 0, "durations": [], "clipped": 0})
+        st["visits"] += 1
+        if i == 0 or i == len(runs) - 1:
+            st["clipped"] += 1
+        else:
+            st["durations"].append(length)
+    return {"states": list(states.values()), "edges": list(edges.values())}
+
+
+def change_ticks(points: list[tuple[int, object]], frm, to) -> list[int]:
+    """Snapshot ticks at which a value went from `frm` to `to` (consecutive ticks only)."""
+    return [b[0] for a, b in zip(points, points[1:]) if b[0] == a[0] + 1 and a[1] == frm and b[1] == to]
+
+
+def call_ticks(t: Trace, func: str) -> list[int]:
+    """Tick counter values at each recorded call of a hooked function (from the hook sequence)."""
+    return [row[0] for row in (t.hook_seq or []) if row[1] == func]
+
+
+def callers(t: Trace, func: str) -> dict[str, int]:
+    """Observed call sites (return addresses) of a hooked function, with counts."""
+    return dict(((t.hooks or {}).get(func) or {}).get("callers", {}))

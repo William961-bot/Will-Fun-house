@@ -17,7 +17,7 @@ from pathlib import Path
 
 from . import traces as T
 from .addr import AddressError, check_expr, check_location
-from .ledger import Ledger, _off
+from .ledger import Ledger, split_field
 from .staticdb import StaticDB
 
 DEFAULT_CONFIG = {
@@ -169,11 +169,19 @@ def observed(work: Path, ledger: Ledger, cfg: dict) -> dict:
                         add(f["loc"], f"opened {Path(e['path']).name} in {label}")
 
     fields: dict[int, set[str]] = {}
+    components: dict[str, set[str]] = {}
+    component_fields: dict[str, set[str]] = {}
     for label, t in all_traces.items():
         if t.snaps:
             for r in T.changing_fields(t):
                 fields.setdefault(r["offset"], set()).add(label)
-    return {"functions": funcs, "fields": fields}
+        if any(t.graphs):
+            for r in T.graph_paths(t):
+                if r["changing_offsets"]:  # only objects that change while the character acts
+                    components.setdefault(r["path"], set()).add(label)
+                    for off in r["changing_offsets"]:
+                        component_fields.setdefault(f"{r['path']}@{off}", set()).add(label)
+    return {"functions": funcs, "fields": fields, "components": components, "component_fields": component_fields}
 
 
 def completeness(work: Path, ledger: Ledger, cfg: dict) -> dict:
@@ -186,10 +194,19 @@ def completeness(work: Path, ledger: Ledger, cfg: dict) -> dict:
     verified = ledger.claims(status="verified")
     named_funcs = {c["subject"] for c in verified if c["kind"] == "function"}
     covered = set()
+    covered_comp = set()
     for c in verified:
         if c["kind"] == "field":
-            off = _off(c["subject"])
-            covered.update(range(off, off + TYPE_SIZE.get(c["ctype"] or "i32", 4)))
+            path, off = split_field(c["subject"])
+            span = range(off, off + TYPE_SIZE.get(c["ctype"] or "i32", 4))
+            if path:
+                covered_comp.update(f"{path}@{o:#x}" for o in span)
+            else:
+                covered.update(span)
+    named_comps = {c["subject"] for c in verified if c["kind"] == "component"}
+    c_left = sorted(p for p in obs["components"] if p not in named_comps)
+    cf_left = sorted(k for k in obs["component_fields"] if k not in covered_comp)
+    transitions = len([c for c in verified if c["kind"] == "transition"])
     f_left = sorted(f for f in obs["functions"] if f not in named_funcs)
     d_left = sorted(o for o in obs["fields"] if o not in covered)
     nf, nd = len(obs["functions"]), len(obs["fields"])
@@ -198,6 +215,13 @@ def completeness(work: Path, ledger: Ledger, cfg: dict) -> dict:
                       "unexplained": [{"func": f, "seen": sorted(obs["functions"][f])} for f in f_left]},
         "fields": {"observed": nd, "explained": nd - len(d_left),
                    "unexplained": [{"offset": hex(o), "seen_in": sorted(obs["fields"][o])} for o in d_left]},
+        "components": {"observed": len(obs["components"]), "explained": len(obs["components"]) - len(c_left),
+                       "unexplained": [{"path": p, "seen_in": sorted(obs["components"][p])} for p in c_left]},
+        "component_fields": {"observed": len(obs["component_fields"]),
+                             "explained": len(obs["component_fields"]) - len(cf_left),
+                             "unexplained": [{"field": k, "seen_in": sorted(obs["component_fields"][k])}
+                                             for k in cf_left]},
+        "transitions": transitions,
         "moves": len([c for c in verified if c["kind"] == "move"]),
         "assets": len([c for c in verified if c["kind"] == "asset"]),
         "broken_traces": broken,

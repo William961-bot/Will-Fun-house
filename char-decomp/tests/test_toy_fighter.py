@@ -96,6 +96,12 @@ def full(game, work):
     run("record", work, "heavy_hit", "--seconds", SECONDS, "--spawn", spawn(game, "heavy"), *common,
         "--hooks", "auto", "--files", "--watch", f"[toy_fighter+{g:#x}]+0x1c:4")
     run("record", work, "heavy_whiff", "--seconds", SECONDS, "--spawn", spawn(game, "heavy", far=True), *common)
+    # New workspaces require a verified identity before snapshot checks count (ADR 0003, Stage 2 decision).
+    with Ledger(work) as led:
+        ident = led.add("identity", f"[toy_fighter+{g:#x}]", "ryo", "HP 1337, game_tick once per frame", [
+            {"check": "tick_rate", "trace": "heavy_whiff", "min_hz": 20, "max_hz": 2000},
+            {"check": "field_equals", "trace": "heavy_whiff", "offset": "0x4", "eq": 1337, "at": "all"}])
+        assert ident["status"] == "verified", ident
     return work
 
 

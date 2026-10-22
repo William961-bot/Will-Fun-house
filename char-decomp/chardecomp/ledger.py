@@ -7,9 +7,12 @@ and `verify` re-runs everything, so a claim can't outlive the data it came from.
 
 Policy (what each kind of claim must be backed by):
   function  at least one dynamic check: executed / called_with_char / writes
-  field     at least one dynamic check on that offset: rle / changes / value_change / field_equals / writes
+  field     at least one dynamic check on that offset (and path, for "PATH@OFFSET" component fields):
+            rle / changes / value_change / field_equals / transition / writes
   move      at least one rle check (frame data comes from per-frame measurements)
   asset     at least one opens_file check
+  component an object reached from the character through pointers: graph_resolves on that path
+  transition a state change seen in a field: a transition check
   identity  that a snapshot base expression really is the character and the tick function really runs once
             per frame: a tick_rate check plus an anchor (field_equals or value_change on object 0), all on
             traces whose object 0 is that base (ADR 0003)
@@ -36,14 +39,17 @@ from .staticdb import StaticDB, parse_loc
 
 REQUIRED = {
     "function": {"executed", "called_with_char", "writes"},
-    "field": {"rle", "changes", "value_change", "field_equals", "writes"},
+    "field": {"rle", "changes", "value_change", "field_equals", "transition", "writes"},
     "move": {"rle"},
     "asset": {"opens_file"},
     "identity": {"tick_rate"},
+    "component": {"graph_resolves"},
+    "transition": {"transition"},
     "note": set(),
 }
 IDENTITY_ANCHORS = {"field_equals", "value_change"}
-SNAPSHOT_CHECKS = {"rle", "changes", "value_change", "field_equals", "base_resolves"}
+SNAPSHOT_CHECKS = {"rle", "changes", "value_change", "field_equals", "base_resolves", "transition", "precedes",
+                   "graph_resolves"}
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS traces (label TEXT PRIMARY KEY, path TEXT, sha256 TEXT, recorded_at TEXT);
@@ -222,12 +228,16 @@ class Ledger:
                             + (f"; e.g. {bad[0]}" if bad else ""))
             if kind == "changes":
                 t = self.trace(c["trace"])
-                vals = {v for _, v in T.series(t, _off(c["offset"]), c.get("type", "i32"), c.get("obj", 0),
-                                               _where(c.get("where")))}
+                if c.get("path"):
+                    pts = T.graph_series(t, c["path"], _off(c["offset"]), c.get("type", "i32"))
+                    vals = {v for _, v in pts if v is not None}
+                else:
+                    vals = {v for _, v in T.series(t, _off(c["offset"]), c.get("type", "i32"), c.get("obj", 0),
+                                                   _where(c.get("where")))}
                 return len(vals) > 1, f"{len(vals)} distinct values: {sorted(vals, key=str)[:12]}"
             if kind == "value_change":
                 t = self.trace(c["trace"])
-                pts = T.series(t, _off(c["offset"]), c.get("type", "i32"), c.get("obj", 0))
+                pts = self._points(t, c)
                 ticks = [b[0] for a, b in zip(pts, pts[1:]) if a[1] == c["from"] and b[1] == c["to"]]
                 return bool(ticks), f"{c['from']} -> {c['to']} at ticks {ticks[:10]}"
             if kind == "tick_rate":
@@ -252,14 +262,53 @@ class Ledger:
                 return ok, f"{how}; {gaps} gaps in the tick sequence; wanted {c['min_hz']}-{c['max_hz']} Hz"
             if kind == "field_equals":
                 t = self.trace(c["trace"])
-                vals = [v for _, v in T.series(t, _off(c["offset"]), c.get("type", "i32"), c.get("obj", 0))
-                        if v is not None]
+                vals = [v for _, v in self._points(t, c) if v is not None]
                 if not vals:
                     return False, f"no readable snapshots of object {c.get('obj', 0)} in {c['trace']}"
                 at = c.get("at", "first")
                 ok = {"first": vals[0] == c["eq"], "all": all(v == c["eq"] for v in vals),
                       "any": c["eq"] in vals}[at]
                 return ok, f"{at} value(s) at {_off(c['offset']):#x}: {vals[0] if at == 'first' else sorted(set(vals), key=str)[:8]}, wanted {c['eq']}"
+            if kind == "graph_resolves":
+                t = self.trace(c["trace"])
+                if not t.graphs or all(g is None for g in t.graphs):
+                    raise CheckError(f"trace {c['trace']} was not recorded with --follow")
+                good = sum(1 for g in t.graphs if g and c["path"] in g)
+                frac = good / len(t.graphs)
+                return frac >= c.get("min_fraction", 1.0), f"{c['path']} resolved in {good}/{len(t.graphs)} snapshots"
+            if kind == "transition":
+                t = self.trace(c["trace"])
+                pts = self._points(t, c)
+                tr = T.transitions(pts)
+                edge = next((e for e in tr["edges"] if e["from"] == c["from"] and e["to"] == c["to"]), None)
+                n = edge["count"] if edge else 0
+                ok = n >= c.get("min_count", 1)
+                detail = f"{c['from']} -> {c['to']} seen {n} times"
+                if c.get("duration") is not None:
+                    durs = self._durations_before(pts, c["from"], c["to"])
+                    ok = ok and bool(durs) and all(d == c["duration"] for d in durs)
+                    detail += f"; {c['from']} lasted {sorted(set(durs))} ticks before it (wanted {c['duration']})"
+                return ok, detail
+            if kind == "precedes":
+                t = self.trace(c["trace"])
+                if not t.hook_seq:
+                    raise CheckError(f"trace {c['trace']} has no hook sequence (record with --hooks)")
+                changes = T.change_ticks(self._points(t, c), c["from"], c["to"])
+                calls = set(T.call_ticks(t, c["func"]))
+                lag = c.get("max_lag", 0)
+                # A call during frame k sees the tick counter at k-1; frame k's snapshot is taken after it.
+                missing = [k for k in changes if not any((k - 1 - d) in calls for d in range(lag + 1))]
+                ok = bool(changes) and not missing
+                return ok, (f"{len(changes) - len(missing)}/{len(changes)} changes {c['from']} -> {c['to']} had a call "
+                            f"to {c['func']} in the same frame" + (f" (lag <= {lag})" if lag else "")
+                            + (f"; missing at ticks {missing[:8]}" if missing else ""))
+            if kind == "called_from":
+                t = self.trace(c["trace"])
+                sites = T.callers(t, c["func"])
+                if not sites:
+                    return False, f"{c['func']} has no recorded callers in {c['trace']} (hooked with format-2 traces only)"
+                hits = {s: n for s, n in sites.items() if self._contains(c["caller"], s)}
+                return bool(hits), f"{sum(hits.values())} calls of {c['func']} came from {c['caller']} ({', '.join(hits) or 'none'})"
             if kind == "base_resolves":
                 t = self.trace(c["trace"])
                 obj = c.get("obj", 0)
@@ -293,6 +342,23 @@ class Ledger:
         except KeyError as e:
             return False, f"check {kind!r} is missing field {e}"
 
+    @staticmethod
+    def _points(t: T.Trace, c: dict) -> list[tuple[int, object]]:
+        if c.get("path"):
+            return T.graph_series(t, c["path"], _off(c["offset"]), c.get("type", "i32"))
+        return T.series(t, _off(c["offset"]), c.get("type", "i32"), c.get("obj", 0), _where(c.get("where")))
+
+    @staticmethod
+    def _durations_before(pts, frm, to) -> list[int]:
+        """Lengths of complete visits to `frm` that ended in `to` (the first visit may be clipped: skipped)."""
+        runs: list[list] = []
+        for tick, v in pts:
+            if runs and runs[-1][0] == v and tick == runs[-1][1] + runs[-1][2]:
+                runs[-1][2] += 1
+            else:
+                runs.append([v, tick, 1])
+        return [a[2] for i, (a, b) in enumerate(zip(runs, runs[1:])) if i > 0 and a[0] == frm and b[0] == to]
+
     # ------------------------------------------------------------------ claims
 
     def add(self, kind: str, subject: str, name: str, statement: str, checks: list[dict],
@@ -305,10 +371,13 @@ class Ledger:
         if need and not any(c.get("check") in need for c in checks):
             raise ValueError(f"a {kind} claim needs at least one of these checks: {sorted(need)}")
         if kind == "field":
-            off = _off(subject)
-            if not any(c.get("check") == "writes" or (c.get("check") in need and _off(c.get("offset", -1)) == off)
-                       for c in checks):
-                raise ValueError("a field claim's dynamic check must measure that same offset")
+            path, off = split_field(subject)
+            if not any(c.get("check") == "writes" or (c.get("check") in need and c.get("path", "") == path
+                                                      and _off(c.get("offset", -1)) == off) for c in checks):
+                raise ValueError("a field claim's dynamic check must measure that same offset (and path)")
+        if kind == "component" and not any(c.get("check") == "graph_resolves" and c.get("path") == subject
+                                           for c in checks):
+            raise ValueError("a component claim's graph_resolves check must name the same path")
         if kind == "identity":
             subject = self._validate_identity(subject, checks)
         gate = kind != "identity"
@@ -383,6 +452,12 @@ class Ledger:
     def retract(self, claim_id: int):
         with self.db:
             self.db.execute("DELETE FROM claims WHERE id=?", (claim_id,))
+
+
+def split_field(subject: str) -> tuple[str, int]:
+    """Field subjects: "0x1c" (on the character object) or "0x68@0x4" (offset 0x4 in the object at path 0x68)."""
+    path, sep, off = str(subject).rpartition("@")
+    return (path if sep else ""), _off(off)
 
 
 def _off(v) -> int:

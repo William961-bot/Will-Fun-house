@@ -115,11 +115,14 @@ function hooksStart(funcs, argCount) {
   for (const f of funcs) {
     let addr;
     try { addr = resolveFunc(f); } catch (e) { continue; }
-    const st = hookStats[f] = { calls: 0, char_args: new Array(argCount).fill(0) };
+    const st = hookStats[f] = { calls: 0, char_args: new Array(argCount).fill(0), callers: {} };
     try {
       listeners.push(Interceptor.attach(addr, {
         onEnter(args) {
           st.calls++;
+          // Runtime call edges: the return address names the call site, including virtual and indirect calls.
+          const site = loc(this.returnAddress);
+          if (site in st.callers || Object.keys(st.callers).length < 64) st.callers[site] = (st.callers[site] || 0) + 1;
           const base = currentCharBase();
           let hit = -1;
           if (base !== null) {
@@ -140,6 +143,39 @@ function hooksStart(funcs, argCount) {
 let snapBuf = null;
 let snapCfg = null;
 
+// Pointer graph: from object 0, follow pointer-sized, aligned values that land in readable writable memory,
+// up to cfg.follow.depth levels, max_objects objects and max_bytes bytes per snapshot. Paths name each object by
+// the offsets taken from the root, e.g. "0x68" or "0x68/0x10".
+function followGraph(root, f) {
+  const out = {};
+  let objects = 0, bytes = 0;
+  const ps = Process.pointerSize;
+  const queue = [[root, '', 0]];
+  const seen = new Set([root.toString()]);
+  while (queue.length) {
+    const [addr, path, depth] = queue.shift();
+    if (depth >= f.depth) continue;
+    let buf;
+    try { buf = new Uint8Array(addr.readByteArray(depth === 0 ? f.root_size : f.size)); } catch (e) { continue; }
+    for (let off = 0; off + ps <= buf.length; off += ps) {
+      let v = 0n;
+      for (let i = ps - 1; i >= 0; i--) v = (v << 8n) | BigInt(buf[off + i]);
+      if (v < 0x10000n) continue;
+      const p = ptr('0x' + v.toString(16));
+      if (seen.has(p.toString())) continue;
+      const r = Process.findRangeByAddress(p);
+      if (!r || r.protection.indexOf('rw') !== 0 || Process.findModuleByAddress(p)) continue;  // heap/data objects only
+      if (objects >= f.max_objects || bytes + f.size > f.max_bytes) return { objs: out, truncated: true };
+      const child = path ? path + '/0x' + off.toString(16) : '0x' + off.toString(16);
+      try { out[child] = arrayHex(p.readByteArray(f.size)); } catch (e) { continue; }
+      seen.add(p.toString());
+      objects++; bytes += f.size;
+      queue.push([p, child, depth + 1]);
+    }
+  }
+  return { objs: out, truncated: false };
+}
+
 function snapStart(cfg) {
   snapCfg = cfg;
   snapBuf = [];
@@ -154,6 +190,11 @@ function snapStart(cfg) {
         if (b === null || b.isNull()) return null;
         try { return arrayHex(b.readByteArray(cfg.size)); } catch (e) { return null; }
       }) };
+      if (cfg.follow && bases[0] !== null && !bases[0].isNull()) {
+        const g = followGraph(bases[0], Object.assign({ root_size: cfg.size }, cfg.follow));
+        row.graph = g.objs;
+        if (g.truncated) row.graph_truncated = true;
+      }
       snapBuf.push(row);
       if (snapBuf.length >= 64) flushSnaps();
     },
@@ -224,6 +265,7 @@ function watchStop() {
 // ---------------------------------------------------------------- file I/O (which assets does the character load?)
 let fileEvents = null;
 const fdPath = {};
+const fdPos = {};
 
 function caller(ctx, ret) {
   // The first return address inside the game's own modules.
@@ -270,7 +312,7 @@ function filesStart() {
     const leave = (self, okFd) => {
       if (!self.outer) return;
       inOpen.delete(self.threadId);
-      if (okFd !== null) { fdPath[okFd] = self.path; opened(self.path, self.ctx, self.ret); }
+      if (okFd !== null) { fdPath[okFd] = self.path; fdPos[okFd] = 0; opened(self.path, self.ctx, self.ret); }
     };
     hookExport('fopen', {
       onEnter(a) { enter(this, a[0].readUtf8String()); },
@@ -279,7 +321,7 @@ function filesStart() {
         inOpen.delete(this.threadId);
         if (!r.isNull()) {
           const fd = fileno ? fileno(r) : -1;
-          if (fd >= 0) fdPath[fd] = this.path;
+          if (fd >= 0) { fdPath[fd] = this.path; fdPos[fd] = 0; }
           opened(this.path, this.ctx, this.ret);
         }
       },
@@ -296,8 +338,21 @@ function filesStart() {
     });
     hookExport('read', {
       onEnter(a) { this.fd = a[0].toInt32(); },
-      onLeave(r) { const n = r.toInt32(); if (n > 0 && fdPath[this.fd]) fileEvents.push({ op: 'read', path: fdPath[this.fd], bytes: n, tick, t: now() }); },
+      onLeave(r) {
+        const n = r.toInt32();
+        if (n > 0 && fdPath[this.fd]) {
+          const pos = fdPos[this.fd];
+          fileEvents.push({ op: 'read', path: fdPath[this.fd], bytes: n, pos: pos === undefined ? null : pos, tick, t: now() });
+          if (pos !== undefined) fdPos[this.fd] = pos + n;
+        }
+      },
     });
+    for (const name of ['lseek', 'lseek64']) {
+      hookExport(name, {
+        onEnter(a) { this.fd = a[0].toInt32(); },
+        onLeave(r) { if (fdPath[this.fd] !== undefined) { const p = r.toInt32(); fdPos[this.fd] = p >= 0 ? p : undefined; } },
+      });
+    }
   }
 }
 

@@ -28,7 +28,7 @@ need adapters that observe the script runtime.
 
 `docs/baseline.md`, `docs/architecture.md`, this roadmap, ADR 0001–0002. Gate: baseline documented.
 
-## Stage 1: reliability and correctness (implemented; gate report in `docs/stages/stage-1.md`, awaiting approval)
+## Stage 1: reliability and correctness (done: `docs/stages/stage-1.md`)
 
 - Reject unsupported CPU architectures in `static_lite` (and report the architecture each exporter saw).
 - Dotted config keys (`target.modules`, `target.spawn`, ...) and validation of `char_base` / `tick`.
@@ -41,7 +41,7 @@ need adapters that observe the script runtime.
 
 Gate: old and new tests pass; unsupported paths fail with a clear error. Windows runtime tests: not available here.
 
-## Stage 2: structured character discovery
+## Stage 2: structured character discovery (done: `docs/stages/stage-2.md`)
 
 Pointer-graph snapshots with declared depth/size limits (`capture.Features` + `frida_agent.js`); component
 discovery (objects reachable from the character that change during actions); state-field and transition discovery

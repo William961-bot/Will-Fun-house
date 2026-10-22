@@ -34,6 +34,8 @@ def file_rows(t: T.Trace, static: StaticDB | None) -> list[dict]:
             r["callers"].add(_containing(static, e["caller"]) or e["caller"])
         else:
             r["bytes_read"] += e.get("bytes", 0)
+            if e.get("pos") is not None:
+                r.setdefault("ranges", []).append([e["pos"], e["bytes"]])  # [offset in file, bytes] per read
     return [{**r, "callers": sorted(r["callers"])} for r in opens.values()]
 
 

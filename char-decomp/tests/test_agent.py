@@ -24,7 +24,7 @@ def call(tools, tool, **kw):
 
 
 def test_every_tool_has_a_valid_schema(tools):
-    assert len(tools) == 16
+    assert len(tools) == 19
     for t in tools.values():
         d = t.to_dict()
         assert d["input_schema"]["type"] == "object" and d["description"]
@@ -45,6 +45,10 @@ def test_read_tools(toy, tools):
     assert [w["runs"] for w in runs if not w["cut"]][0] == [[0, 13], [1, 4], [0, 20]]
     assert L["update_move"] in call(tools, "watch_hits", trace="heavy_hit")
     assert "ryo/sprite.bin" in call(tools, "file_events", trace="heavy_hit")
+    edges = json.loads(call(tools, "state_transitions", trace="heavy_whiff", offset="0x18"))["edges"]
+    assert {(e["from"], e["to"]) for e in edges} == {(0, 1), (1, 0)}
+    assert L["game_tick"].split("+")[0] in call(tools, "call_sites", trace="heavy_hit", func=L["update_move"])
+    assert json.loads(call(tools, "object_graph", trace="heavy_whiff")) == []  # recorded without follow
 
 
 def test_claims_go_through_the_ledger(toy, tools):
@@ -117,7 +121,7 @@ def test_run_builds_the_documented_request_and_writes_a_report(fresh_work, capsy
     assert kw["fallbacks"] == "default"
     assert set(kw["betas"]) == {"server-side-fallback-2026-07-01", "context-management-2025-06-27"}
     assert kw["context_management"]["edits"][0]["type"] == "clear_tool_uses_20250919"
-    assert len(kw["tools"]) == 16 and "frame data" in kw["messages"][0]["content"]
+    assert len(kw["tools"]) == 19 and "frame data" in kw["messages"][0]["content"]
     assert "identity claim" in kw["system"]
     out = capsys.readouterr().out
     assert "-> overview" in out and "Done: nothing verified yet." in out

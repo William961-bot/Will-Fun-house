@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from .ledger import Ledger, _off
+from .ledger import Ledger, _off, split_field
 from .staticdb import parse_loc
 from .workspace import TYPE_SIZE, completeness
 
@@ -63,11 +63,30 @@ def write(work: Path, ledger: Ledger, cfg: dict) -> Path:
         L.append(f"| {r['label']} | {r['recorded_at']} | `{r['sha256'][:16]}` |")
     L.append("")
 
-    fields = sorted(by("field"), key=lambda c: _off(c["subject"]))
+    fields = sorted((c for c in by("field") if not split_field(c["subject"])[0]), key=lambda c: _off(c["subject"]))
+    comp_fields = sorted((c for c in by("field") if split_field(c["subject"])[0]), key=lambda c: split_field(c["subject"]))
     L += ["## Object layout", "", "| Offset | Type | Name | Meaning | Evidence |", "|---|---|---|---|---|"]
     for c in fields:
         L.append(f"| {_off(c['subject']):#x} | {c['ctype'] or '?'} | `{c['name']}` | {_cell(c['statement'])} | {_evidence(c)} |")
     L.append("")
+
+    comps = by("component")
+    if comps or comp_fields:
+        L += ["## Components", "", "Objects reached from the character through pointers (path = offsets followed).", "",
+              "| Path | Name | What it is | Evidence |", "|---|---|---|---|"]
+        for c in comps:
+            L.append(f"| `{c['subject']}` | `{c['name']}` | {_cell(c['statement'])} | {_evidence(c)} |")
+        L += ["", "| Field (path@offset) | Type | Name | Meaning | Evidence |", "|---|---|---|---|---|"]
+        for c in comp_fields:
+            L.append(f"| `{c['subject']}` | {c['ctype'] or '?'} | `{c['name']}` | {_cell(c['statement'])} | {_evidence(c)} |")
+        L.append("")
+
+    trans = by("transition")
+    if trans:
+        L += ["## State transitions", "", "| Transition | Name | Rule | Evidence |", "|---|---|---|---|"]
+        for c in trans:
+            L.append(f"| `{c['subject']}` | `{c['name']}` | {_cell(c['statement'])} | {_evidence(c)} |")
+        L.append("")
 
     L += ["## Functions", "", "| Address | Name | What it does | Evidence |", "|---|---|---|---|"]
     for c in sorted(by("function"), key=lambda c: parse_loc(c["subject"])[1]):
@@ -91,12 +110,17 @@ def write(work: Path, ledger: Ledger, cfg: dict) -> Path:
         L.append("")
 
     L += ["## Not explained yet", ""]
-    if not f["unexplained"] and not d["unexplained"]:
-        L.append("Nothing: every observed function and changing field has a verified claim.")
+    if not (f["unexplained"] or d["unexplained"] or comp["components"]["unexplained"]
+            or comp["component_fields"]["unexplained"]):
+        L.append("Nothing: every observed function, changing field and component has a verified claim.")
     for u in f["unexplained"]:
         L.append(f"- function `{u['func']}`: {', '.join(u['seen'])}")
     for u in d["unexplained"]:
         L.append(f"- field {u['offset']}: changes in {', '.join(u['seen_in'])}")
+    for u in comp["components"]["unexplained"]:
+        L.append(f"- component `{u['path']}`: changes in {', '.join(u['seen_in'])}")
+    for u in comp["component_fields"]["unexplained"]:
+        L.append(f"- component field `{u['field']}`: changes in {', '.join(u['seen_in'])}")
     L.append("")
 
     if failed:

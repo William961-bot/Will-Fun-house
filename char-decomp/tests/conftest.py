@@ -48,6 +48,7 @@ def recorded(toy, tmp_path_factory):
     w = tmp_path_factory.mktemp("ws") / "W"
     g = toy["syms"]["g_fighters"]
     run_cli("init", w, "--binary", toy["dir"] / "toy_fighter", "--spawn", spawn_cmd(toy, "idle"), "--character", "Ryo")
+    run_cli("set", w, "require_identity=false")  # these tests cover lenient mode; strict mode is tested explicitly
     run_cli("static", w)
     run_cli("record", w, "idle", "--seconds", SECONDS)
     run_cli("record", w, "heavy", "--seconds", SECONDS, "--spawn", spawn_cmd(toy, "heavy"))

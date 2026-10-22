@@ -57,7 +57,12 @@ def _target(cfg: dict, a) -> capture.Target:
 
 def cmd_init(a):
     w = Path(a.work)
+    new = not (w / "config.json").exists()
     cfg = load_config(w)
+    if new:
+        # New workspaces are strict: snapshot checks need a verified identity claim (ADR 0003). Existing
+        # workspaces keep their setting.
+        cfg["require_identity"] = True
     if a.binary:
         cfg["binary"] = str(Path(a.binary).resolve())
         cfg["module"] = a.module or Path(a.binary).name
@@ -132,6 +137,13 @@ def _record(a, w, cfg, led):
         if not feats.snap_tick or not feats.char_base:
             sys.exit("--snap needs tick and char_base (chardecomp set W tick=... char_base=...)")
         feats.snap_bases = a.snap_base or []
+        if a.follow:
+            if not 1 <= a.follow <= 4:
+                sys.exit("--follow depth must be 1-4")
+            feats.follow = {"depth": a.follow, "size": a.follow_size, "max_objects": a.follow_max_objects,
+                            "max_bytes": a.follow_max_bytes}
+    elif a.follow:
+        sys.exit("--follow needs --snap")
     if a.hooks:
         if a.hooks == "auto":
             seen: dict[str, int] = {}
@@ -209,6 +221,32 @@ def cmd_fields(a):
 def cmd_runs(a):
     with _led(a) as led:
         out(T.window_runs(led.trace(a.label), _off(a.offset), a.type, a.obj, _where(a.where)))
+
+
+def cmd_graph(a):
+    with _led(a) as led:
+        out(T.graph_paths(led.trace(a.label)))
+
+
+def cmd_transitions(a):
+    with _led(a) as led:
+        t = led.trace(a.label)
+        pts = (T.graph_series(t, a.path, _off(a.offset), a.type) if a.path
+               else T.series(t, _off(a.offset), a.type, a.obj, _where(a.where)))
+        out(T.transitions(pts))
+
+
+def cmd_callers(a):
+    with _led(a) as led:
+        sites = T.callers(led.trace(a.label), a.func)
+        rows = []
+        for site, n in sorted(sites.items(), key=lambda kv: -kv[1]):
+            f = None
+            if led.static and "+" in site:
+                mod, rva = site.rsplit("+", 1)
+                f = led.static.containing(f"{mod}+{int(rva, 16) - 1:#x}")
+            rows.append({"call_site": site, "caller": f["loc"] if f else None, "calls": n})
+        out(rows)
 
 
 def cmd_watch(a):
@@ -320,6 +358,10 @@ def main(argv=None):
     s.add_argument("--files", action="store_true", help="log file opens and reads")
     s.add_argument("--keep-alive", action="store_true", help="don't kill a spawned game afterwards")
     s.add_argument("--delay", type=float, default=0.0, help="seconds to wait after resuming a spawned game")
+    s.add_argument("--follow", type=int, help="with --snap: follow pointers from the character this many levels (1-4)")
+    s.add_argument("--follow-size", type=int, default=256, help="bytes read from each followed object")
+    s.add_argument("--follow-max-objects", type=int, default=16, help="objects followed per snapshot, at most")
+    s.add_argument("--follow-max-bytes", type=int, default=8192, help="bytes followed per snapshot, at most")
 
     s = cmd("scan", cmd_scan, "find a value in memory (interactive unless --next is given)")
     s.add_argument("--type", default="i32"), s.add_argument("--value", required=True)
@@ -338,6 +380,14 @@ def main(argv=None):
     s = cmd("runs", cmd_runs, "run lengths of one field (frame data), per window")
     s.add_argument("label"), s.add_argument("offset"), s.add_argument("--type", default="i32")
     s.add_argument("--obj", type=int, default=0), s.add_argument("--where", help="OFF:TYPE:VALUE")
+    s = cmd("graph", cmd_graph, "objects reached from the character through pointers (needs --follow)")
+    s.add_argument("label")
+    s = cmd("transitions", cmd_transitions, "state machine of one field: edges, counts, visit durations")
+    s.add_argument("label"), s.add_argument("offset"), s.add_argument("--type", default="i32")
+    s.add_argument("--obj", type=int, default=0), s.add_argument("--path", help="field in a followed object")
+    s.add_argument("--where", help="OFF:TYPE:VALUE")
+    s = cmd("callers", cmd_callers, "observed call sites of a hooked function (incl. virtual/indirect calls)")
+    s.add_argument("label"), s.add_argument("func")
     s = cmd("watch", cmd_watch, "watchpoint hits with the functions that wrote")
     s.add_argument("label")
     s = cmd("files", cmd_files, "files opened and read, with the functions that opened them")
@@ -348,9 +398,11 @@ def main(argv=None):
     s.add_argument("text")
 
     s = cmd("claim", cmd_claim, "add a claim; it is verified only if every check passes")
-    s.add_argument("--kind", required=True, choices=["function", "field", "move", "asset", "identity", "note"])
+    s.add_argument("--kind", required=True, choices=["function", "field", "move", "asset", "identity", "component",
+                                                       "transition", "note"])
     s.add_argument("--subject", required=True,
-                   help="module+0xRVA, field offset, move name, file path, or (identity) the base expression")
+                   help="module+0xRVA, field offset (or PATH@OFFSET in a component), move name, file path, "
+                        "component path, transition name, or (identity) the base expression")
     s.add_argument("--name", required=True), s.add_argument("--statement"), s.add_argument("--type", help="field type: i32 f32 ...")
     s.add_argument("--checks", required=True, help="JSON list of checks, or @file")
     s = cmd("claims", cmd_claims, "list claims")

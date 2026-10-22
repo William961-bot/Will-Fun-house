@@ -21,6 +21,13 @@ typedef struct {
     int32_t damage;     // 0x14
 } Hitbox;
 
+// A separate component reached through a pointer, like the animation state of an engine character.
+typedef struct {
+    int32_t clip;   // 0x0 mirrors the fighter's state
+    int32_t frame;  // 0x4 frames since the clip started
+    float rate;     // 0x8 playback rate
+} Anim;
+
 typedef struct Fighter {
     uint32_t tag;        // 0x00 'FGHT'
     int32_t hp;          // 0x04
@@ -35,6 +42,7 @@ typedef struct Fighter {
     char name[16];       // 0x44
     uint8_t *sprite;     // 0x58
     size_t sprite_size;  // 0x60
+    Anim *anim;          // 0x68
 } Fighter;
 
 typedef struct {
@@ -75,6 +83,8 @@ NOINLINE static Fighter *load_character(const char *assets, const char *name, in
     strncpy(f->name, name, sizeof(f->name) - 1);
     snprintf(path, sizeof path, "%s/%s/sprite.bin", assets, name);
     f->sprite_size = read_file(path, &f->sprite);
+    f->anim = calloc(1, sizeof(Anim));
+    f->anim->rate = 1.0f;
     uint8_t *voice = NULL;
     snprintf(path, sizeof path, "%s/%s/voice.wav", assets, name);
     read_file(path, &voice);
@@ -150,6 +160,12 @@ NOINLINE static void game_tick(Fighter *p1, Fighter *p2, int cmd) {
         if (f->state == ST_ATTACK) update_move(f);
         else if (f->state == ST_HITSTUN) update_hitstun(f);
         apply_physics(f);
+        if (f->anim->clip != f->state) {
+            f->anim->clip = f->state;
+            f->anim->frame = 0;
+        } else {
+            f->anim->frame++;
+        }
     }
     check_hit(p1, p2);
 }

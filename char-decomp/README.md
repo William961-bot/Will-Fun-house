@@ -60,7 +60,8 @@ Addresses are `module+0xRVA`, so recordings from different runs line up despite 
 
 Minimum evidence: a **function** needs `executed`/`called_with_char`/`writes`; a **field** needs a
 dynamic check on that same offset; a **move** needs `rle`; an **asset** needs `opens_file`; an **identity**
-needs `tick_rate` plus an anchor on object 0. Static checks back names up but never stand alone. A window
+needs `tick_rate` plus an anchor on object 0; a **component** needs `graph_resolves`; a **transition** needs `transition`. Static checks
+back names up but never stand alone. A window
 clipped by the start or end of a recording is ignored.
 
 ### Identity: proving the snapshots show the character
@@ -69,8 +70,9 @@ Snapshots read whatever `char_base` points at, once per call of `tick`. Setting 
 **identity claim** proves them: its subject is the base expression, and it needs a `tick_rate` check (the tick
 runs at the game's frame rate, no gaps in the tick sequence) and an anchor on object 0 (`field_equals` on a value
 you can see in game, such as HP, or a `value_change` you caused). Until one is verified, every snapshot-based
-result says `identity ... is not verified` and the report opens with a warning. `chardecomp set W
-require_identity=true` turns that warning into a failed check (ADR 0003, `docs/adr/`).
+result says `identity ... is not verified` and the report opens with a warning. `New workspaces are strict
+(`require_identity: true`): the warning is a failed check. `chardecomp set W require_identity=false` relaxes it
+(ADR 0003, `docs/adr/`).
 
 ```
 chardecomp claim W --kind identity --subject "[Fighter.exe+0x2a3f10]" --name ryo \
@@ -181,6 +183,21 @@ RenderDoc.
   detect.
 - Keep workspaces, decompiled code and assets private. Many decomp communities don't accept AI-made
   contributions (the author of decomp.wtf archived it for that reason): don't submit this output to them.
+
+## Structure: components, state machines, call edges
+
+```
+chardecomp record W whiff --snap --follow 1 --follow-size 12 --hooks auto   # follow pointers from the character
+chardecomp graph W whiff                          # objects reached through pointers and which offsets change
+chardecomp transitions W whiff 0x18               # state machine: edges, counts, how long each state lasted
+chardecomp transitions W whiff 0x0 --path 0x68    # same, for a field inside the component at 0x68
+chardecomp callers W whiff Fighter.exe+0x41a10    # observed call sites, virtual and indirect calls included
+```
+
+Claim kinds `component` (`graph_resolves`) and `transition` (`transition`, optionally with an exact `duration`
+and a `precedes` check naming the function that causes it); component fields are `PATH@OFFSET`, e.g. `0x68@0x4`.
+Snapshots read fixed sizes, so set `snap_size` and `--follow-size` to the objects' real sizes once known: until
+then, neighbouring heap objects show up as unexplained components.
 
 ## Configuration
 

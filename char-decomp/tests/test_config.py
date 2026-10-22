@@ -97,3 +97,12 @@ def test_record_rejects_bad_addresses_before_touching_the_game(fresh_work):
 def test_cli_reports_missing_evidence_without_traceback(fresh_work):
     with pytest.raises(SystemExit, match="error: CheckError: no trace labelled 'nope'"):
         run_cli("methods", fresh_work, "nope")
+
+
+def test_new_workspaces_are_strict_existing_keep_their_setting(tmp_path):
+    w = tmp_path / "W"
+    run_cli("init", w)
+    assert load_config(w)["require_identity"] is True
+    run_cli("set", w, "require_identity=false")
+    run_cli("init", w, "--character", "Ryo")  # re-running init on an existing workspace keeps the choice
+    assert load_config(w)["require_identity"] is False

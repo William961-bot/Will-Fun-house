@@ -63,6 +63,14 @@ Check shapes for record_claim (checks_json is a JSON list)
   {"check":"tick_rate","trace":T,"min_hz":55,"max_hz":65,"max_jitter":0.5}
   {"check":"field_equals","trace":T,"offset":"0x4","type":"i32","eq":1000,"at":"first"}   (at: first|all|any)
   {"check":"base_resolves","trace":T,"obj":0,"min_fraction":1.0}
+  {"check":"graph_resolves","trace":T,"path":"0x68"}                (component claims; record with follow)
+  {"check":"transition","trace":T,"offset":"0x18","from":0,"to":1,"min_count":1,"duration":37}
+     (duration: ticks spent in "from" before each such change; add "path":"0x68" for a component field)
+  {"check":"precedes","trace":T,"func":F,"offset":"0x18","from":0,"to":1,"max_lag":0}  (F runs in that frame)
+  {"check":"called_from","trace":T,"func":F,"caller":G}             (runtime call edge, virtual calls included)
+Component fields are claimed as kind field with subject "PATH@OFFSET" (e.g. "0x68@0x4") and checks with "path".
+Snapshots read snap_size bytes and followed objects follow_size bytes: until you know an object's size, paths
+past its end show neighbouring heap objects; narrow the sizes rather than naming those as components.
   {"check":"static_call","caller":F,"callee":G}      {"check":"static_field","func":F,"offset":"0x1c","access":"w"}
   {"check":"static_const","func":F,"value":13}       {"check":"static_string","func":F,"contains":"text"}
 obj selects which snapshotted object (0 = the character, then any extra bases in the trace's snap_bases).
@@ -196,6 +204,44 @@ def build_tools(work: Path, interactive: bool):
             return dump(T.window_runs(lg.trace(trace), _off(offset), type, obj, _where(where)))
 
     @beta_tool
+    def object_graph(trace: str) -> str:
+        """Objects reached from the character through pointers in a trace recorded with follow, and their changing offsets.
+
+        Args:
+            trace: Trace label recorded with snapshots and follow.
+        """
+        with led() as lg:
+            return dump(T.graph_paths(lg.trace(trace)))
+
+    @beta_tool
+    def state_transitions(trace: str, offset: str, type: str = "i32", path: str = "", where: str = "") -> str:
+        """State machine of one field: transitions with counts and ticks, and how long each value lasted.
+
+        Args:
+            trace: Trace label with snapshots.
+            offset: Field offset, e.g. 0x18.
+            type: Field type.
+            path: Optional component path (e.g. 0x68) for a field inside a followed object.
+            where: Optional filter OFFSET:TYPE:VALUE on the character object.
+        """
+        with led() as lg:
+            t = lg.trace(trace)
+            pts = (T.graph_series(t, path, _off(offset), type) if path
+                   else T.series(t, _off(offset), type, 0, _where(where)))
+            return dump(T.transitions(pts))
+
+    @beta_tool
+    def call_sites(trace: str, func: str) -> str:
+        """Observed call sites of a hooked function (return addresses), including virtual and indirect calls.
+
+        Args:
+            trace: Trace label recorded with hooks.
+            func: Function location module+0xRVA.
+        """
+        with led() as lg:
+            return dump(T.callers(lg.trace(trace), func))
+
+    @beta_tool
     def watch_hits(trace: str) -> str:
         """Instructions that wrote the watched field(s), mapped to their functions, with the ticks they ran at.
 
@@ -218,7 +264,7 @@ def build_tools(work: Path, interactive: bool):
     @beta_tool
     def request_recording(label: str, instructions: str, seconds: float = 5.0, spawn: str = "",
                           snapshots: bool = False, hooks: bool = False, files: bool = False, watch: str = "",
-                          coverage: bool = True) -> str:
+                          coverage: bool = True, follow: int = 0, follow_size: int = 256) -> str:
         """Ask the player to perform something in game and record it as a new trace.
 
         Coverage is turned off automatically when watch or files is set (record those in separate passes).
@@ -229,6 +275,8 @@ def build_tools(work: Path, interactive: bool):
             seconds: How long to record.
             spawn: Optional command line to start the game for this recording instead of the configured one.
             snapshots: Snapshot the character (and nothing else) every frame. Needs char_base and tick set.
+            follow: With snapshots, follow pointers from the character this many levels (0 = off, max 4).
+            follow_size: Bytes read from each followed object.
             hooks: Hook every function seen in earlier coverage and count calls that received the character.
             files: Log file opens and reads.
             watch: Optional EXPR:SIZE to watch for writes, e.g. [game.exe+0x2a3f10]+0x1c:4.
@@ -246,6 +294,10 @@ def build_tools(work: Path, interactive: bool):
             if not (c.get("tick") and c.get("char_base")):
                 raise ValueError("snapshots need tick and char_base set first (set_config)")
             feats.snap_tick = c.get("tick")
+            if follow:
+                if not 1 <= follow <= 4:
+                    raise ValueError("follow must be 0-4")
+                feats.follow = {"depth": follow, "size": follow_size, "max_objects": 16, "max_bytes": 8192}
         if watch:
             expr, _, size = watch.rpartition(":")
             if size not in ("1", "2", "4", "8"):
@@ -289,7 +341,7 @@ def build_tools(work: Path, interactive: bool):
         """State a finding. Its checks run now; it is stored as verified only if all pass, otherwise as rejected.
 
         Args:
-            kind: function, field, move, asset, identity or note.
+            kind: function, field, move, asset, identity, component, transition or note.
             subject: function location, field offset (0x1c), move name, file path, or (identity) the base expression.
             name: Short identifier (function or field name, move name).
             statement: What it is or does, in one or two sentences, consistent with the checks.
@@ -332,7 +384,7 @@ def build_tools(work: Path, interactive: bool):
             return f"wrote {p}; completeness {completeness(work, lg, load_config(work))['score']}%"
 
     return [overview, coverage_diff, char_methods, frame_rate_functions, function_info, search_static,
-            changing_fields, field_runs, watch_hits, file_events, request_recording, set_config, record_claim,
+            changing_fields, field_runs, object_graph, state_transitions, call_sites, watch_hits, file_events, request_recording, set_config, record_claim,
             list_claims, retract_claim, write_report]
 
 

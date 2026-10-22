@@ -38,6 +38,7 @@ class Features:
     snap_tick: str | None = None                    # per-frame function ("module+0xRVA")
     snap_bases: list[str] = field(default_factory=list)
     snap_size: int = 0x200
+    follow: dict | None = None  # {"depth": 2, "size": 256, "max_objects": 16, "max_bytes": 8192}
     watch: list[dict] = field(default_factory=list)  # {"expr": ..., "size": 4, "kind": "w"}
     files: bool = False
 
@@ -52,6 +53,8 @@ class Features:
             if not bases:
                 raise ValueError("snapshots need a character base expression")
             cfg["snap"] = {"tick": self.snap_tick, "bases": bases, "size": self.snap_size}
+            if self.follow:
+                cfg["snap"]["follow"] = self.follow
         if self.watch:
             cfg["watch"] = self.watch
         return cfg
@@ -152,7 +155,12 @@ def record(work: Path, label: str, target: Target, features: Features, seconds: 
         for m in sess.messages:
             if m.get("type") == "snap":
                 for row in m["rows"]:
-                    f.write(json.dumps({"type": "snap", "tick": row["tick"], "t": row["t"], "objs": row["objs"]}) + "\n")
+                    ev = {"type": "snap", "tick": row["tick"], "t": row["t"], "objs": row["objs"]}
+                    if "graph" in row:
+                        ev["graph"] = row["graph"]
+                        if row.get("graph_truncated"):
+                            ev["graph_truncated"] = True
+                    f.write(json.dumps(ev) + "\n")
         if "watch" in result:
             f.write(json.dumps({"type": "watch", "specs": features.watch, "armed_at": result["watch"]["armed_at"],
                                 "hits": result["watch"]["hits"]}) + "\n")
