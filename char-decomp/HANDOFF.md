@@ -37,7 +37,7 @@ DLL loaded by Mod Engine 2. **Seize is dropped.** Five abilities, in this order:
 
 Agreed order of work:
 
-1. **Browser prototype first** (three.js, published as a private Claude Artifact): an Elden-style sandbox (FP and
+1. **Browser prototype: extend the existing lab** (see above; originally planned as a new three.js Artifact): an Elden-style sandbox (FP and
    stamina, dodge with invincibility frames, lock-on, dummy enemies with poise) running Jesse's five abilities from
    the spec. Placeholder values are marked "unmeasured" until step 3. Add it as a third port target so the
    agent can replay recordings in it. Controls: WASD, mouse, Space evade/levitate, LMB weapon, RMB launch,
@@ -48,10 +48,38 @@ Agreed order of work:
 5. Reverse-engineer Elden Ring's player state, gravity, dodge, projectiles and physics objects with the agent;
    then write the DLL, Levitate first, verified against Jesse's measured spec.
 
-**First thing to do on the PC:** the user has some existing Jesse Faden data on this machine that is "not
-accurate". The cloud session could not find it (not in the repo, Google Drive or Notion). Ask where it is, read
-it, and load its values into the spec labelled "from the user's notes, unverified". The Control measurements in
-step 3 will confirm or correct each one.
+**First thing to do on the PC: the user already has a browser lab for Jesse on this machine.** Ask where it is
+and read it before building anything. As the user described it, it has:
+
+- recovered original content (Jesse's mesh, skeleton, textures, animation streams converted for the browser);
+- selected traced logic, e.g. Control's damped-facing equation, checked against 512 instruction-reference cases;
+- explicit labels: Jesse's active facing settings are unresolved, so registered defaults are used as labelled
+  fallbacks; landing interruption is a reconstructed browser policy, not a recovered native rule;
+- its own five-step method: identify the exact build → extract and verify assets → trace usage (scripts,
+  configuration, animation databases and graphs, native functions; input → conditions → animation selection →
+  movement/effect → cancellation and recovery) → implement in a browser runtime → compare (inputs, states, clip
+  clocks, root displacement, markers, resources, rendered transitions, frame rates, the files localhost serves).
+- The user calls it "not accurate". Their stated next step: recover how native movement goals select animation
+  candidates (having the turn clips does not tell when Control picks each).
+
+So **integrate char-decomp with that lab instead of building the browser prototype from scratch** (step 1 below
+becomes "extend the existing lab"):
+
+1. Make the lab a port target: replay char-decomp scenarios (first snapshot + recorded inputs from Control) in the
+   lab's runtime and compare field by field with `port/scenario.compare`, like the Godot and Minetest targets.
+2. Load the lab's recovered values into the spec with their existing labels kept ("recovered", "registered
+   default / fallback", "reconstructed policy"), never upgraded to facts without a verified claim.
+3. Add a `formula_matches` check: evaluate a native function on generated inputs (in-process with Frida, or in an
+   emulator) and compare with a claimed equation, the way the facing equation was checked. char-decomp does not
+   have this yet.
+4. Add a decision-rule check for animation selection: hook the selection function with `--capture-args`, drive
+   inputs over many goal/facing situations (`record --drive`), record which clip is chosen, then claim a rule
+   that must predict every recorded choice. Not in char-decomp yet.
+5. Gaps char-decomp has for this (from the comparison with the lab's method): no Control (Northlight) archive or
+   animation decoders, no reading of scripts/config/animation graphs, root motion reported Unknown, no clip-clock
+   or root-displacement comparison in ports, no frame-rate variation or rendered-transition checks.
+
+The Control measurements in step 3 below then confirm or correct the lab's values one by one.
 
 ## Setup on the PC (Windows)
 
