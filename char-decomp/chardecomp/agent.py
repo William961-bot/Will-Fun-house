@@ -50,7 +50,7 @@ the move's state, and claim it with an rle check. Measure whiffs and hits separa
 8. If a claim fails, read why, fix the claim or gather data, and try again. After three failures on the \
 same question, stop and leave it unexplained, with what you tried.
 9. Finish when overview shows nothing unexplained, or nothing more can be learned from new recordings. \
-Then call write_report and end with a short summary: what is verified, what is still open, and why.
+Then call write_report and write_ucs, and end with a short summary: what is verified, what is still open, and why.
 
 Check shapes for record_claim (checks_json is a JSON list)
   {"check":"executed","trace":T,"func":F}            {"check":"not_executed","trace":T,"func":F}
@@ -383,9 +383,22 @@ def build_tools(work: Path, interactive: bool):
             p = report.write(work, lg, load_config(work))
             return f"wrote {p}; completeness {completeness(work, lg, load_config(work))['score']}%"
 
+    @beta_tool
+    def write_ucs() -> str:
+        """Build and validate the Universal Character Specification from verified claims (W/ucs/character.ucs.json)."""
+        from . import ucs
+        doc = ucs.build_workspace(work).to_json()
+        problems = ucs.validate(doc)
+        if problems:
+            raise ValueError("UCS failed validation: " + "; ".join(problems[:10]))
+        path = work / "ucs" / "character.ucs.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+        return dump({"written": str(path), "domains": doc["completeness"]["domains"]})
+
     return [overview, coverage_diff, char_methods, frame_rate_functions, function_info, search_static,
             changing_fields, field_runs, object_graph, state_transitions, call_sites, watch_hits, file_events, request_recording, set_config, record_claim,
-            list_claims, retract_claim, write_report]
+            list_claims, retract_claim, write_report, write_ucs]
 
 
 def run(work: Path, goal: str = "", model: str = "claude-opus-5-5", effort: str = "high", interactive: bool = True,

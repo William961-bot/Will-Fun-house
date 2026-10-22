@@ -7,6 +7,7 @@ checked against the C source of fixtures/toy_fighter.c."""
 from __future__ import annotations
 
 import json
+import shutil
 
 import pytest
 
@@ -14,22 +15,7 @@ from chardecomp import report, traces as T
 from chardecomp.ledger import Ledger
 from chardecomp.workspace import completeness, load_config
 
-from conftest import SECONDS, run_cli, spawn_cmd
-
-
-@pytest.fixture(scope="module")
-def mapped(toy, tmp_path_factory):
-    w = tmp_path_factory.mktemp("s2") / "W"
-    g = toy["syms"]["g_fighters"]
-    run_cli("init", w, "--binary", toy["dir"] / "toy_fighter", "--spawn", spawn_cmd(toy, "heavy", far=True))
-    run_cli("static", w)
-    run_cli("record", w, "cov", "--seconds", SECONDS)
-    # Object sizes from the field layout (Fighter is 0x70 bytes, Anim 12): no reads past the objects.
-    run_cli("set", w, f"char_base=[toy_fighter+{g:#x}]", f"tick={toy['loc']['game_tick']}", "snap_size=0x70")
-    run_cli("record", w, "whiff", "--seconds", SECONDS, "--snap", "--follow", "1", "--follow-size", "12",
-            "--hooks", "auto")
-    run_cli("record", w, "load", "--seconds", "1", "--files")
-    return w
+from conftest import run_cli, stage2_claims
 
 
 def test_graph_shows_only_the_real_components(mapped):
@@ -59,40 +45,10 @@ def test_file_read_positions(mapped, capsys):
     assert rows["ryo/sprite.bin"]["ranges"] == [[0, 4096]]
 
 
-def test_verified_map(toy, mapped):
-    L, g = toy["loc"], toy["syms"]["g_fighters"]
-    claims = [
-        ("identity", f"[toy_fighter+{g:#x}]", "ryo", "", [
-            {"check": "tick_rate", "trace": "whiff", "min_hz": 20, "max_hz": 2000},
-            {"check": "field_equals", "trace": "whiff", "offset": "0x4", "eq": 1337, "at": "all"}], ""),
-        ("component", "0x68", "anim", "animation state, one per fighter", [
-            {"check": "graph_resolves", "trace": "whiff", "path": "0x68"}], ""),
-        ("field", "0x68@0x0", "clip", "current clip; follows the state", [
-            {"check": "transition", "trace": "whiff", "path": "0x68", "offset": "0x0", "from": 0, "to": 1}], "i32"),
-        ("field", "0x68@0x4", "frame", "frames since the clip started", [
-            {"check": "changes", "trace": "whiff", "path": "0x68", "offset": "0x4"}], "i32"),
-        ("field", "0x18", "state", "0 idle, 1 attack", [
-            {"check": "changes", "trace": "whiff", "offset": "0x18"}], "i32"),
-        ("field", "0x1c", "state_frame", "frames in the current state", [
-            {"check": "changes", "trace": "whiff", "offset": "0x1c"}], "i32"),
-        ("field", "0x20", "move_id", "current move", [
-            {"check": "value_change", "trace": "whiff", "offset": "0x20", "from": 0, "to": 1}], "i32"),
-        ("field", "0x38", "hitbox_active", "hitbox on", [
-            {"check": "changes", "trace": "whiff", "offset": "0x38"}], "i32"),
-        ("field", "0x3c", "hitbox_damage", "damage of the active hitbox", [
-            {"check": "changes", "trace": "whiff", "offset": "0x3c"}], "i32"),
-        ("field", "0x28", "hitbox_x", "", [{"check": "changes", "trace": "whiff", "offset": "0x28", "type": "f32"}], "f32"),
-        ("field", "0x30", "hitbox_w", "", [{"check": "changes", "trace": "whiff", "offset": "0x30", "type": "f32"}], "f32"),
-        ("field", "0x34", "hitbox_h", "", [{"check": "changes", "trace": "whiff", "offset": "0x34", "type": "f32"}], "f32"),
-        ("transition", "state:0->1", "attack_start", "an attack starts when start_move runs", [
-            {"check": "transition", "trace": "whiff", "offset": "0x18", "from": 0, "to": 1, "min_count": 3},
-            {"check": "precedes", "trace": "whiff", "func": L["start_move"], "offset": "0x18", "from": 0, "to": 1}], ""),
-        ("transition", "state:1->0", "attack_end", "the heavy returns to idle after 37 frames", [
-            {"check": "transition", "trace": "whiff", "offset": "0x18", "from": 1, "to": 0, "duration": 37}], ""),
-        ("function", L["update_move"], "update_move", "per-frame move update, called by game_tick", [
-            {"check": "called_with_char", "trace": "whiff", "func": L["update_move"]},
-            {"check": "called_from", "trace": "whiff", "func": L["update_move"], "caller": L["game_tick"]}], ""),
-    ]
+def test_verified_map(toy, mapped, tmp_path):
+    L = toy["loc"]
+    claims = stage2_claims(toy)
+    mapped = shutil.copytree(mapped, tmp_path / "W")  # claim on a private copy; the session workspace stays clean
     with Ledger(mapped) as led:
         for kind, subject, name, statement, checks, ctype in claims:
             r = led.add(kind, subject, name, statement, checks, ctype=ctype)

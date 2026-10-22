@@ -199,6 +199,13 @@ and a `precedes` check naming the function that causes it); component fields are
 Snapshots read fixed sizes, so set `snap_size` and `--follow-size` to the objects' real sizes once known: until
 then, neighbouring heap objects show up as unexplained components.
 
+## Universal Character Specification
+
+`chardecomp ucs W` turns the verified claims into `W/ucs/character.ucs.json`: an engine-independent, versioned
+document where every value is a fact citing the claims that prove it, or an explicit `unknown` with a reason. Times
+are kept in source ticks and in seconds derived from the measured tick rate. `chardecomp ucs-validate FILE` checks
+any UCS file. See `chardecomp/ucs/model.py` and ADR 0004.
+
 ## Configuration
 
 `chardecomp set W KEY=VALUE ...` validates every pair before saving any: `char_base` (address expression),

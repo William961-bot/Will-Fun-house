@@ -315,6 +315,28 @@ def cmd_report(a):
     print(f"wrote {p}, {p.parent / 'character.h'} and {p.parent / 'names.json'}")
 
 
+def cmd_ucs(a):
+    from . import ucs
+    w = Path(a.work)
+    doc = ucs.build_workspace(w).to_json()
+    problems = ucs.validate(doc)
+    if problems:
+        sys.exit("UCS failed validation:\n  " + "\n  ".join(problems))
+    path = Path(a.out) if a.out else w / "ucs" / "character.ucs.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+    out({"written": str(path), "version": doc["version"], "domains": doc["completeness"]["domains"]})
+
+
+def cmd_ucs_validate(a):
+    from . import ucs
+    doc = ucs.migrate(json.loads(Path(a.file).read_text(encoding="utf-8")))
+    problems = ucs.validate(doc)
+    out({"valid": not problems, "problems": problems})
+    if problems:
+        sys.exit(1)
+
+
 def cmd_agent(a):
     from . import agent
     agent.run(Path(a.work), goal=a.goal, model=a.model, effort=a.effort, interactive=not a.no_capture,
@@ -414,6 +436,11 @@ def main(argv=None):
     cmd("verify", cmd_verify, "re-run every check")
     cmd("status", cmd_status, "completeness: what is observed but not explained yet")
     cmd("report", cmd_report, "write report/CHARACTER.md, character.h and names.json")
+
+    s = cmd("ucs", cmd_ucs, "build the Universal Character Specification from verified claims")
+    s.add_argument("--out", help="output file (default W/ucs/character.ucs.json)")
+    s = sub.add_parser("ucs-validate", help="validate (and migrate) a UCS JSON file")
+    s.add_argument("file"), s.set_defaults(fn=cmd_ucs_validate)
 
     s = cmd("agent", cmd_agent, "let Claude drive the loop until everything observed is explained")
     s.add_argument("--goal", default="")

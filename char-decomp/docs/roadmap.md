@@ -51,7 +51,7 @@ Evidence attribution: every derived structure cites the traces and offsets it ca
 Gate: a verified structural + behavioural map of the toy (object graph, state machine with transitions and
 timings) matching its source.
 
-## Stage 3: Universal Character Specification foundation
+## Stage 3: Universal Character Specification foundation (done: `docs/stages/stage-3.md`, ADR 0004)
 
 `chardecomp/ucs/`: versioned typed schema (dataclasses + JSON Schema export, no new heavy dependency unless
 justified), explicit units, time bases, coordinate conventions, `Unknown` as a first-class value, evidence

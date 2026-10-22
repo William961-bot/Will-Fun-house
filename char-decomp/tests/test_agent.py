@@ -24,7 +24,7 @@ def call(tools, tool, **kw):
 
 
 def test_every_tool_has_a_valid_schema(tools):
-    assert len(tools) == 19
+    assert len(tools) == 20
     for t in tools.values():
         d = t.to_dict()
         assert d["input_schema"]["type"] == "object" and d["description"]
@@ -71,6 +71,7 @@ def test_claims_go_through_the_ledger(toy, tools):
     call(tools, "retract_claim", claim_id=listed[1]["id"])
     assert len(json.loads(call(tools, "list_claims"))) == 1
     assert "wrote" in call(tools, "write_report")
+    assert json.loads(call(tools, "write_ucs"))["written"].endswith("character.ucs.json")
 
 
 def test_set_config_validates(toy, tools, fresh_work):
@@ -121,7 +122,7 @@ def test_run_builds_the_documented_request_and_writes_a_report(fresh_work, capsy
     assert kw["fallbacks"] == "default"
     assert set(kw["betas"]) == {"server-side-fallback-2026-07-01", "context-management-2025-06-27"}
     assert kw["context_management"]["edits"][0]["type"] == "clear_tool_uses_20250919"
-    assert len(kw["tools"]) == 19 and "frame data" in kw["messages"][0]["content"]
+    assert len(kw["tools"]) == 20 and "frame data" in kw["messages"][0]["content"]
     assert "identity claim" in kw["system"]
     out = capsys.readouterr().out
     assert "-> overview" in out and "Done: nothing verified yet." in out
