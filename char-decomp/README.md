@@ -262,6 +262,18 @@ installs it into the world's `worldmods`, runs the game's headless server to rep
 spawn the character, and rolls back to the previous version if the mod fails to load or disagrees with the source
 in a way no tested explanation covers. Tested with Minetest 5.6.1 (`docs/stages/stage-9.md`).
 
+## Automation: measure-then-claim and regressions
+
+```
+chardecomp autoclaim W profile.json        # profile = where fields are + which recording shows what; no values
+chardecomp regress W --scenario jump --scenario super --write-baseline   # every available engine, then later:
+chardecomp regress W --scenario jump --scenario super                    # exit 1 on new unexplained differences
+```
+
+`autoclaim` measures every value from the recordings and submits ordinary claims (the ledger verifies them); it
+refines a hit rule only when a recording contradicts the plain one (ADR 0007). Tested on two different native
+characters (C and C++) ported to Godot 4 and Minetest (`docs/stages/stage-10.md`).
+
 ## Configuration
 
 `chardecomp set W KEY=VALUE ...` validates every pair before saving any: `char_base` (address expression),

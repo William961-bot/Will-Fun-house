@@ -49,7 +49,10 @@ static_field, static_const, static_string) where they back up the name.
 the move's state, and claim it with an rle check. Measure whiffs and hits separately; they can differ.
 8. If a claim fails, read why, fix the claim or gather data, and try again. After three failures on the \
 same question, stop and leave it unexplained, with what you tried.
-9. Finish when overview shows nothing unexplained, or nothing more can be learned from new recordings. \
+9. Work domain by domain (identity, structure, controller and inputs, movement, combat, abilities, assets) and
+use domain_status to see which domain is weakest and what a port would still miss; port_regression replays the
+character in other engines and shows rules the reconstruction is missing as unexplained differences.
+10. Finish when overview shows nothing unexplained, or nothing more can be learned from new recordings. \
 Then call write_report and write_ucs, and end with a short summary: what is verified, what is still open, and why.
 
 Check shapes for record_claim (checks_json is a JSON list)
@@ -293,6 +296,30 @@ def build_tools(work: Path, interactive: bool):
             return dump({"model": physics.MODEL, "estimates": res})
 
     @beta_tool
+    def domain_status() -> str:
+        """Per-domain state of the reconstruction: UCS domains (known / partial / unknown), and what a port to
+        another engine would still miss (missing facts, manual items). Use it to decide which domain to work on."""
+        from . import ucs as ucs_mod
+        from .port import plan
+        doc = ucs_mod.build_workspace(work).to_json()
+        spec = plan.extract(doc)
+        return dump({"domains": doc["completeness"]["domains"], "port_missing": spec["missing"],
+                     "port_manual": spec["manual"], "rejected": len(doc["rejected"])})
+
+    @beta_tool
+    def port_regression(scenarios: str, targets: str = "") -> str:
+        """Port the character to every available engine (Godot 4, Minetest), replay recordings there and report
+        differences from the source, each explained by a test or listed as unexplained.
+
+        Args:
+            scenarios: Comma-separated trace labels recorded with snapshots of both fighters and captured inputs.
+            targets: Optional comma-separated subset of godot,minetest.
+        """
+        from .port import regress
+        return dump(regress.run(work, [x for x in scenarios.split(",") if x],
+                                [x for x in targets.split(",") if x] or None))
+
+    @beta_tool
     def call_sites(trace: str, func: str) -> str:
         """Observed call sites of a hooked function (return addresses), including virtual and indirect calls.
 
@@ -486,7 +513,7 @@ def build_tools(work: Path, interactive: bool):
         return dump({"written": str(path), "domains": doc["completeness"]["domains"]})
 
     return [overview, coverage_diff, char_methods, frame_rate_functions, function_info, search_static,
-            changing_fields, field_runs, object_graph, state_transitions, movement_estimates, call_sites, watch_hits, file_events, request_recording, set_config, record_claim,
+            changing_fields, field_runs, object_graph, state_transitions, movement_estimates, domain_status, port_regression, call_sites, watch_hits, file_events, request_recording, set_config, record_claim,
             list_claims, retract_claim, write_report, write_ucs, import_asset, asset_info]
 
 

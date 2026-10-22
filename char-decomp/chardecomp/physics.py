@@ -145,7 +145,10 @@ def predicted_hits(t: T.Trace, c: dict) -> dict:
         x_offset, defender obj (default 1), hp_offset.
     rule "overlap": a moving object (projectile) connects on the first frame it is within reach of the defender;
         it is then gone (its active flag is 0 in that snapshot). c: attacker obj, attacker_x_offset,
-        active_offset, reach, x_offset (defender), defender, hp_offset."""
+        active_offset, reach, x_offset (defender), defender, hp_offset.
+    Both rules: with "unless_defender_state": S (and "state_duration": D, the measured length of S), no hit is
+    predicted while the defender is still in S at the check (in S at the previous snapshot for fewer than D
+    snapshots). Observed hits split S visits, so a re-hit right as S ends counts as a new visit."""
     from .ledger import _off
     if c.get("rule", "first_active") == "overlap":
         return _overlap_hits(t, c)
@@ -158,8 +161,11 @@ def predicted_hits(t: T.Trace, c: dict) -> dict:
     xd = T.series(t, xo, "f32", dobj)
     hp = T.series(t, ho, "i32", dobj)
     predicted, observed, evaluated = set(), set(), {}
+    blocked = _blocked(t, {**c, "state_offset": c.get("state_offset", 0x18)}, hp)
     for i in range(1, len(st)):
         tick = st[i][0]
+        if tick in blocked:
+            continue
         if st[i][1] == c["attack_state"] and sf[i][1] == c["active_from"] and None not in (xa[i][1], xd[i][1]):
             evaluated[tick] = abs(xd[i][1] - xa[i][1])
             if evaluated[tick] <= c["reach"]:
@@ -185,6 +191,31 @@ def reach_bounds(results: list[dict]) -> tuple[float | None, float | None]:
     return (max(hits) if hits else None, min(misses) if misses else None)
 
 
+def _blocked(t: T.Trace, c: dict, hp: list) -> set:
+    """Ticks at which the defender is still in `unless_defender_state` when hits are checked."""
+    from .ledger import _off
+    s = c.get("unless_defender_state")
+    if s is None:
+        return set()
+    st = T.series(t, _off(c.get("state_offset", 0x18)), "i32", c.get("defender", 1))
+    dur = c.get("state_duration")
+
+    def hit_at(k):
+        return k >= 1 and None not in (hp[k][1], hp[k - 1][1]) and hp[k][1] < hp[k - 1][1]
+
+    out, run = set(), 0
+    for i in range(1, len(st)):
+        prev = st[i - 1][1]
+        if prev == s:  # length of the current visit of S up to the previous snapshot
+            new_visit = run == 0 or st[i - 2][1] != s or hit_at(i - 1)
+            run = 1 if new_visit else run + 1
+        else:
+            run = 0
+        if prev == s and (dur is None or run < dur):
+            out.add(st[i][0])
+    return out
+
+
 def _overlap_hits(t: T.Trace, c: dict) -> dict:
     from .ledger import _off
     aobj, dobj = c.get("attacker", 0), c.get("defender", 1)
@@ -193,11 +224,12 @@ def _overlap_hits(t: T.Trace, c: dict) -> dict:
     xd = T.series(t, _off(c.get("x_offset", 0x8)), "f32", dobj)
     hp = T.series(t, _off(c.get("hp_offset", 0x4)), "i32", dobj)
     predicted, observed, launches, evaluated = set(), set(), 0, {}
+    blocked = _blocked(t, c, hp)
     for i in range(1, len(act)):
         tick = act[i][0]
         if act[i][1] == 1 and act[i - 1][1] == 0:
             launches += 1
-        if act[i - 1][1] == 1 and None not in (xa[i][1], xd[i][1]):
+        if act[i - 1][1] == 1 and None not in (xa[i][1], xd[i][1]) and tick not in blocked:
             evaluated[tick] = abs(xd[i][1] - xa[i][1])
             if evaluated[tick] <= c["reach"]:
                 predicted.add(tick)

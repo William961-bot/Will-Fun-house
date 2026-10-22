@@ -3,23 +3,25 @@
 Current state of `chardecomp` and where the planned layers attach. Read `docs/roadmap.md` for the staged plan
 and `docs/adr/` for decisions.
 
-## Modules today
+## Modules today (after Stage 10)
 
 | Module | Responsibility | Depends on |
 |---|---|---|
-| `cli.py` | 22 subcommands; argument parsing; prints JSON | everything below (agent and static_lite lazily) |
-| `capture.py` | Frida session, `record()` one labelled trace, `scan()` value + pointer scan | `frida` (lazy), `frida_agent.js` |
-| `frida_agent.js` | in-process recorder: coverage (Stalker), hooks, per-tick snapshots, watchpoints, file I/O, scans | Frida 17 JS API |
-| `addr.py` | address-expression and code-location validation (mirrors `evalExpr` in the JS agent) | stdlib |
-| `traces.py` | parse traces (formats 1 and 2); pure analyses: coverage diff, char methods, rates, series, windows, RLE, changing fields | stdlib |
-| `queries.py` | traces joined with the static DB (watch rows, file rows, diff with names) | traces, staticdb |
-| `static_lite.py` | built-in static export (PE/ELF x86/x64): bounds, calls, strings, consts, `[reg+off]` fields | lief, capstone |
-| `ghidra/*.java` | Ghidra export (same JSON schema + decompiled C) and name apply-back | Ghidra 11 |
-| `staticdb.py` | SQLite view of a static export | sqlite3 |
-| `ledger.py` | evidence ledger: traces pinned by SHA-256, claims (incl. identity), 15 check kinds, policy | traces, staticdb, capture.sha256 |
-| `workspace.py` | `config.json` (validated settings), observed set, completeness, identity per trace | traces, ledger, staticdb, addr |
-| `report.py` | `CHARACTER.md`, `character.h`, `names.json` from verified claims | ledger, staticdb, workspace |
-| `agent.py` | Claude tool-runner agent; 16 tools over one workspace | anthropic (lazy), capture, queries, report, traces, ledger, workspace |
+| `cli.py` | 36 subcommands; argument parsing; prints JSON | everything below (heavy parts lazily) |
+| `capture.py` | Frida session, `record()` one labelled trace (snapshots, follow, hooks with argument capture, watches, files), `scan()` | `frida` (lazy), `frida_agent.js` |
+| `frida_agent.js` | in-process recorder | Frida 17 JS API |
+| `addr.py` | address-expression and code-location validation | stdlib |
+| `traces.py` | parse traces (formats 1 and 2); pure analyses (coverage, series, windows, RLE, graphs, transitions, call args) | stdlib |
+| `queries.py` | traces joined with the static DB | traces, staticdb |
+| `static_lite.py`, `ghidra/*.java`, `staticdb.py` | static export and its SQLite view | lief, capstone / Ghidra 11 |
+| `ledger.py` | evidence ledger: traces and artifacts pinned by SHA-256, claims (16 kinds), 36 check kinds, policy, identity gate | traces, staticdb, physics, assets |
+| `physics.py` | movement model, estimators, replay, hit rules (first-active, overlap, defender-state condition), proven ranges | traces |
+| `assets/` | format plugins (tfmd, tfan, glTF), neutral model, validation, GLB writer/reader | stdlib |
+| `ucs/` | Universal Character Specification 0.5: build from verified claims, validate, migrate | ledger, workspace |
+| `autoclaim.py` | measure-then-claim for fighter-model characters from a value-free profile; refines hit rules against every recording | ledger, physics, traces |
+| `port/` | UCS → port spec + compatibility (`plan`), scenarios and comparison (`scenario`), report, Godot 4 target (`godot`, GDScript runtime), Minetest/Luanti mod target (`minetest`, Lua runtime), regression automation (`regress`) | ucs, ledger, assets |
+| `workspace.py`, `report.py` | config, completeness; dossier | ledger |
+| `agent.py` | Claude tool-runner agent; 25 tools incl. per-domain status and port regression | anthropic (lazy), the rest |
 
 Import graph has no cycles. `frida`, `lief`/`capstone` and `anthropic` are imported lazily, so static-only and
 offline use don't need all of them.
@@ -30,7 +32,9 @@ offline use don't need all of them.
 game ──Frida──► frida_agent.js ──► capture.record ──► traces/<label>.jsonl ──sha256──► ledger.db(traces)
 binary ──static_lite | Ghidra──► export JSON ──► staticdb.build ──► static.db
 traces + static.db ──► traces.py / queries.py ──► CLI JSON | agent tool results
-claim (person | Claude Code | agent) ──► Ledger.add ──run_check──► verified | failed ──► report.write
+claim (person | Claude Code | agent | autoclaim) ──► Ledger.add ──run_check──► verified | failed ──► report.write
+verified claims ──► ucs.build ──► UCS JSON ──► port.plan ──► port spec ──► Godot project | Minetest mod
+recordings ──► port.scenario (first snapshot + inputs) ──► target replay ──► port.scenario.compare ──► PORT.md / regress
 ```
 
 ## Workspace (on disk, never in git)

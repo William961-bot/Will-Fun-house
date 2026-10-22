@@ -80,7 +80,7 @@ func _advance(c: Dictionary, who: int) -> void:
 			if pr != null and int(c["state"]) == int(a["to"]) and int(c["n"]) == int(pr["launch_frame"]):
 				var dir := 1.0 if float(f[1]["x"]) >= float(c["x"]) else -1.0
 				proj = {"active": 1, "x": float(c["x"]), "vx": float(pr["speed"]) * dir, "radius": float(pr["radius"]),
-						"on_hit": a["on_hit"]}
+						"on_hit": a["on_hit"], "unless": pr.get("unless_defender_state")}
 
 
 func _phase(phases: Array, n: int) -> int:
@@ -112,6 +112,8 @@ func _melee(a: Dictionary, d: Dictionary) -> void:
 	var m: Dictionary = spec["moves"][st]
 	if m["active_from"] == null or int(a["n"]) != int(m["active_from"]):
 		return
+	if m.get("unless_defender_state") != null and int(d["state"]) == int(m["unless_defender_state"]):
+		return
 	if absf(float(d["x"]) - float(a["x"])) <= float(m["reach"]):
 		_hit(a, d, m["on_hit"])
 
@@ -120,6 +122,9 @@ func _projectile(d: Dictionary) -> void:
 	if int(proj["active"]) != 1:
 		return
 	proj["x"] = float(proj["x"]) + float(proj["vx"])
+	var unless = proj.get("unless")
+	if unless != null and int(d["state"]) == int(unless):
+		return
 	if absf(float(d["x"]) - float(proj["x"])) <= float(proj["radius"]):
 		proj["active"] = 0
 		_hit(f[0], d, proj["on_hit"])

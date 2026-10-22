@@ -209,6 +209,16 @@ def validate(world: Path, scenarios: dict[str, dict] | None = None, gameid: str 
     return out
 
 
+def install_only(world: Path, mod_dir: Path, gameid: str = "minetest_game") -> Path:
+    """Copy a mod into a (new or existing) world's worldmods, replacing any copy there; no validation."""
+    world = make_world(world, gameid)
+    target = world / "worldmods" / Path(mod_dir).name
+    if target.exists():
+        shutil.rmtree(target)
+    shutil.copytree(mod_dir, target)
+    return world
+
+
 def install(world: Path, mod_dir: Path, scenarios: dict[str, dict] | None = None, gameid: str = "minetest_game",
             check=None) -> dict:
     """Install into <world>/worldmods, validate, and roll back to the previous version (or to nothing) on failure.

@@ -89,7 +89,7 @@ function R:advance(c, who)
 			if pr and num(c.state) == num(a.to) and num(c.n) == num(pr.launch_frame) then
 				local dir = num(self.f[2].x) >= num(c.x) and 1.0 or -1.0
 				self.proj = {active = 1, x = num(c.x), vx = num(pr.speed) * dir, radius = num(pr.radius),
-					on_hit = a.on_hit}
+					on_hit = a.on_hit, unless = pr.unless_defender_state}
 			end
 		end
 	end
@@ -131,6 +131,7 @@ end
 function R:melee(a, d)
 	local m = self.spec.moves[tostring(math.floor(num(a.state)))]
 	if not m or m.active_from == nil or num(a.n) ~= num(m.active_from) then return end
+	if m.unless_defender_state ~= nil and num(d.state) == num(m.unless_defender_state) then return end
 	if math.abs(num(d.x) - num(a.x)) <= num(m.reach) then self:hit(a, d, m.on_hit) end
 end
 
@@ -138,6 +139,7 @@ function R:projectile(d)
 	local p = self.proj
 	if num(p.active) ~= 1 then return end
 	p.x = num(p.x) + num(p.vx)
+	if p.unless ~= nil and num(d.state) == num(p.unless) then return end
 	if math.abs(num(d.x) - p.x) <= num(p.radius) then
 		p.active = 0
 		self:hit(self.f[1], d, p.on_hit)

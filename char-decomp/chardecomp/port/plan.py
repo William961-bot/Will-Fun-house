@@ -90,6 +90,7 @@ def extract(doc: dict) -> dict:
         moves[str(state)] = {"name": m["name"], "phases": [[p["value"], p["ticks"]] for p in m["phases"]],
                              "reach": _v(col["reach"]) if col else None,
                              "active_from": _v(col["active_from"]) if col else None,
+                             "unless_defender_state": _v(col.get("unless_defender_state")) if col else None,
                              "on_hit": _effects(m["on_hit"])}
         if not col:
             missing.append(f"move {m['name']}: no collision rule for attack state {state}")
@@ -116,6 +117,7 @@ def extract(doc: dict) -> dict:
             "min": _v(a["gate"]["min"]), "cost": _v(a["cost"], 0),
             "projectile": None if not _domain(p) else {
                 "speed": _v(p["speed"]), "radius": _v(p["hit_radius"]), "launch_frame": _v(p["launch_frame"]),
+                "unless_defender_state": _v(p.get("unless_defender_state")),
                 "recorded_as": _v(p["object"])},
             "on_hit": _effects(a["on_hit"])}
         if _domain(p):

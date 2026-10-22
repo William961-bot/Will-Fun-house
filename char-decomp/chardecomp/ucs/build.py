@@ -293,6 +293,15 @@ def _effects(c: dict) -> dict:
     return {"name": c["name"], "statement": c["statement"], "events": out, "evidence": [c["id"]]}
 
 
+def _unless(hits: list, e: tuple):
+    s = {ch.get("unless_defender_state") for ch in hits}
+    if s == {None}:
+        return Unknown("no recording tested hits on a defender in a given state")
+    if len(s) != 1:
+        return Unknown("the hit checks disagree on the defender-state condition")
+    return Fact(s.pop(), e, None, "no hit while the defender is still in this state")
+
+
 def _ability(led: Ledger, c: dict, damage: dict | None) -> dict:
     """A resource-gated input (gated_input), with its projectile (motion_fit speed, overlap hit_outcome) if any."""
     e = (c["id"],)
@@ -305,6 +314,7 @@ def _ability(led: Ledger, c: dict, damage: dict | None) -> dict:
         proj = {"speed": Fact(speed["expect"], e, "units/tick") if speed else Unknown("speed not claimed"),
                 "hit_radius": Fact(hit["reach"], e, "units") if hit else Unknown("hit rule not claimed"),
                 "hit_radius_proven_range": _reach_range(led, [hit], e) if hit else Unknown("hit rule not claimed"),
+                "unless_defender_state": _unless([hit], e) if hit else Unknown("hit rule not claimed"),
                 "rule": Fact("hits on the first frame within hit_radius of the defender, then disappears", e)
                 if hit else Unknown("hit rule not claimed"),
                 "launch_frame": Fact(launch["expect"][0][1] + 1, e, "ticks", "first frame of the ability state in "
@@ -390,6 +400,7 @@ def _physics(led: Ledger, claims: list, collisions: list, hz: float | None, iden
                           "reach_proven_range": _reach_range(led, hits, e),
                           "attack_state": Fact(ch["attack_state"], e),
                           "active_from": Fact(ch["active_from"], e, "ticks"),
+                          "unless_defender_state": _unless(hits, e),
                           "boundary_tested": Fact(sorted({x["trace"] for x in hits}), e)})
     return {"model": model, "parameters": params, "per_second": per_second or Unknown("tick rate unknown"),
             "replay": replay, "collision": collision or Unknown("no verified collision claim"),

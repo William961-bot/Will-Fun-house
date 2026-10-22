@@ -100,7 +100,7 @@ Gate: the character plays in Godot; target traces compared with source traces; d
 One moddable offline target game with a documented mod interface; packaging, install validation, failure recovery.
 Gate: a mod built and tested in that environment.
 
-## Stage 10: generalisation
+## Stage 10: generalisation (done: `docs/stages/stage-10.md`, ADR 0007)
 
 Second engine pairing without changing the UCS core; more adapters; regression and comparison automation; agent
 coordination per domain.

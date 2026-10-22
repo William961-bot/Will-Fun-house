@@ -447,6 +447,30 @@ def cmd_mod(a):
     out(result)
 
 
+def cmd_autoclaim(a):
+    from . import autoclaim
+    profile = json.loads(Path(a.profile).read_text(encoding="utf-8"))
+    with _led(a) as led:
+        r = autoclaim.run(led, profile)
+    out({k: r[k] for k in ("verified", "failed", "skipped", "measured")})
+
+
+def cmd_regress(a):
+    from .port import regress
+    cur = regress.run(Path(a.work), a.scenario, a.target, a.opponent)
+    res = {"current": cur}
+    base = Path(a.baseline) if a.baseline else Path(a.work) / "port" / "regression_baseline.json"
+    if base.exists() and not a.write_baseline:
+        res.update(regress.diff(regress.load(base), cur))
+    if a.write_baseline:
+        base.parent.mkdir(parents=True, exist_ok=True)
+        base.write_text(json.dumps(cur, indent=1) + "\n", encoding="utf-8")
+        res["baseline_written"] = str(base)
+    out(res)
+    if res.get("regressions"):
+        sys.exit(1)
+
+
 def cmd_agent(a):
     from . import agent
     agent.run(Path(a.work), goal=a.goal, model=a.model, effort=a.effort, interactive=not a.no_capture,
@@ -581,6 +605,15 @@ def main(argv=None):
     s.add_argument("--world", help="world directory to install into (created if missing)")
     s.add_argument("--gameid", default="minetest_game")
     s.add_argument("--scenario", action="append", help="recording replayed in the game and compared (repeatable)")
+    s.add_argument("--opponent", type=int, default=1)
+
+    s = cmd("autoclaim", cmd_autoclaim, "measure and claim a fighter-model character from a profile (JSON)")
+    s.add_argument("profile")
+    s = cmd("regress", cmd_regress, "replay recordings in every available target and compare with a baseline")
+    s.add_argument("--scenario", action="append", required=True)
+    s.add_argument("--target", action="append", choices=["godot", "minetest"])
+    s.add_argument("--baseline", help="default W/port/regression_baseline.json")
+    s.add_argument("--write-baseline", action="store_true")
     s.add_argument("--opponent", type=int, default=1)
 
     s = cmd("agent", cmd_agent, "let Claude drive the loop until everything observed is explained")
