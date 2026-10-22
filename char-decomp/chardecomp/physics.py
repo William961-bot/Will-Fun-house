@@ -55,15 +55,18 @@ def _summary(vals: list[float]) -> dict:
     return {"n": len(vals), "value": statistics.median(vals), "stdev": statistics.pstdev(vals) if len(vals) > 1 else 0.0}
 
 
-def estimate(t: T.Trace, param: str, o: Offsets, air_state: int | None = None, walk_state: int | None = None) -> dict:
-    """Measure one movement parameter from consecutive snapshots.
+def estimate(t: T.Trace, param: str, o: Offsets, air_state: int | None = None, walk_state: int | None = None,
+             obj: int = 0) -> dict:
+    """Measure one movement parameter of snapshotted object `obj` from consecutive snapshots.
 
     friction      vx[t+1] / vx[t] over frames where |vx| decays without new input (ratio < 1)
     gravity       vy[t] - vy[t+1] over consecutive airborne frames (y > 0 in both, not the landing frame)
     jump_impulse  vy of the first airborne frame + gravity (gravity is applied after the move in that frame)
     walk_speed    x[t+1] - x[t] over consecutive walk-state frames (displacement, not the velocity field)
+    speed         |x[t+1] - x[t]| over every pair of frames in state walk_state (constant-velocity objects such as
+                  projectiles: state_offset = their active flag, walk_state = 1)
     """
-    fr = frames(t, o)
+    fr = frames(t, o, obj)
     pairs = [(a, b) for a, b in zip(fr, fr[1:]) if b["tick"] == a["tick"] + 1 and None not in a.values()
              and None not in b.values()]
     if param == "friction":
@@ -74,7 +77,7 @@ def estimate(t: T.Trace, param: str, o: Offsets, air_state: int | None = None, w
                 and (air_state is None or (a["state"] == air_state and b["state"] == air_state))]
         return _summary(vals)
     if param == "jump_impulse":
-        g = estimate(t, "gravity", o, air_state)["value"]
+        g = estimate(t, "gravity", o, air_state, obj=obj)["value"]
         firsts = [b["vy"] for a, b in pairs if b["y"] > 0 and a["y"] <= 0
                   and (air_state is None or b["state"] == air_state)]
         if g is None:
@@ -88,6 +91,10 @@ def estimate(t: T.Trace, param: str, o: Offsets, air_state: int | None = None, w
             return _summary([])
         top = max(vals)
         return _summary([v for v in vals if v >= top * 0.99])  # steady walking, not the slow-down afterwards
+    if param == "speed":
+        if walk_state is None:
+            raise ValueError("speed needs walk_state (the moving state or active flag value)")
+        return _summary([abs(b["x"] - a["x"]) for a, b in pairs if a["state"] == walk_state and b["state"] == walk_state])
     raise ValueError(f"unknown movement parameter {param!r}")
 
 
@@ -131,11 +138,17 @@ def replay_error(t: T.Trace, o: Offsets, inputs: dict[int, str], params: dict) -
 
 
 def predicted_hits(t: T.Trace, c: dict) -> dict:
-    """Collision rule: the attack connects on its first active frame iff |x_def - x_att| <= reach.
+    """Collision rules. Observed hits: ticks where the defender's HP drops.
 
-    c: state_offset, attack_state, frame_offset (state frame), active_from (first active state frame), reach,
-    x_offset, defender obj (default 1), hp_offset. Observed hits: ticks where the defender's HP drops."""
+    rule "first_active" (default): a melee attack connects on its first active frame iff |x_def - x_att| <= reach.
+        c: state_offset, attack_state, frame_offset (state frame), active_from (first active state frame), reach,
+        x_offset, defender obj (default 1), hp_offset.
+    rule "overlap": a moving object (projectile) connects on the first frame it is within reach of the defender;
+        it is then gone (its active flag is 0 in that snapshot). c: attacker obj, attacker_x_offset,
+        active_offset, reach, x_offset (defender), defender, hp_offset."""
     from .ledger import _off
+    if c.get("rule", "first_active") == "overlap":
+        return _overlap_hits(t, c)
     so, fo, xo, ho = (_off(c.get(k, d)) for k, d in (("state_offset", 0x18), ("frame_offset", 0x1c),
                                                       ("x_offset", 0x8), ("hp_offset", 0x4)))
     dobj = c.get("defender", 1)
@@ -144,13 +157,62 @@ def predicted_hits(t: T.Trace, c: dict) -> dict:
     xa = T.series(t, xo, "f32")
     xd = T.series(t, xo, "f32", dobj)
     hp = T.series(t, ho, "i32", dobj)
-    predicted, observed = set(), set()
+    predicted, observed, evaluated = set(), set(), {}
     for i in range(1, len(st)):
         tick = st[i][0]
         if st[i][1] == c["attack_state"] and sf[i][1] == c["active_from"] and None not in (xa[i][1], xd[i][1]):
-            if abs(xd[i][1] - xa[i][1]) <= c["reach"]:
+            evaluated[tick] = abs(xd[i][1] - xa[i][1])
+            if evaluated[tick] <= c["reach"]:
                 predicted.add(tick)
         if hp[i][1] is not None and hp[i - 1][1] is not None and hp[i][1] < hp[i - 1][1]:
             observed.add(tick)
+    observed = _only_while(t, c, observed)
     first_active = sum(1 for i in range(len(st)) if st[i][1] == c["attack_state"] and sf[i][1] == c["active_from"])
-    return {"predicted": sorted(predicted), "observed": sorted(observed), "attacks": first_active}
+    return {"predicted": sorted(predicted), "observed": sorted(observed), "attacks": first_active,
+            **_distances(evaluated, observed)}
+
+
+def _distances(evaluated: dict, observed: set) -> dict:
+    """Distances at every evaluated frame, split by whether a hit was observed there: they bound the reach."""
+    return {"hit_distances": sorted(d for tk, d in evaluated.items() if tk in observed),
+            "miss_distances": sorted(d for tk, d in evaluated.items() if tk not in observed)}
+
+
+def reach_bounds(results: list[dict]) -> tuple[float | None, float | None]:
+    """(largest distance that hit, smallest distance that missed) over several recordings: reach lies in [lo, hi)."""
+    hits = [d for r in results for d in r["hit_distances"]]
+    misses = [d for r in results for d in r["miss_distances"]]
+    return (max(hits) if hits else None, min(misses) if misses else None)
+
+
+def _overlap_hits(t: T.Trace, c: dict) -> dict:
+    from .ledger import _off
+    aobj, dobj = c.get("attacker", 0), c.get("defender", 1)
+    act = T.series(t, _off(c.get("active_offset", 0)), "i32", aobj)
+    xa = T.series(t, _off(c.get("attacker_x_offset", 0x4)), "f32", aobj)
+    xd = T.series(t, _off(c.get("x_offset", 0x8)), "f32", dobj)
+    hp = T.series(t, _off(c.get("hp_offset", 0x4)), "i32", dobj)
+    predicted, observed, launches, evaluated = set(), set(), 0, {}
+    for i in range(1, len(act)):
+        tick = act[i][0]
+        if act[i][1] == 1 and act[i - 1][1] == 0:
+            launches += 1
+        if act[i - 1][1] == 1 and None not in (xa[i][1], xd[i][1]):
+            evaluated[tick] = abs(xd[i][1] - xa[i][1])
+            if evaluated[tick] <= c["reach"]:
+                predicted.add(tick)
+        if hp[i][1] is not None and hp[i - 1][1] is not None and hp[i][1] < hp[i - 1][1]:
+            observed.add(tick)
+    observed = _only_while(t, c, observed)
+    return {"predicted": sorted(predicted), "observed": sorted(observed), "attacks": launches,
+            **_distances(evaluated, observed)}
+
+
+def _only_while(t: T.Trace, c: dict, observed: set) -> set:
+    """Restrict observed hits to ticks where another field holds (e.g. the attacker's state), if asked."""
+    from .ledger import _off
+    w = c.get("only_while")
+    if not w:
+        return observed
+    return observed & {tk for tk, v in T.series(t, _off(w["offset"]), w.get("type", "i32"), w.get("obj", 0))
+                       if v == w["eq"]}

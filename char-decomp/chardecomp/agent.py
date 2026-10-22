@@ -86,6 +86,19 @@ Check shapes for record_claim (checks_json is a JSON list)
   {"check":"hit_outcome","trace":T,"attack_state":1,"active_from":13,"reach":70,"defender":1}
      (an attack connects on its first active frame iff |x_defender - x_attacker| <= reach: predicted hits
       must equal the ticks where the defender's HP dropped; record with --snap-base for the defender)
+  {"check":"hit_outcome","trace":T,"rule":"overlap","attacker":2,"attacker_x_offset":"0x4","active_offset":"0x0",
+   "reach":10,"defender":1,"only_while":{"offset":"0x18","eq":5}}
+     (a projectile hits on the first frame within reach, then deactivates; only_while limits observed hits)
+  {"check":"motion_fit","trace":T,"param":"speed","expect":8,"obj":2,"x_offset":"0x4","state_offset":"0x0",
+   "walk_state":1}     (constant speed of an object while its state/active field equals walk_state)
+  {"check":"event_deltas","trace":T,"trigger":{"obj":1,"offset":"0x4"},"when":{"obj":0,"offset":"0x18","eq":1},
+   "deltas":[{"obj":1,"offset":"0x4","delta":-95},{"obj":0,"offset":"0x40","delta":19}]}
+     (at every tick the trigger field drops while `when` holds, each field changes by exactly its delta)
+  {"check":"gated_input","trace":T,"func":F,"arg":2,"value":5,"resource":{"obj":0,"offset":"0x40"},"min":50,
+   "cost":50,"offset":"0x18","from":0,"to":5,"lag":1}
+     (calls change the state iff the resource is >= min, and then cost it; both outcomes must be recorded)
+Damage claims (subject = the move or ability name) need event_deltas; ability claims need gated_input and may
+add the projectile's motion_fit speed and overlap hit_outcome.
 Input claims need arg_precedes; physics claims need motion_fit or trajectory_matches (claim the parameters
 with motion_fit and the model with trajectory_matches); collision claims need hit_outcome. Test a reach at the
 boundary from both sides (a recording at exactly the reach and one a unit beyond).
@@ -391,7 +404,7 @@ def build_tools(work: Path, interactive: bool):
 
         Args:
             kind: function, field, move, asset, identity, component, transition, skeleton, mesh, animation, input,
-                physics, collision or note.
+                physics, collision, damage, ability or note.
             subject: function location, field offset (0x1c), move name, file path, or (identity) the base expression.
             name: Short identifier (function or field name, move name).
             statement: What it is or does, in one or two sentences, consistent with the checks.

@@ -5,8 +5,9 @@
 // function or struct field this source says it should.
 //
 // usage: toy_fighter <assets_dir> <script> [frames] [far | DISTANCE]
-//   script: idle | jab | heavy | sweep | walk | jump   (player 1 repeats that action)
+//   script: idle | jab | heavy | sweep | walk | jump | super   (player 1 repeats that action)
 //           walk: walk for 30 frames, stop for 30; jump: jump every 60 frames
+//           super: heavy at frame 10 of every 60, super attempt at frame 50 of every 60 (needs 50 meter)
 //   far:    put player 2 out of reach (500 units), so attacks whiff; a number puts player 2 that far away
 #include <stdint.h>
 #include <stdio.h>
@@ -47,7 +48,7 @@ typedef struct Fighter {
     int32_t hp;          // 0x04
     float x, y;          // 0x08 0x0c
     float vx, vy;        // 0x10 0x14
-    int32_t state;       // 0x18 0 idle, 1 attack, 2 hitstun, 3 walk
+    int32_t state;       // 0x18 0 idle, 1 attack, 2 hitstun, 3 walk, 4 air, 5 super
     int32_t state_frame; // 0x1c
     int32_t move_id;     // 0x20
     int32_t facing;      // 0x24
@@ -71,9 +72,24 @@ static const Move MOVES[] = {
     {"sweep", 9, 3, 16, 60, 55.0f},
 };
 
-enum { ST_IDLE, ST_ATTACK, ST_HITSTUN, ST_WALK, ST_AIR };
+enum { ST_IDLE, ST_ATTACK, ST_HITSTUN, ST_WALK, ST_AIR, ST_SUPER };
+
+// The special mechanic: a super costs 50 meter (gained by landing hits: damage / 5), and 8 frames in it
+// launches a projectile that flies 8 units per frame and hits within 10 units for 150, or expires after 60.
+#define SUPER_COST 50
+#define SUPER_LAUNCH 8
+#define SUPER_LENGTH 30
+typedef struct {
+    int32_t active;      // 0x00
+    float x;             // 0x04
+    float vx;            // 0x08
+    int32_t age;         // 0x0c
+    int32_t damage;      // 0x10
+    float radius;        // 0x14
+} Projectile;
 
 Fighter *g_fighters[2];
+Projectile *g_projectile;
 
 NOINLINE static size_t read_file(const char *path, uint8_t **out) {
     FILE *f = fopen(path, "rb");
@@ -195,6 +211,47 @@ NOINLINE static void update_move(Fighter *f) {
     }
 }
 
+NOINLINE static void start_super(Fighter *f) {
+    if (f->state != ST_IDLE && f->state != ST_WALK) return;
+    if (f->meter < SUPER_COST) return;
+    f->meter -= SUPER_COST;
+    f->state = ST_SUPER;
+    f->state_frame = 0;
+    f->vx = 0;
+}
+
+NOINLINE static void update_super(Fighter *f, Projectile *p) {
+    f->state_frame++;
+    if (f->state_frame == SUPER_LAUNCH) {
+        p->active = 1;
+        p->x = f->x;
+        p->vx = 8.0f * f->facing;
+        p->age = 0;
+        p->damage = 150;
+        p->radius = 10.0f;
+    }
+    if (f->state_frame >= SUPER_LENGTH) {
+        f->state = ST_IDLE;
+        f->state_frame = 0;
+    }
+}
+
+NOINLINE static void update_projectile(Projectile *p, Fighter *d) {
+    if (!p->active) return;
+    p->x += p->vx;
+    p->age++;
+    float dist = d->x - p->x;
+    if (dist < 0) dist = -dist;
+    if (dist <= p->radius && d->state != ST_HITSTUN) {
+        d->hp -= p->damage;
+        d->state = ST_HITSTUN;
+        d->state_frame = 0;
+        p->active = 0;
+    } else if (p->age >= 60) {
+        p->active = 0;
+    }
+}
+
 NOINLINE static void update_hitstun(Fighter *f) {
     if (++f->state_frame >= 18) {
         f->state = ST_IDLE;
@@ -243,10 +300,12 @@ NOINLINE static void game_tick(Fighter *p1, Fighter *p2, int cmd) {
     if (cmd >= 0 && cmd < 3) start_move(p1, cmd);
     if (cmd == 3) walk(p1, 1.0f);
     if (cmd == 4) jump(p1);
+    if (cmd == 5) start_super(p1);
     for (int i = 0; i < 2; i++) {
         Fighter *f = i ? p2 : p1;
         if (f->state == ST_ATTACK) update_move(f);
         else if (f->state == ST_HITSTUN) update_hitstun(f);
+        else if (f->state == ST_SUPER) update_super(f, g_projectile);
         apply_physics(f);
         if (f->anim->clip != f->state) {
             f->anim->clip = f->state;
@@ -257,6 +316,7 @@ NOINLINE static void game_tick(Fighter *p1, Fighter *p2, int cmd) {
         evaluate_pose(f->anim, i);
     }
     check_hit(p1, p2);
+    update_projectile(g_projectile, p2);
 }
 
 int main(int argc, char **argv) {
@@ -272,6 +332,7 @@ int main(int argc, char **argv) {
     else if (!strcmp(script, "sweep")) action = 2;
     else if (!strcmp(script, "walk")) action = 3;
     else if (!strcmp(script, "jump")) action = 4;
+    else if (!strcmp(script, "super")) action = 5;
 
     g_fighters[0] = load_character(argv[1], "ryo", 1337, 0.0f, 1);
     load_clips(argv[1], "ryo", 0);
@@ -279,11 +340,13 @@ int main(int argc, char **argv) {
     if (argc > 4) p2x = !strcmp(argv[4], "far") ? 500.0f : (float)atof(argv[4]);
     g_fighters[1] = load_character(argv[1], "ken", 1000, p2x, -1);
     load_clips(argv[1], "ken", 1);
+    g_projectile = calloc(1, sizeof(Projectile));
     if (getenv("TOY_DEBUG")) fprintf(stderr, "P1 %p\n", (void *)g_fighters[0]);
 
     for (int frame = 0; frame < frames; frame++) {
         int cmd = -1;
         if (action == 3) cmd = frame % 60 < 30 ? 3 : -1;
+        else if (action == 5) cmd = frame % 60 == 10 ? 1 : frame % 60 == 50 ? 5 : -1;
         else if (action >= 0 && frame % 60 == 10) cmd = action;
         game_tick(g_fighters[0], g_fighters[1], cmd);
         usleep(4000);

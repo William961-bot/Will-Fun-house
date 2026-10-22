@@ -144,7 +144,7 @@ def test_claims_and_ucs(toy, moving, capsys):
                        [hit("at70", 70), hit("at71", 70), hit("far", 70)])["status"] == "verified"
         assert led.add("physics", "bad", "bad", "", [fit("jump", "gravity", 0.6)])["status"] == "failed"
     doc = ucs.build_workspace(w).to_json()
-    assert ucs.validate(doc) == [] and doc["version"] == ucs.UCS_VERSION == "0.4"
+    assert ucs.validate(doc) == [] and doc["version"] == ucs.UCS_VERSION
     ph = doc["physics"]
     assert {k: v["value"] for k, v in ph["parameters"].items()} == TRUTH
     assert ph["parameters"]["gravity"]["unit"] == "units/tick^2" and ph["model"]["value"] == physics.MODEL
@@ -153,6 +153,7 @@ def test_claims_and_ucs(toy, moving, capsys):
     assert ph["per_second"]["gravity"]["unit"] == "units/s^2"
     assert ph["collision"][0]["reach"]["value"] == 70 and ph["collision"][0]["boundary_tested"]["value"] == [
         "at70", "at71", "far"]
+    assert ph["collision"][0]["reach_proven_range"]["value"] == [70, 71]  # hit at 70, missed at 71
     assert "unknown" in ph["units"]
     im = doc["controller"]["input_mapping"]
     assert im[0]["value"] == 4 and im[0]["effect"] == "0x18: 0 -> 4" and im[0]["lag"]["unit"] == "ticks"

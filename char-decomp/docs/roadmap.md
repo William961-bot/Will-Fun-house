@@ -81,7 +81,7 @@ source constants; typed controller graphs (states, transitions with conditions/a
 event-driven forms). Trajectory and timing checks.
 Gate: the test character's movement and collision reproduced within stated tolerances.
 
-## Stage 7: combat and abilities
+## Stage 7: combat and abilities (done: `docs/stages/stage-7.md`)
 
 Attacks, hit/hurt volumes per frame, damage formulas, blocking/parry, resources (posture, stamina, meters),
 cooldowns, status effects, projectiles; custom mechanics as extension modules over generic building blocks.

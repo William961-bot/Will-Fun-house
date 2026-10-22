@@ -14,7 +14,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Union
 
-UCS_VERSION = "0.4"  # 0.2: mesh/skeleton/materials; 0.3: animation; 0.4: physics, collision, input mapping
+UCS_VERSION = "0.5"  # 0.2: mesh/skeleton/materials; 0.3: animation; 0.4: physics, collision, input mapping;
+#                       0.5: move on_hit effects, abilities
 
 
 @dataclass(frozen=True)
@@ -153,6 +154,7 @@ class MoveSpec:
     phases: list[FramePhase]
     total_ticks: int
     evidence: tuple[int, ...]
+    on_hit: Any = field(default_factory=lambda: Unknown("no verified damage claim for this move"))
 
 
 @dataclass
@@ -172,7 +174,7 @@ class AssetSpec:
 
 @dataclass
 class Dependency:
-    kind: str                 # "calls" | "has_component" | "caused_by"
+    kind: str                 # "calls" | "has_component" | "caused_by" | "input" | "on_hit"
     source: str
     target: str
     evidence: tuple[int, ...]
@@ -204,7 +206,7 @@ class UCS:
     materials: Any            # list of {"name", "base_color", "texture"} or Unknown
     animation: Any            # {"artifact", "sample_rate", "interpolation", "clips": [...], ...} or Unknown
     physics: Any              # {"model", "parameters", "per_second", "replay", "collision"} or Unknown
-    abilities: Value
+    abilities: Any            # [{"name", "input", "gate", "cost", "state", "on_hit", "projectile"}] or Unknown
     camera: Value
     audio: Value
     dependencies: list[Dependency]

@@ -24,6 +24,9 @@ MIGRATIONS: dict[str, tuple[str, callable]] = {
     # 0.3 -> 0.4: physics and controller.input_mapping may now be objects/lists; 0.3 documents (both Unknown)
     # are valid 0.4.
     "0.3": ("0.4", lambda doc: dict(doc)),
+    # 0.4 -> 0.5: moves gain on_hit (Unknown unless a damage claim exists), abilities may be a list.
+    "0.4": ("0.5", lambda doc: {**doc, "moves": [{**m, "on_hit": m.get("on_hit", {"unknown": "no verified damage "
+                                                                     "claim for this move"})} for m in doc["moves"]]}),
 }
 
 

@@ -61,7 +61,8 @@ Addresses are `module+0xRVA`, so recordings from different runs line up despite 
 Minimum evidence: a **function** needs `executed`/`called_with_char`/`writes`; a **field** needs a
 dynamic check on that same offset; a **move** needs `rle`; an **asset** needs `opens_file`; an **identity**
 needs `tick_rate` plus an anchor on object 0; a **component** needs `graph_resolves`; a **transition** needs `transition`. An **input** needs `arg_precedes`, **physics**
-needs `motion_fit` or `trajectory_matches`, a **collision** needs `hit_outcome`. Static checks
+needs `motion_fit` or `trajectory_matches`, a **collision** needs `hit_outcome`. **Damage** needs `event_deltas`, an
+**ability** needs `gated_input`. Static checks
 back names up but never stand alone. A window
 clipped by the start or end of a recording is ignored.
 
@@ -226,6 +227,11 @@ Parameters are measured from what positions do, not read from velocity fields. `
 within a tolerance; `trajectory_matches` replays the whole recording with the model and the captured inputs and
 fails with the tick of the worst error; `arg_precedes` ties an input argument value to the state change it causes;
 `hit_outcome` must predict exactly which attacks connected (record both sides of the reach boundary).
+
+Combat: `event_deltas` claims what each hit does to every field (damage, meter gain), `gated_input` an input that
+a resource allows and costs (both outcomes must be recorded), and `hit_outcome` with `"rule": "overlap"` a
+projectile's hit. Where recordings only bound a value (a threshold, a radius), the UCS reports the proven range
+next to the claimed value. Claim kinds `damage` and `ability`.
 
 ## Universal Character Specification
 

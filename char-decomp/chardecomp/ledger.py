@@ -15,6 +15,8 @@ Policy (what each kind of claim must be backed by):
   physics   a movement parameter measured from snapshots (motion_fit) or a model that replays them
             (trajectory_matches)
   collision a hit rule that predicts exactly which attacks connected (hit_outcome)
+  damage    what a hit does to each field: exact per-event deltas (event_deltas)
+  ability   an input gated by a resource, with its cost (gated_input)
   animation  imported clips that decode, that the character loads, and whose evaluation matches the poses
             recorded in the running game (anim_matches)
   skeleton, mesh  an imported file (artifact) that decodes and validates (asset_decodes) and that the character
@@ -58,13 +60,15 @@ REQUIRED = {
     "input": {"arg_precedes"},
     "physics": {"motion_fit", "trajectory_matches"},
     "collision": {"hit_outcome"},
+    "damage": {"event_deltas"},
+    "ability": {"gated_input"},
     "transition": {"transition"},
     "note": set(),
 }
 IDENTITY_ANCHORS = {"field_equals", "value_change"}
 SNAPSHOT_CHECKS = {"rle", "changes", "value_change", "field_equals", "base_resolves", "transition", "precedes",
                    "graph_resolves", "anim_matches", "notify_aligns", "arg_precedes", "motion_fit",
-                   "trajectory_matches", "hit_outcome"}
+                   "trajectory_matches", "hit_outcome", "event_deltas", "gated_input"}
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS traces (label TEXT PRIMARY KEY, path TEXT, sha256 TEXT, recorded_at TEXT);
@@ -429,7 +433,8 @@ class Ledger:
             if kind == "motion_fit":
                 from . import physics
                 t = self.trace(c["trace"])
-                r = physics.estimate(t, c["param"], physics.Offsets.from_check(c), c.get("air_state"), c.get("walk_state"))
+                r = physics.estimate(t, c["param"], physics.Offsets.from_check(c), c.get("air_state"),
+                                     c.get("walk_state"), c.get("obj", 0))
                 if not r["n"]:
                     return False, f"{c['param']} not measurable in {c['trace']}" + (f" ({r['note']})" if r.get("note") else "")
                 ok = abs(r["value"] - c["expect"]) <= c.get("tolerance", 1e-3)
@@ -448,12 +453,18 @@ class Ledger:
                 return ok, (f"replayed {r['frames']} ticks with {len(inputs)} inputs: max position error "
                             f"{r['max_error']:.6g} (tolerance {c.get('tolerance', 0.01)})"
                             + ("" if ok else f", worst at tick {r['first_bad_tick']}"))
+            if kind == "event_deltas":
+                return self._event_deltas(self.trace(c["trace"]), c)
+            if kind == "gated_input":
+                return self._gated_input(self.trace(c["trace"]), c)
             if kind == "hit_outcome":
                 from . import physics
                 r = physics.predicted_hits(self.trace(c["trace"]), c)
                 ok = r["attacks"] > 0 and r["predicted"] == r["observed"]
-                return ok, (f"{r['attacks']} attacks reached their first active frame; predicted hits at "
-                            f"{r['predicted'][:8]}, observed HP drops at {r['observed'][:8]} (reach {c['reach']})")
+                lo, hi = physics.reach_bounds([r])
+                return ok, (f"{r['attacks']} attacks evaluated; predicted hits at {r['predicted'][:8]}, observed HP "
+                            f"drops at {r['observed'][:8]} (reach {c['reach']}; this recording bounds it to "
+                            f"[{lo}, {hi}) )")
             if kind == "anim_matches":
                 return self._anim_matches(c)
             if kind == "notify_aligns":
@@ -562,6 +573,69 @@ class Ledger:
         ok = bool(lags) and all(x == want for x in lags)
         return ok, (f"{len(lags)} changes {c['from']} -> {c['to']} of {_off(c['offset']):#x} during {c['clip']}: "
                     f"animation frame minus notify {c['notify']}@{notify} = {sorted(set(lags))} (wanted {want})")
+
+    @staticmethod
+    def _event_deltas(t: T.Trace, c: dict) -> tuple[bool, str]:
+        """At every tick where the trigger field decreases (and `when` holds), each listed field changes by exactly
+        its delta over that tick."""
+        def col(f):
+            return dict(T.series(t, _off(f["offset"]), f.get("type", "i32"), f.get("obj", 0)))
+        trig = col(c["trigger"])
+        when = c.get("when")
+        held = col(when) if when else None
+        events = [tk for tk in sorted(trig) if tk - 1 in trig and None not in (trig[tk], trig[tk - 1])
+                  and trig[tk] < trig[tk - 1] and (held is None or held.get(tk) == when["eq"])]
+        if not events:
+            return False, "no trigger events in this trace"
+        bad = []
+        for d in c["deltas"]:
+            s = col(d)
+            for tk in events:
+                got = None if None in (s.get(tk), s.get(tk - 1)) else s[tk] - s[tk - 1]
+                if got is None or abs(got - d["delta"]) > d.get("tolerance", 0):
+                    bad.append(f"{d.get('obj', 0)}:{d['offset']} changed by {got} at tick {tk}, wanted {d['delta']}")
+        return not bad, (f"{len(events)} events at ticks {events[:8]}: "
+                         + ("every delta as claimed" if not bad else "; ".join(bad[:4])))
+
+    def gate_bounds(self, c: dict) -> tuple[float | None, float | None]:
+        """(largest resource value that was refused, smallest that was allowed) for a gated_input check."""
+        return self._gate_rows(self.trace(c["trace"]), c)[3]
+
+    @staticmethod
+    def _gate_rows(t: T.Trace, c: dict):
+        res = dict(T.series(t, _off(c["resource"]["offset"]), c["resource"].get("type", "i32"),
+                            c["resource"].get("obj", 0)))
+        state = dict(T.series(t, _off(c["offset"]), c.get("type", "i32"), c.get("obj", 0)))
+        lag = c.get("lag", 1)
+        fired_at, refused_at, rows = [], [], []
+        for tk, args in T.call_args(t, c["func"]):
+            if T.signed32(args[c["arg"]]) != c["value"] or res.get(tk) is None or state.get(tk) != c["from"]:
+                continue
+            fired = state.get(tk + lag) == c["to"]
+            (fired_at if fired else refused_at).append(res[tk])
+            rows.append((tk, res[tk], fired, res.get(tk + lag)))
+        bounds = (max(refused_at) if refused_at else None, min(fired_at) if fired_at else None)
+        return res, rows, lag, bounds
+
+    @staticmethod
+    def _gated_input(t: T.Trace, c: dict) -> tuple[bool, str]:
+        """Calls with argument value V change the state `lag` ticks later iff the resource (read in the snapshot of
+        the call's tick) is >= min, and then the resource drops by `cost`. Both outcomes must be observed."""
+        _, rows, lag, (lo, hi) = Ledger._gate_rows(t, c)
+        allowed, refused, bad = [], [], []
+        for tk, r, fired, after in rows:
+            want = r >= c["min"]
+            (allowed if want else refused).append(tk)
+            if fired != want:
+                bad.append(f"tick {tk}: resource {r}, state {'changed' if fired else 'unchanged'}")
+            elif fired and "cost" in c and after is not None and r - after != c["cost"]:
+                bad.append(f"tick {tk}: resource {r} -> {after}, cost {c['cost']} claimed")
+        if not allowed or not refused:
+            return False, (f"gate needs both outcomes: {len(allowed)} calls with resource >= {c['min']}, "
+                           f"{len(refused)} below (from state {c['from']})")
+        return not bad, (f"{len(allowed)} calls with enough resource changed {c['from']} -> {c['to']}, "
+                         f"{len(refused)} without did not; the threshold lies in ({lo}, {hi}]"
+                         + ("; " + "; ".join(bad[:4]) if bad else ""))
 
     @staticmethod
     def _points(t: T.Trace, c: dict) -> list[tuple[int, object]]:

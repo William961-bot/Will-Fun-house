@@ -477,7 +477,7 @@ def main(argv=None):
     s = cmd("claim", cmd_claim, "add a claim; it is verified only if every check passes")
     s.add_argument("--kind", required=True, choices=["function", "field", "move", "asset", "identity", "component",
                                                        "transition", "skeleton", "mesh", "animation", "input", "physics",
-                                                       "collision", "note"])
+                                                       "collision", "damage", "ability", "note"])
     s.add_argument("--subject", required=True,
                    help="module+0xRVA, field offset (or PATH@OFFSET in a component), move name, file path, "
                         "component path, transition name, or (identity) the base expression")

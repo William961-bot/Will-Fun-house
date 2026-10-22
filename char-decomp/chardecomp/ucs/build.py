@@ -17,7 +17,7 @@ NOT_YET = {
     "materials": "no verified mesh claim with materials",
     "animation": "no verified animation claim",
     "physics": "no verified physics claim",
-    "abilities": "ability system not recovered yet (Stage 7)",
+    "abilities": "no verified ability claim",
     "camera": "camera behaviour not recovered",
     "audio": "audio and gameplay events not recovered",
 }
@@ -130,7 +130,7 @@ def build(led: Ledger, cfg: dict) -> UCS:
         controller.input_mapping = inputs
         for i in inputs:
             deps.append(Dependency("input", i["function"], i["effect"], tuple(i["evidence"])))
-    physics = _physics(by("physics"), by("collision"), round(hz, 3) if hz else None, ev(ident) if ident else ())
+    physics = _physics(led, by("physics"), by("collision"), round(hz, 3) if hz else None, ev(ident) if ident else ())
 
     # --- combat (frame data from rle claims)
     moves = []
@@ -142,6 +142,14 @@ def build(led: Ledger, cfg: dict) -> UCS:
             c["name"], c["statement"], hex(_off(rle["offset"])),
             f"{hex(_off(where['offset']))} == {where['eq']}" if where else None,
             [FramePhase(v, n, seconds(n, ev(c))) for v, n in runs], sum(n for _, n in runs), ev(c)))
+    damage = {c["subject"]: c for c in by("damage")}
+    for m in moves:
+        mc = next(c for c in by("move") if c["name"] == m.name)
+        d = damage.get(mc["subject"]) or damage.get(m.name)
+        if d:
+            m.on_hit = _effects(d)
+            deps.append(Dependency("on_hit", m.name, d["name"], ev(d)))
+    abilities = [_ability(led, c, damage.get(c["subject"])) for c in by("ability")]
 
     functions = [FunctionSpec(c["subject"], c["name"], c["statement"], ev(c)) for c in by("function")]
     for c in by("function"):
@@ -168,6 +176,7 @@ def build(led: Ledger, cfg: dict) -> UCS:
         "code": _ratio(comp["functions"]),
         "controller": "partial" if transitions or inputs else "unknown",
         "combat": "partial" if moves else "unknown",
+        "damage": "partial" if damage else "unknown",
         "assets": "partial" if assets else "unknown",
         **{k: "unknown" for k in NOT_YET},
         "skeleton": "known" if isinstance(skeleton, dict) else "unknown",
@@ -178,6 +187,7 @@ def build(led: Ledger, cfg: dict) -> UCS:
         "partial" if isinstance(physics, dict) else "unknown",
         "collision": "known" if isinstance(physics, dict) and isinstance(physics["collision"], list) else "unknown",
         "input": "partial" if inputs else "unknown",
+        "abilities": "partial" if abilities else "unknown",
     }
     completeness_doc = {"domains": domains, "observed_vs_explained": {
         k: {"observed": comp[k]["observed"], "explained": comp[k]["explained"]}
@@ -185,8 +195,8 @@ def build(led: Ledger, cfg: dict) -> UCS:
         "note": "Explained counts cover only what the recordings exercised; unrecorded behaviour is not counted."}
 
     return UCS(UCS_VERSION, source, time_base, conventions, obj, components, controller, moves, functions, assets,
-               mesh, skeleton, materials, animation, physics,
-               *(Unknown(NOT_YET[k]) for k in ("abilities", "camera", "audio")),
+               mesh, skeleton, materials, animation, physics, abilities or Unknown(NOT_YET["abilities"]),
+               *(Unknown(NOT_YET[k]) for k in ("camera", "audio")),
                deps, evidence, rejected, completeness_doc)
 
 
@@ -268,6 +278,46 @@ def _animation(led: Ledger, claims: list):
     }
 
 
+def _effects(c: dict) -> dict:
+    """What one hit does, from a damage claim's event_deltas checks: field deltas per event, by object."""
+    e = (c["id"],)
+    out = []
+    for ch in c["checks"]:
+        if ch["check"] == "event_deltas":
+            out.append({"trace": ch["trace"], "condition": Fact(ch.get("when"), e) if ch.get("when") else
+                        Unknown("no condition: every trigger event"),
+                        "deltas": [{"object": "self" if d.get("obj", 0) == 0 else f"snapshot object {d['obj']}",
+                                    "offset": hex(_off(d["offset"])), "delta": Fact(d["delta"], e)}
+                                   for d in ch["deltas"]]})
+    return {"name": c["name"], "statement": c["statement"], "events": out, "evidence": [c["id"]]}
+
+
+def _ability(led: Ledger, c: dict, damage: dict | None) -> dict:
+    """A resource-gated input (gated_input), with its projectile (motion_fit speed, overlap hit_outcome) if any."""
+    e = (c["id"],)
+    g = next(ch for ch in c["checks"] if ch["check"] == "gated_input")
+    speed = next((ch for ch in c["checks"] if ch["check"] == "motion_fit" and ch["param"] == "speed"), None)
+    hit = next((ch for ch in c["checks"] if ch["check"] == "hit_outcome" and ch.get("rule") == "overlap"), None)
+    proj = Unknown("no projectile checks in this ability claim")
+    if speed or hit:
+        proj = {"speed": Fact(speed["expect"], e, "units/tick") if speed else Unknown("speed not claimed"),
+                "hit_radius": Fact(hit["reach"], e, "units") if hit else Unknown("hit rule not claimed"),
+                "hit_radius_proven_range": _reach_range(led, [hit], e) if hit else Unknown("hit rule not claimed"),
+                "rule": Fact("hits on the first frame within hit_radius of the defender, then disappears", e)
+                if hit else Unknown("hit rule not claimed")}
+    return {"name": c["name"], "statement": c["statement"],
+            "input": {"function": g["func"], "argument": g["arg"], "value": g["value"]},
+            "gate": {"resource": f"{g['resource'].get('obj', 0)}:{hex(_off(g['resource']['offset']))}",
+                     "min": Fact(g["min"], e),
+                     "min_proven_range": Fact(list(led.gate_bounds(g)), e, None,
+                                              "(largest value refused, smallest value allowed] in the recording")},
+            "cost": Fact(g["cost"], e) if "cost" in g else Unknown("cost not claimed"),
+            "state": {"field": hex(_off(g["offset"])), "from": g["from"], "to": g["to"],
+                      "lag": Fact(g.get("lag", 1), e, "ticks")},
+            "on_hit": _effects(damage) if damage else Unknown("no verified damage claim for this ability"),
+            "projectile": proj, "evidence": [c["id"]]}
+
+
 def _inputs(claims: list) -> list:
     """Input mapping: which captured argument value of which function causes which state change."""
     out = []
@@ -283,7 +333,13 @@ def _inputs(claims: list) -> list:
 PARAM_UNITS = {"gravity": "units/tick^2", "jump_impulse": "units/tick", "walk_speed": "units/tick", "friction": None}
 
 
-def _physics(claims: list, collisions: list, hz: float | None, ident_ev: tuple):
+def _reach_range(led: Ledger, checks: list, e: tuple):
+    from ..physics import predicted_hits, reach_bounds
+    lo, hi = reach_bounds([predicted_hits(led.trace(ch["trace"]), ch) for ch in checks])
+    return Fact([lo, hi], e, "units", "[largest distance that hit, smallest distance that missed) in the recordings")
+
+
+def _physics(led: Ledger, claims: list, collisions: list, hz: float | None, ident_ev: tuple):
     """Movement parameters (motion_fit), the model that replays recordings (trajectory_matches) and hit rules."""
     if not claims and not collisions:
         return Unknown(NOT_YET["physics"])
@@ -313,17 +369,18 @@ def _physics(claims: list, collisions: list, hz: float | None, ident_ev: tuple):
         params.setdefault(k, Unknown(f"no verified claim measures {k}"))
     collision = []
     for c in collisions:
-        for ch in c["checks"]:
-            if ch["check"] == "hit_outcome":
-                e = (c["id"],)
-                collision.append({"name": c["name"], "rule": Fact("|x_defender - x_attacker| <= reach on the first "
-                                                                   "active frame", e),
-                                  "reach": Fact(ch["reach"], e, "units"),
-                                  "attack_state": Fact(ch["attack_state"], e),
-                                  "active_from": Fact(ch["active_from"], e, "ticks"),
-                                  "boundary_tested": Fact(sorted({x["trace"] for x in c["checks"]
-                                                                  if x["check"] == "hit_outcome"}), e)})
-                break
+        hits = [ch for ch in c["checks"]
+                if ch["check"] == "hit_outcome" and ch.get("rule", "first_active") == "first_active"]
+        if not hits:
+            continue
+        ch, e = hits[0], (c["id"],)
+        collision.append({"name": c["name"],
+                          "rule": Fact("|x_defender - x_attacker| <= reach on the first active frame", e),
+                          "reach": Fact(ch["reach"], e, "units"),
+                          "reach_proven_range": _reach_range(led, hits, e),
+                          "attack_state": Fact(ch["attack_state"], e),
+                          "active_from": Fact(ch["active_from"], e, "ticks"),
+                          "boundary_tested": Fact(sorted({x["trace"] for x in hits}), e)})
     return {"model": model, "parameters": params, "per_second": per_second or Unknown("tick rate unknown"),
             "replay": replay, "collision": collision or Unknown("no verified collision claim"),
             "units": Unknown("source distance units are not calibrated to metres")}
