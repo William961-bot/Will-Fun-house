@@ -14,8 +14,11 @@ TOP_LEVEL = ("version", "source", "time_base", "conventions", "object", "compone
              "audio", "dependencies", "evidence", "rejected", "completeness")
 DOMAIN_STATES = {"known", "complete", "partial", "unknown"}
 
-# version -> function upgrading a document of that version to the next one. Empty while 0.1 is the first version.
-MIGRATIONS: dict[str, tuple[str, callable]] = {}
+# version -> (next version, function upgrading a document of that version to the next one).
+MIGRATIONS: dict[str, tuple[str, callable]] = {
+    # 0.1 -> 0.2: mesh/skeleton/materials may now be objects; every 0.1 document (all three Unknown) is valid 0.2.
+    "0.1": ("0.2", lambda doc: dict(doc)),
+}
 
 
 class UCSError(ValueError):

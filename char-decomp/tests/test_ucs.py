@@ -122,15 +122,16 @@ def test_migration_chain(doc, monkeypatch):
         ucs.migrate(old)
     V = importlib.import_module("chardecomp.ucs.validate")
     monkeypatch.setitem(V.MIGRATIONS, "0.0", ("0.1", lambda d: {**d, "migrated": True}))
-    new = ucs.migrate(old)
-    assert new["version"] == "0.1" and new["migrated"] is True
+    new = ucs.migrate(old)  # 0.0 -> 0.1 (registered here) -> 0.2 (the real migration)
+    assert new["version"] == ucs.UCS_VERSION and new["migrated"] is True
+    assert ucs.validate(new) == []
 
 
 def test_cli(claimed, tmp_path, capsys):
     capsys.readouterr()
     run_cli("ucs", claimed)
     res = json.loads(capsys.readouterr().out)
-    assert res["version"] == "0.1" and res["domains"]["identity"] == "known"
+    assert res["version"] == ucs.UCS_VERSION and res["domains"]["identity"] == "known"
     run_cli("ucs-validate", res["written"])
     assert json.loads(capsys.readouterr().out)["valid"] is True
     bad = tmp_path / "bad.json"

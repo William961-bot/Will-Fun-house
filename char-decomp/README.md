@@ -199,6 +199,18 @@ and a `precedes` check naming the function that causes it); component fields are
 Snapshots read fixed sizes, so set `snap_size` and `--follow-size` to the objects' real sizes once known: until
 then, neighbouring heap objects show up as unexplained components.
 
+## Assets: models and skeletons
+
+```
+chardecomp files W load                                   # which files the character opens
+chardecomp import-asset W ryo_model /path/the/game/opened/model.tfmd   # copy + pin by SHA-256
+chardecomp asset-info W ryo_model                         # decode with a format plugin and validate
+chardecomp export-gltf W ryo_model                        # glTF 2.0 binary with the skeleton and skin
+```
+
+A `skeleton` or `mesh` claim needs `asset_decodes` and `artifact_loaded` (the game opened that exact file).
+Format plugins: `tfmd` (the toy's test format) and `gltf`. Engine formats need their own plugins (ADR 0005).
+
 ## Universal Character Specification
 
 `chardecomp ucs W` turns the verified claims into `W/ucs/character.ucs.json`: an engine-independent, versioned

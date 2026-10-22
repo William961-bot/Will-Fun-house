@@ -12,9 +12,9 @@ from .model import (UCS, UCS_VERSION, AssetSpec, ComponentSpec, Controller, Conv
                     TransitionSpec, Unknown)
 
 NOT_YET = {
-    "mesh": "mesh recovery not implemented yet (Stage 4)",
-    "skeleton": "skeleton recovery not implemented yet (Stage 4)",
-    "materials": "material recovery not implemented yet (Stage 4)",
+    "mesh": "no verified mesh claim",
+    "skeleton": "no verified skeleton claim",
+    "materials": "no verified mesh claim with materials",
     "animation": "animation clip recovery not implemented yet (Stage 5)",
     "physics": "physics parameters not recovered yet (Stage 6)",
     "abilities": "ability system not recovered yet (Stage 7)",
@@ -150,6 +150,7 @@ def build(led: Ledger, cfg: dict) -> UCS:
     rejected = [Rejected(c["id"], c["kind"], c["subject"], c["name"],
                          "; ".join(r["detail"] for r in c["results"] if not r["ok"])) for c in failed]
 
+    skeleton, mesh, materials = _assets(led, by("skeleton"), by("mesh"))
     comp = completeness(led.work, led, cfg)
     domains = {
         "identity": "known" if ident else "unknown",
@@ -162,6 +163,9 @@ def build(led: Ledger, cfg: dict) -> UCS:
         "combat": "partial" if moves else "unknown",
         "assets": "partial" if assets else "unknown",
         **{k: "unknown" for k in NOT_YET},
+        "skeleton": "known" if isinstance(skeleton, dict) else "unknown",
+        "mesh": "known" if isinstance(mesh, dict) else "unknown",
+        "materials": "known" if isinstance(materials, list) and materials else "unknown",
     }
     completeness_doc = {"domains": domains, "observed_vs_explained": {
         k: {"observed": comp[k]["observed"], "explained": comp[k]["explained"]}
@@ -169,9 +173,48 @@ def build(led: Ledger, cfg: dict) -> UCS:
         "note": "Explained counts cover only what the recordings exercised; unrecorded behaviour is not counted."}
 
     return UCS(UCS_VERSION, source, time_base, conventions, obj, components, controller, moves, functions, assets,
-               *(Unknown(NOT_YET[k]) for k in ("mesh", "skeleton", "materials", "animation", "physics", "abilities",
-                                                "camera", "audio")),
+               mesh, skeleton, materials,
+               *(Unknown(NOT_YET[k]) for k in ("animation", "physics", "abilities", "camera", "audio")),
                deps, evidence, rejected, completeness_doc)
+
+
+def _assets(led: Ledger, skel_claims: list, mesh_claims: list):
+    """Skeleton, mesh and material domains from verified skeleton/mesh claims (first claim of each kind)."""
+    skeleton, mesh, materials = (Unknown(NOT_YET["skeleton"]), Unknown(NOT_YET["mesh"]), Unknown(NOT_YET["materials"]))
+    if skel_claims:
+        c = skel_claims[0]
+        a = led.decoded(c["subject"])
+        e = (c["id"],)
+        ibm_derived = any("inverse bind" in d for d in a.derived)
+        skeleton = {
+            "artifact": Fact(c["subject"], e), "sha256": Fact(a.sha256, e), "format": Fact(a.decoder, e),
+            "bones": [{"name": b.name, "parent": b.parent,
+                       "translation": Fact(list(b.translation), e), "rotation": Fact(list(b.rotation), e),
+                       "scale": Fact(list(b.scale), e),
+                       "inverse_bind": Fact(b.inverse_bind, e, None, "computed from the bind pose by the decoder")
+                       if ibm_derived else Fact(b.inverse_bind, e)} for b in a.skeleton.bones],
+            "constraints": Unknown("bone constraints are not stored in this format"),
+            "retargeting": Unknown("no retargeting metadata in the source"),
+        }
+    if mesh_claims:
+        c = mesh_claims[0]
+        a = led.decoded(c["subject"])
+        e = (c["id"],)
+        s = a.summary()
+        m = a.mesh
+        mesh = {
+            "artifact": Fact(c["subject"], e), "sha256": Fact(a.sha256, e), "format": Fact(a.decoder, e),
+            "vertices": Fact(s["vertices"], e), "triangles": Fact(s["triangles"], e),
+            "attributes": Fact(s["attributes"], e),
+            "skinned": Fact(m.joints is not None and m.weights is not None, e),
+            "submeshes": Fact([[x.first_index, x.index_count, x.material] for x in m.submeshes], e),
+            **{k.replace(" ", "_"): Unknown(f"{k} not present in the {a.decoder} format") for k in a.missing},
+        }
+        materials = [{"name": x.name, "base_color": Fact(list(x.base_color), e) if x.base_color
+                      else Unknown("no base colour"),
+                      "texture": Fact(x.texture, e) if x.texture else Unknown("no texture reference in the source")}
+                     for x in a.materials] or Unknown("the mesh has no materials")
+    return skeleton, mesh, materials
 
 
 def _ratio(d: dict) -> str:

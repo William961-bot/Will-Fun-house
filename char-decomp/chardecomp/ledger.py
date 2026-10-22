@@ -11,6 +11,8 @@ Policy (what each kind of claim must be backed by):
             rle / changes / value_change / field_equals / transition / writes
   move      at least one rle check (frame data comes from per-frame measurements)
   asset     at least one opens_file check
+  skeleton, mesh  an imported file (artifact) that decodes and validates (asset_decodes) and that the character
+            was seen loading (artifact_loaded)
   component an object reached from the character through pointers: graph_resolves on that path
   transition a state change seen in a field: a transition check
   identity  that a snapshot base expression really is the character and the tick function really runs once
@@ -44,6 +46,8 @@ REQUIRED = {
     "asset": {"opens_file"},
     "identity": {"tick_rate"},
     "component": {"graph_resolves"},
+    "skeleton": {"asset_decodes"},
+    "mesh": {"asset_decodes"},
     "transition": {"transition"},
     "note": set(),
 }
@@ -59,6 +63,15 @@ CREATE TABLE IF NOT EXISTS claims (
 """
 
 
+# Numbered schema migrations, applied in order on open and recorded in schema_version (ADR 0002).
+# Version 0 is the original schema above (traces, claims).
+MIGRATIONS = [
+    # 1 (Stage 4): imported files (assets) pinned by SHA-256, like traces.
+    """CREATE TABLE IF NOT EXISTS artifacts (label TEXT PRIMARY KEY, kind TEXT, path TEXT, sha256 TEXT,
+       source_path TEXT, imported_at TEXT)""",
+]
+
+
 class CheckError(Exception):
     pass
 
@@ -69,6 +82,7 @@ class Ledger:
         self.db = sqlite3.connect(work / "ledger.db")
         self.db.row_factory = sqlite3.Row
         self.db.executescript(SCHEMA)
+        self._migrate()
         self._traces: dict[str, T.Trace] = {}
         sp = work / "static.db"
         self.static = StaticDB(sp) if sp.exists() else None
@@ -97,6 +111,61 @@ class Ledger:
             pass
 
     # ------------------------------------------------------------------ traces
+
+    def _migrate(self):
+        with self.db:
+            self.db.execute("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER)")
+            row = self.db.execute("SELECT version FROM schema_version").fetchone()
+            current = row[0] if row else 0
+            if row is None:
+                self.db.execute("INSERT INTO schema_version VALUES (0)")
+            for v, sql in enumerate(MIGRATIONS, start=1):
+                if v > current:
+                    self.db.execute(sql)
+                    self.db.execute("UPDATE schema_version SET version=?", (v,))
+
+    @property
+    def schema_version(self) -> int:
+        return self.db.execute("SELECT version FROM schema_version").fetchone()[0]
+
+    # ------------------------------------------------------------------ artifacts (imported asset files)
+
+    def import_artifact(self, label: str, source: Path, kind: str = "asset") -> dict:
+        """Copy a file into <work>/artifacts/ and pin it. The original path is kept to link it to file traces."""
+        if self.db.execute("SELECT 1 FROM artifacts WHERE label=?", (label,)).fetchone():
+            raise ValueError(f"artifact {label!r} already exists; pick a new label")
+        data = Path(source).read_bytes()
+        dest = self.work / "artifacts" / f"{label}{Path(source).suffix}"
+        dest.parent.mkdir(exist_ok=True)
+        dest.write_bytes(data)
+        row = {"label": label, "kind": kind, "path": str(dest.relative_to(self.work)), "sha256": sha256(dest),
+               "source_path": str(Path(source).resolve()), "imported_at": time.strftime("%Y-%m-%dT%H:%M:%S")}
+        with self.db:
+            self.db.execute("INSERT INTO artifacts VALUES (:label,:kind,:path,:sha256,:source_path,:imported_at)", row)
+        return row
+
+    def artifact(self, label: str) -> tuple[dict, bytes]:
+        row = self.db.execute("SELECT * FROM artifacts WHERE label=?", (label,)).fetchone()
+        if row is None:
+            raise CheckError(f"no artifact labelled {label!r}")
+        path = self.work / row["path"]
+        if not path.exists():
+            raise CheckError(f"artifact file {row['path']} is missing")
+        data = path.read_bytes()
+        if sha256(path) != row["sha256"]:
+            raise CheckError(f"artifact {label!r} changed since it was imported (SHA-256 mismatch)")
+        return dict(row), data
+
+    def artifacts(self) -> list[dict]:
+        return [dict(r) for r in self.db.execute("SELECT * FROM artifacts ORDER BY imported_at")]
+
+    def decoded(self, label: str, decoder: str | None = None):
+        from . import assets
+        row, data = self.artifact(label)
+        try:
+            return assets.decode(data, label, decoder)
+        except assets.AssetFormatError as e:
+            raise CheckError(f"artifact {label!r} does not decode: {e}") from None
 
     def register_trace(self, path: Path):
         with self.db:
@@ -309,6 +378,39 @@ class Ledger:
                     return False, f"{c['func']} has no recorded callers in {c['trace']} (hooked with format-2 traces only)"
                 hits = {s: n for s, n in sites.items() if self._contains(c["caller"], s)}
                 return bool(hits), f"{sum(hits.values())} calls of {c['func']} came from {c['caller']} ({', '.join(hits) or 'none'})"
+            if kind == "asset_decodes":
+                from . import assets
+                a = self.decoded(c["artifact"], c.get("decoder"))
+                rep = assets.check(a)
+                s = a.summary()
+                detail = (f"{c['artifact']} decodes as {a.decoder}: {s['bones']} bones, {s['vertices']} vertices, "
+                          f"{s['triangles']} triangles; {len(rep['errors'])} errors, {len(rep['warnings'])} warnings")
+                if rep["errors"]:
+                    detail += f" ({'; '.join(rep['errors'][:3])})"
+                return not rep["errors"], detail
+            if kind == "asset_roundtrip":
+                from . import assets
+                row, data = self.artifact(c["artifact"])
+                plugin = assets.find(data, c.get("decoder"))
+                if not plugin.can_encode:
+                    return False, f"the {plugin.name} plugin cannot encode, so no round trip"
+                again = plugin.encode(plugin.decode(data, c["artifact"]))
+                return again == data, (f"decode -> encode reproduces all {len(data)} bytes" if again == data else
+                                       f"decode -> encode differs ({len(again)} vs {len(data)} bytes)")
+            if kind == "asset_property":
+                a = self.decoded(c["artifact"], c.get("decoder"))
+                prop = c["property"]
+                summary = a.summary()
+                if prop not in summary:
+                    raise CheckError(f"unknown asset property {prop!r}; have {sorted(summary)}")
+                return summary[prop] == c["eq"], f"{prop} = {summary[prop]!r}, wanted {c['eq']!r}"
+            if kind == "artifact_loaded":
+                row, _ = self.artifact(c["artifact"])
+                t = self.trace(c["trace"])
+                opened = {e["path"] for e in t.files if e["op"] == "open"}
+                hit = row["source_path"] in opened or any(Path(p).resolve() == Path(row["source_path"]) for p in opened)
+                return hit, (f"{row['source_path']} {'was' if hit else 'was not'} opened in {c['trace']} "
+                             f"(imported with SHA-256 {row['sha256'][:16]})")
             if kind == "base_resolves":
                 t = self.trace(c["trace"])
                 obj = c.get("obj", 0)
@@ -380,6 +482,11 @@ class Ledger:
             raise ValueError("a component claim's graph_resolves check must name the same path")
         if kind == "identity":
             subject = self._validate_identity(subject, checks)
+        if kind in ("skeleton", "mesh"):
+            if not any(ch.get("check") == "artifact_loaded" and ch.get("artifact") == subject for ch in checks):
+                raise ValueError(f"a {kind} claim needs artifact_loaded: proof the character loads this exact file")
+            if not any(ch.get("check") == "asset_decodes" and ch.get("artifact") == subject for ch in checks):
+                raise ValueError(f"a {kind} claim's asset_decodes check must name the same artifact")
         gate = kind != "identity"
         results = [self.run_check(c, identity_gate=gate) for c in checks]
         status = "verified" if all(ok for ok, _ in results) else "failed"

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -12,6 +13,8 @@ import pytest
 from chardecomp import cli
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "fixtures"))
+import toy_model  # noqa: E402
 SECONDS = "2.0"
 
 
@@ -32,6 +35,7 @@ def toy(tmp_path_factory):
         (d / "assets" / who).mkdir(parents=True)
         (d / "assets" / who / "sprite.bin").write_bytes(bytes(range(256)) * 16)
         (d / "assets" / who / "voice.wav").write_bytes(b"RIFF" + bytes(2044))
+        toy_model.write(d / "assets" / who / "model.tfmd")  # ground-truth skinned model (fixtures/toy_model.py)
     nm = subprocess.run(["nm", d / "toy_dbg"], capture_output=True, text=True, check=True).stdout
     syms = {p[2]: int(p[0], 16) for p in (line.split() for line in nm.splitlines()) if len(p) == 3}
     return {"dir": d, "syms": syms, "loc": {n: f"toy_fighter+{r:#x}" for n, r in syms.items()}}

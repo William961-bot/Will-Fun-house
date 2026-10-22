@@ -68,6 +68,9 @@ Check shapes for record_claim (checks_json is a JSON list)
      (duration: ticks spent in "from" before each such change; add "path":"0x68" for a component field)
   {"check":"precedes","trace":T,"func":F,"offset":"0x18","from":0,"to":1,"max_lag":0}  (F runs in that frame)
   {"check":"called_from","trace":T,"func":F,"caller":G}             (runtime call edge, virtual calls included)
+  {"check":"artifact_loaded","artifact":A,"trace":T}   {"check":"asset_decodes","artifact":A}
+  {"check":"asset_roundtrip","artifact":A}   {"check":"asset_property","artifact":A,"property":"bones","eq":5}
+Skeleton and mesh claims (subject = artifact label) need asset_decodes and artifact_loaded on that artifact.
 Component fields are claimed as kind field with subject "PATH@OFFSET" (e.g. "0x68@0x4") and checks with "path".
 Snapshots read snap_size bytes and followed objects follow_size bytes: until you know an object's size, paths
 past its end show neighbouring heap objects; narrow the sizes rather than naming those as components.
@@ -341,7 +344,7 @@ def build_tools(work: Path, interactive: bool):
         """State a finding. Its checks run now; it is stored as verified only if all pass, otherwise as rejected.
 
         Args:
-            kind: function, field, move, asset, identity, component, transition or note.
+            kind: function, field, move, asset, identity, component, transition, skeleton, mesh or note.
             subject: function location, field offset (0x1c), move name, file path, or (identity) the base expression.
             name: Short identifier (function or field name, move name).
             statement: What it is or does, in one or two sentences, consistent with the checks.
@@ -384,6 +387,32 @@ def build_tools(work: Path, interactive: bool):
             return f"wrote {p}; completeness {completeness(work, lg, load_config(work))['score']}%"
 
     @beta_tool
+    def import_asset(label: str, path: str) -> str:
+        """Import (copy and pin) a file the game opened in a recording, so it can be decoded and claimed.
+
+        Args:
+            label: New artifact label, e.g. ryo_model.
+            path: The file's path exactly as file_events shows it.
+        """
+        with led() as lg:
+            opened = {e["path"] for t in lg.usable()[0].values() for e in t.files if e["op"] == "open"}
+            if path not in opened:
+                raise ValueError("only files a recording shows the game opening can be imported")
+            return dump(lg.import_artifact(label, Path(path)))
+
+    @beta_tool
+    def asset_info(label: str) -> str:
+        """Decode an imported file with the matching format plugin and validate it (bones, mesh, weights, errors).
+
+        Args:
+            label: Artifact label.
+        """
+        from . import assets
+        with led() as lg:
+            a = lg.decoded(label)
+            return dump({**a.summary(), **assets.check(a)})
+
+    @beta_tool
     def write_ucs() -> str:
         """Build and validate the Universal Character Specification from verified claims (W/ucs/character.ucs.json)."""
         from . import ucs
@@ -398,7 +427,7 @@ def build_tools(work: Path, interactive: bool):
 
     return [overview, coverage_diff, char_methods, frame_rate_functions, function_info, search_static,
             changing_fields, field_runs, object_graph, state_transitions, call_sites, watch_hits, file_events, request_recording, set_config, record_claim,
-            list_claims, retract_claim, write_report, write_ucs]
+            list_claims, retract_claim, write_report, write_ucs, import_asset, asset_info]
 
 
 def run(work: Path, goal: str = "", model: str = "claude-opus-5-5", effort: str = "high", interactive: bool = True,

@@ -315,6 +315,38 @@ def cmd_report(a):
     print(f"wrote {p}, {p.parent / 'character.h'} and {p.parent / 'names.json'}")
 
 
+def cmd_import_asset(a):
+    with _led(a) as led:
+        out(led.import_artifact(a.label, Path(a.path)))
+
+
+def cmd_artifacts(a):
+    with _led(a) as led:
+        out(led.artifacts())
+
+
+def cmd_asset_info(a):
+    from . import assets
+    with _led(a) as led:
+        asset = led.decoded(a.label, a.decoder)
+        out({**asset.summary(), **assets.check(asset)})
+
+
+def cmd_export_gltf(a):
+    from . import assets
+    from .assets.gltf import write_glb
+    with _led(a) as led:
+        asset = led.decoded(a.label, a.decoder)
+        problems = assets.check(asset)["errors"]
+        if problems:
+            sys.exit("asset failed validation: " + "; ".join(problems))
+        data = write_glb(asset)
+    path = Path(a.out) if a.out else Path(a.work) / "export" / f"{a.label}.glb"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    out({"written": str(path), "bytes": len(data), "sha256": assets.sha256(data)})
+
+
 def cmd_ucs(a):
     from . import ucs
     w = Path(a.work)
@@ -421,7 +453,7 @@ def main(argv=None):
 
     s = cmd("claim", cmd_claim, "add a claim; it is verified only if every check passes")
     s.add_argument("--kind", required=True, choices=["function", "field", "move", "asset", "identity", "component",
-                                                       "transition", "note"])
+                                                       "transition", "skeleton", "mesh", "note"])
     s.add_argument("--subject", required=True,
                    help="module+0xRVA, field offset (or PATH@OFFSET in a component), move name, file path, "
                         "component path, transition name, or (identity) the base expression")
@@ -436,6 +468,14 @@ def main(argv=None):
     cmd("verify", cmd_verify, "re-run every check")
     cmd("status", cmd_status, "completeness: what is observed but not explained yet")
     cmd("report", cmd_report, "write report/CHARACTER.md, character.h and names.json")
+
+    s = cmd("import-asset", cmd_import_asset, "copy a file the character loads into the workspace and pin it")
+    s.add_argument("label"), s.add_argument("path")
+    cmd("artifacts", cmd_artifacts, "list imported files with their SHA-256")
+    s = cmd("asset-info", cmd_asset_info, "decode an imported file and validate it")
+    s.add_argument("label"), s.add_argument("--decoder", help="plugin name; default: detect")
+    s = cmd("export-gltf", cmd_export_gltf, "export a decoded asset as glTF 2.0 binary (GLB)")
+    s.add_argument("label"), s.add_argument("--decoder"), s.add_argument("--out")
 
     s = cmd("ucs", cmd_ucs, "build the Universal Character Specification from verified claims")
     s.add_argument("--out", help="output file (default W/ucs/character.ucs.json)")

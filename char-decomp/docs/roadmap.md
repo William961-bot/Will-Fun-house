@@ -59,7 +59,7 @@ references (claim ids, artifact hashes), per-domain completeness, migrations. Le
 optional `ucs_path` and typed `value`; the artifact registry generalises `traces`.
 Gate: everything verified for the toy round-trips into UCS without losing evidence or inventing values.
 
-## Stage 4: assets and skeleton
+## Stage 4: assets and skeleton (done: `docs/stages/stage-4.md`, ADR 0005)
 
 Asset plugin interface (`chardecomp/assets/`): decode → validate → provenance; mesh, skeleton (hierarchy, bind pose,
 inverse bind matrices), skin weights, material references; checks: structure, bone indices, weight normalisation,

@@ -83,6 +83,10 @@ NOINLINE static Fighter *load_character(const char *assets, const char *name, in
     strncpy(f->name, name, sizeof(f->name) - 1);
     snprintf(path, sizeof path, "%s/%s/sprite.bin", assets, name);
     f->sprite_size = read_file(path, &f->sprite);
+    uint8_t *model = NULL;  // the character's skinned mesh (TFMD format, see chardecomp/assets/toyfmt.py)
+    snprintf(path, sizeof path, "%s/%s/model.tfmd", assets, name);
+    read_file(path, &model);
+    free(model);
     f->anim = calloc(1, sizeof(Anim));
     f->anim->rate = 1.0f;
     uint8_t *voice = NULL;
