@@ -18,6 +18,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 AGENT_JS = Path(__file__).with_name("frida_agent.js")
+# 1: original format (no "format" key). 2: adds "t" (ms) to snapshots, hook sequence, watch hits and file events.
+TRACE_FORMAT = 2
 
 
 @dataclass
@@ -135,7 +137,8 @@ def record(work: Path, label: str, target: Target, features: Features, seconds: 
 
     errors = [m for m in sess.messages if m.get("type") == "agent_error"]
     meta = {
-        "type": "meta", "label": label, "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "type": "meta", "format": TRACE_FORMAT, "clock": "ms since the in-game agent started (1 ms resolution)",
+        "label": label, "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "seconds": round(elapsed, 3), "target": {"spawn": target.spawn, "attach": target.attach},
         "process": sess.info, "features": features.to_agent(), "started": started,
         "ticks": result.get("ticks", -1), "agent_errors": errors,
@@ -149,7 +152,7 @@ def record(work: Path, label: str, target: Target, features: Features, seconds: 
         for m in sess.messages:
             if m.get("type") == "snap":
                 for row in m["rows"]:
-                    f.write(json.dumps({"type": "snap", "tick": row["tick"], "objs": row["objs"]}) + "\n")
+                    f.write(json.dumps({"type": "snap", "tick": row["tick"], "t": row["t"], "objs": row["objs"]}) + "\n")
         if "watch" in result:
             f.write(json.dumps({"type": "watch", "specs": features.watch, "armed_at": result["watch"]["armed_at"],
                                 "hits": result["watch"]["hits"]}) + "\n")

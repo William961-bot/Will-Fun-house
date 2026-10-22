@@ -28,7 +28,7 @@ need adapters that observe the script runtime.
 
 `docs/baseline.md`, `docs/architecture.md`, this roadmap, ADR 0001–0002. Gate: baseline documented.
 
-## Stage 1: reliability and correctness
+## Stage 1: reliability and correctness (implemented; gate report in `docs/stages/stage-1.md`, awaiting approval)
 
 - Reject unsupported CPU architectures in `static_lite` (and report the architecture each exporter saw).
 - Dotted config keys (`target.modules`, `target.spawn`, ...) and validation of `char_base` / `tick`.

@@ -8,6 +8,9 @@
 let modules = [];          // modules whose code counts as "the game"
 let tick = -1;             // frame counter, advanced by the snapshot hook (-1 = no tick hook)
 const listeners = [];
+// Trace format 2: event times in ms since init (Date.now, 1 ms resolution).
+let t0 = Date.now();
+function now() { return Date.now() - t0; }
 
 function loc(p) {
   for (const m of modules) {
@@ -100,8 +103,8 @@ const SEQ_LIMIT = 50000;
 
 function currentCharBase() {
   if (!charBaseExpr) return null;
-  const now = Date.now();
-  if (charBase === null || now - charBaseAt > 50) { charBase = safeEval(charBaseExpr); charBaseAt = now; }
+  const ms = Date.now();
+  if (charBase === null || ms - charBaseAt > 50) { charBase = safeEval(charBaseExpr); charBaseAt = ms; }
   return charBase;
 }
 
@@ -124,7 +127,7 @@ function hooksStart(funcs, argCount) {
               if (args[i].equals(base)) { st.char_args[i]++; hit = i; }
             }
           }
-          if (hookSeq.length < SEQ_LIMIT) hookSeq.push([tick, f, hit]);
+          if (hookSeq.length < SEQ_LIMIT) hookSeq.push([tick, f, hit, now()]);
         },
       }));
       ok++;
@@ -145,8 +148,9 @@ function snapStart(cfg) {
   listeners.push(Interceptor.attach(addr, {
     onLeave() {
       tick++;
+      const t = now();
       const bases = cfg.bases.map(safeEval);
-      const row = { tick, objs: bases.map(b => {
+      const row = { tick, t, objs: bases.map(b => {
         if (b === null || b.isNull()) return null;
         try { return arrayHex(b.readByteArray(cfg.size)); } catch (e) { return null; }
       }) };
@@ -192,9 +196,9 @@ function watchStart(specs) {
     if (watchHits === null) return false;
     // x86 data breakpoints trap after the access: d.address is the next instruction.
     const k = loc(d.address);
-    const h = watchHits[k] || (watchHits[k] = { count: 0, ticks: [] });
+    const h = watchHits[k] || (watchHits[k] = { count: 0, ticks: [], times: [] });
     h.count++;
-    if (h.ticks.length < 256) h.ticks.push(tick);
+    if (h.ticks.length < 256) { h.ticks.push(tick); h.times.push(now()); }
     return true;
   });
   let armed = specs.map((s, i) => armWatch(i, s));
@@ -241,7 +245,7 @@ function hookExport(name, cbs) {
 function filesStart() {
   fileEvents = [];
   const win = Process.platform === 'windows';
-  const opened = (path, ctx, ret) => fileEvents.push({ op: 'open', path, tick, caller: caller(ctx, ret) });
+  const opened = (path, ctx, ret) => fileEvents.push({ op: 'open', path, tick, t: now(), caller: caller(ctx, ret) });
   if (win) {
     for (const [name, wide] of [['CreateFileW', true], ['CreateFileA', false]]) {
       hookExport(name, {
@@ -251,7 +255,7 @@ function filesStart() {
     }
     hookExport('ReadFile', {
       onEnter(a) { this.h = a[0].toString(); this.n = a[2].toUInt32(); },
-      onLeave() { if (fdPath[this.h]) fileEvents.push({ op: 'read', path: fdPath[this.h], bytes: this.n, tick }); },
+      onLeave() { if (fdPath[this.h]) fileEvents.push({ op: 'read', path: fdPath[this.h], bytes: this.n, tick, t: now() }); },
     });
   } else {
     // fopen calls open/openat itself: log only the outermost call on each thread.
@@ -292,7 +296,7 @@ function filesStart() {
     });
     hookExport('read', {
       onEnter(a) { this.fd = a[0].toInt32(); },
-      onLeave(r) { const n = r.toInt32(); if (n > 0 && fdPath[this.fd]) fileEvents.push({ op: 'read', path: fdPath[this.fd], bytes: n, tick }); },
+      onLeave(r) { const n = r.toInt32(); if (n > 0 && fdPath[this.fd]) fileEvents.push({ op: 'read', path: fdPath[this.fd], bytes: n, tick, t: now() }); },
     });
   }
 }
@@ -329,6 +333,7 @@ rpc.exports = {
     const main = Process.mainModule;
     const names = (opts && opts.modules && opts.modules.length) ? opts.modules : [main.name];
     modules = names.map(n => Process.getModuleByName(n));
+    t0 = Date.now();
     return {
       main: main.name, arch: Process.arch, platform: Process.platform, pid: Process.id,
       modules: modules.map(m => ({ name: m.name, base: m.base.toString(), size: m.size, path: m.path })),

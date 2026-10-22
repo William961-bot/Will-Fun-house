@@ -20,12 +20,25 @@ class Trace:
     hooks: dict | None = None
     hook_seq: list | None = None
     snaps: list[tuple[int, list[bytes | None]]] = field(default_factory=list)
+    snap_times: list[float | None] = field(default_factory=list)  # ms per snapshot; None in format-1 traces
     watch: dict | None = None
     files: list[dict] = field(default_factory=list)
 
     @property
     def main(self) -> str:
         return self.meta["process"]["main"]
+
+    @property
+    def format(self) -> int:
+        return self.meta.get("format", 1)
+
+    @property
+    def snap_identity(self) -> tuple[str, str] | None:
+        """(object-0 base expression, tick function) of the snapshots, or None without snapshots."""
+        snap = self.meta.get("features", {}).get("snap")
+        if not snap or not snap.get("bases"):
+            return None
+        return snap["bases"][0], snap["tick"]
 
 
 def load(path: Path) -> Trace:
@@ -41,6 +54,7 @@ def load(path: Path) -> Trace:
             t.hooks, t.hook_seq = ev["stats"], ev["seq"]
         elif kind == "snap":
             t.snaps.append((ev["tick"], [bytes.fromhex(o) if o else None for o in ev["objs"]]))
+            t.snap_times.append(ev.get("t"))
         elif kind == "watch":
             t.watch = ev
         elif kind == "file":

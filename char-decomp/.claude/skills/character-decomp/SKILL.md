@@ -30,7 +30,9 @@ re-runs everything. Your reading of the code suggests names; measurements prove 
 3. Find the character in memory: `chardecomp scan W --type i32 --value <HP shown in game>` (the user
    changes HP between scans) gives base expressions like `[Game.exe+0x2a3f10]` and the HP offset. Pick
    the tick function from `chardecomp rates W heavy` (called once per frame and, in a hooks trace, given
-   the character). Then `chardecomp set W char_base=... tick=...`.
+   the character). Then `chardecomp set W char_base=... tick=...` (validated, not proven), record a
+   snapshot pass, and prove both with an `identity` claim (`tick_rate` + an anchor such as
+   `field_equals` on the HP shown in game). Snapshot results say "identity not verified" until then.
 4. Deep recording: `--snap --hooks auto` (fields per frame, which functions get the character),
    then separately `--files` (assets) and `--watch "<char_base>+0x1c:4"` (who writes a field). Add
    `--snap-base` for the opponent to see damage and hitstun.

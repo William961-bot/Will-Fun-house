@@ -5,7 +5,8 @@ symbols and exports, so they're the compiler's boundaries rather than heuristics
 records: direct calls, strings it references, immediates, and [reg+offset] memory accesses (the struct
 offsets the function reads and writes). No decompiled C: use the Ghidra exporter or REA for that.
 
-Output follows the same JSON schema as ghidra/ExportCharDecomp.java, so either feeds staticdb.
+Output follows the same JSON schema as ghidra/ExportCharDecomp.java, so either feeds staticdb. Anything other
+than x86/x86-64 PE or ELF raises UnsupportedBinary instead of being disassembled as x86.
 """
 
 from __future__ import annotations
@@ -13,6 +14,10 @@ from __future__ import annotations
 import bisect
 import hashlib
 from pathlib import Path
+
+
+class UnsupportedBinary(ValueError):
+    """The file is not something this exporter can analyse correctly."""
 
 
 def export(binary: Path, module: str | None = None) -> dict:
@@ -27,12 +32,18 @@ def export(binary: Path, module: str | None = None) -> dict:
     is_pe = isinstance(b, lief.PE.Binary)
     if is_pe:
         image_base = b.optional_header.imagebase
-        bits = 64 if b.header.machine == lief.PE.Header.MACHINE_TYPES.AMD64 else 32
+        machine = b.header.machine
+        bits = {lief.PE.Header.MACHINE_TYPES.AMD64: 64, lief.PE.Header.MACHINE_TYPES.I386: 32}.get(machine)
     elif isinstance(b, lief.ELF.Binary):
         image_base = b.imagebase
-        bits = 64 if b.header.identity_class == lief.ELF.Header.CLASS.ELF64 else 32
+        machine = b.header.machine_type
+        bits = {lief.ELF.ARCH.X86_64: 64, lief.ELF.ARCH.I386: 32}.get(machine)
     else:
-        raise ValueError("only PE and ELF are supported by the built-in exporter")
+        raise UnsupportedBinary(f"{binary.name}: only PE and ELF are supported by the built-in exporter")
+    if bits is None:
+        # Disassembling another architecture as x86 would produce plausible-looking garbage.
+        raise UnsupportedBinary(f"{binary.name}: CPU architecture {str(machine).split('.')[-1]} is not supported "
+                                "by the built-in exporter (x86 and x86-64 only); use the Ghidra exporter")
 
     # Executable and readable sections as (start_va, end_va, bytes, executable)
     secs = []

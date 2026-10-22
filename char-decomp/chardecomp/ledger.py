@@ -7,10 +7,17 @@ and `verify` re-runs everything, so a claim can't outlive the data it came from.
 
 Policy (what each kind of claim must be backed by):
   function  at least one dynamic check: executed / called_with_char / writes
-  field     at least one dynamic check on that offset: rle / changes / value_change / writes
+  field     at least one dynamic check on that offset: rle / changes / value_change / field_equals / writes
   move      at least one rle check (frame data comes from per-frame measurements)
   asset     at least one opens_file check
+  identity  that a snapshot base expression really is the character and the tick function really runs once
+            per frame: a tick_rate check plus an anchor (field_equals or value_change on object 0), all on
+            traces whose object 0 is that base (ADR 0003)
   note      any checks
+
+Snapshot-based checks (rle, changes, value_change, field_equals, base_resolves) say whether their trace's
+identity (object-0 base, tick) is backed by a verified identity claim. With `require_identity` set in
+config.json they fail when it isn't.
 """
 
 from __future__ import annotations
@@ -18,20 +25,25 @@ from __future__ import annotations
 import fnmatch
 import json
 import sqlite3
+import statistics
 import time
 from pathlib import Path
 
 from . import traces as T
+from .addr import AddressError, check_expr
 from .capture import sha256
 from .staticdb import StaticDB, parse_loc
 
 REQUIRED = {
     "function": {"executed", "called_with_char", "writes"},
-    "field": {"rle", "changes", "value_change", "writes"},
+    "field": {"rle", "changes", "value_change", "field_equals", "writes"},
     "move": {"rle"},
     "asset": {"opens_file"},
+    "identity": {"tick_rate"},
     "note": set(),
 }
+IDENTITY_ANCHORS = {"field_equals", "value_change"}
+SNAPSHOT_CHECKS = {"rle", "changes", "value_change", "field_equals", "base_resolves"}
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS traces (label TEXT PRIMARY KEY, path TEXT, sha256 TEXT, recorded_at TEXT);
@@ -54,6 +66,29 @@ class Ledger:
         self._traces: dict[str, T.Trace] = {}
         sp = work / "static.db"
         self.static = StaticDB(sp) if sp.exists() else None
+        cfg_path = work / "config.json"
+        cfg = json.loads(cfg_path.read_text(encoding="utf-8")) if cfg_path.exists() else {}
+        self.require_identity = bool(cfg.get("require_identity", False))
+
+    def close(self):
+        if self.static is not None:
+            self.static.close()
+        if self.db is not None:
+            self.db.close()
+            self.db = None
+
+    def __enter__(self) -> "Ledger":
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
+
+    def __del__(self):
+        # Safety net for callers that don't close; code in this package closes explicitly.
+        try:
+            self.close()
+        except Exception:
+            pass
 
     # ------------------------------------------------------------------ traces
 
@@ -111,7 +146,42 @@ class Ledger:
         f = self._static().containing(f"{mod}+{rva - 1:#x}")
         return f is not None and f["loc"] == func
 
-    def run_check(self, c: dict) -> tuple[bool, str]:
+    # ------------------------------------------------------------------ identity
+
+    def verified_identities(self) -> set[tuple[str, str]]:
+        """(object-0 base, tick) pairs proven by verified identity claims."""
+        keys = set()
+        for row in self.db.execute("SELECT checks FROM claims WHERE kind='identity' AND status='verified'"):
+            for c in json.loads(row["checks"]):
+                if "trace" in c:
+                    try:
+                        key = self.trace(c["trace"]).snap_identity
+                    except CheckError:
+                        continue
+                    if key:
+                        keys.add(key)
+        return keys
+
+    def identity_status(self, label: str) -> tuple[bool, tuple[str, str] | None]:
+        key = self.trace(label).snap_identity
+        return (key is not None and key in self.verified_identities()), key
+
+    def run_check(self, c: dict, identity_gate: bool = True) -> tuple[bool, str]:
+        ok, detail = self._check(c)
+        if not identity_gate or c.get("check") not in SNAPSHOT_CHECKS or "trace" not in c:
+            return ok, detail
+        try:
+            verified, key = self.identity_status(c["trace"])
+        except CheckError:
+            return ok, detail
+        if verified or key is None:
+            return ok, detail
+        note = f"identity of {key[0]} @ {key[1]} is not verified by an identity claim"
+        if self.require_identity:
+            return False, f"{note} (require_identity is on)"
+        return ok, f"{detail} [{note}]"
+
+    def _check(self, c: dict) -> tuple[bool, str]:
         kind = c.get("check")
         try:
             if kind == "executed":
@@ -160,6 +230,43 @@ class Ledger:
                 pts = T.series(t, _off(c["offset"]), c.get("type", "i32"), c.get("obj", 0))
                 ticks = [b[0] for a, b in zip(pts, pts[1:]) if a[1] == c["from"] and b[1] == c["to"]]
                 return bool(ticks), f"{c['from']} -> {c['to']} at ticks {ticks[:10]}"
+            if kind == "tick_rate":
+                t = self.trace(c["trace"])
+                if not t.snaps:
+                    raise CheckError(f"trace {c['trace']} has no snapshots, so no tick data")
+                ticks = [tick for tick, _ in t.snaps]
+                gaps = sum(1 for a, b in zip(ticks, ticks[1:]) if b != a + 1)
+                times = [x for x in t.snap_times if x is not None]
+                if len(times) >= 3:
+                    iv = [b - a for a, b in zip(times, times[1:])]
+                    mean = statistics.fmean(iv)
+                    hz = 1000 / mean if mean > 0 else float("inf")
+                    jitter = statistics.pstdev(iv) / mean if mean > 0 else float("inf")
+                    how = f"{hz:.1f} Hz over {len(times)} timed ticks, jitter {jitter:.2f}"
+                else:
+                    hz, jitter = len(ticks) / max(t.meta["seconds"], 1e-6), None
+                    how = f"{hz:.1f} Hz from {len(ticks)} ticks / {t.meta['seconds']} s (format-1 trace, no timestamps)"
+                ok = c["min_hz"] <= hz <= c["max_hz"] and gaps == 0
+                if c.get("max_jitter") is not None and jitter is not None:
+                    ok = ok and jitter <= c["max_jitter"]
+                return ok, f"{how}; {gaps} gaps in the tick sequence; wanted {c['min_hz']}-{c['max_hz']} Hz"
+            if kind == "field_equals":
+                t = self.trace(c["trace"])
+                vals = [v for _, v in T.series(t, _off(c["offset"]), c.get("type", "i32"), c.get("obj", 0))
+                        if v is not None]
+                if not vals:
+                    return False, f"no readable snapshots of object {c.get('obj', 0)} in {c['trace']}"
+                at = c.get("at", "first")
+                ok = {"first": vals[0] == c["eq"], "all": all(v == c["eq"] for v in vals),
+                      "any": c["eq"] in vals}[at]
+                return ok, f"{at} value(s) at {_off(c['offset']):#x}: {vals[0] if at == 'first' else sorted(set(vals), key=str)[:8]}, wanted {c['eq']}"
+            if kind == "base_resolves":
+                t = self.trace(c["trace"])
+                obj = c.get("obj", 0)
+                n = len(t.snaps)
+                good = sum(1 for _, objs in t.snaps if obj < len(objs) and objs[obj] is not None)
+                frac = good / n if n else 0.0
+                return n > 0 and frac >= c.get("min_fraction", 1.0), f"object {obj} readable in {good}/{n} snapshots"
             if kind == "opens_file":
                 t = self.trace(c["trace"])
                 evs = [e for e in t.files if e["op"] == "open" and fnmatch.fnmatch(e["path"], f"*{c['contains']}*")]
@@ -202,7 +309,10 @@ class Ledger:
             if not any(c.get("check") == "writes" or (c.get("check") in need and _off(c.get("offset", -1)) == off)
                        for c in checks):
                 raise ValueError("a field claim's dynamic check must measure that same offset")
-        results = [self.run_check(c) for c in checks]
+        if kind == "identity":
+            subject = self._validate_identity(subject, checks)
+        gate = kind != "identity"
+        results = [self.run_check(c, identity_gate=gate) for c in checks]
         status = "verified" if all(ok for ok, _ in results) else "failed"
         now = time.strftime("%Y-%m-%dT%H:%M:%S")
         with self.db:
@@ -214,11 +324,38 @@ class Ledger:
         return {"id": cur.lastrowid, "status": status,
                 "results": [{"check": c["check"], "ok": ok, "detail": d} for c, (ok, d) in zip(checks, results)]}
 
+    def _validate_identity(self, subject: str, checks: list[dict]) -> str:
+        try:
+            base = check_expr(subject)
+        except AddressError as e:
+            raise ValueError(f"identity subject must be the character's base expression: {e}") from None
+        if not any(c.get("check") in IDENTITY_ANCHORS and c.get("obj", 0) == 0 for c in checks):
+            raise ValueError("an identity claim needs an anchor on object 0: field_equals or value_change "
+                             "(a value you can see in game, such as the HP shown on screen)")
+        ticks = set()
+        for c in checks:
+            if "trace" not in c:
+                continue
+            try:
+                key = self.trace(c["trace"]).snap_identity
+            except CheckError as e:
+                raise ValueError(f"identity check cites an unreadable trace: {e}") from None
+            if key is None:
+                raise ValueError(f"trace {c['trace']} has no snapshots; identity needs snapshot recordings")
+            if key[0] != base:
+                raise ValueError(f"trace {c['trace']} snapshots object 0 at {key[0]!r}, not {base!r}")
+            ticks.add(key[1])
+        if len(ticks) > 1:
+            raise ValueError(f"identity checks use different tick functions: {sorted(ticks)}")
+        return base
+
     def verify_all(self) -> dict:
         counts = {"verified": 0, "failed": 0}
-        for row in self.db.execute("SELECT * FROM claims").fetchall():
+        rows = self.db.execute("SELECT * FROM claims").fetchall()
+        # Identity claims first: other claims' snapshot checks depend on their status.
+        for row in sorted(rows, key=lambda r: (r["kind"] != "identity", r["id"])):
             checks = json.loads(row["checks"])
-            results = [self.run_check(c) for c in checks]
+            results = [self.run_check(c, identity_gate=row["kind"] != "identity") for c in checks]
             status = "verified" if all(ok for ok, _ in results) else "failed"
             counts[status] += 1
             with self.db:

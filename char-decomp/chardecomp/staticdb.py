@@ -37,6 +37,24 @@ class StaticDB:
         self.db.row_factory = sqlite3.Row
         self.db.executescript(SCHEMA)
 
+    def close(self):
+        if self.db is not None:
+            self.db.close()
+            self.db = None
+
+    def __enter__(self) -> "StaticDB":
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
+
+    def __del__(self):
+        # Safety net for callers that don't close; code in this package closes explicitly.
+        try:
+            self.close()
+        except Exception:
+            pass
+
     @classmethod
     def build(cls, path: Path, export: dict) -> "StaticDB":
         if path.exists():

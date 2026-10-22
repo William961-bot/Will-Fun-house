@@ -19,6 +19,7 @@ import ghidra.program.model.listing.Listing;
 import ghidra.program.model.scalar.Scalar;
 import ghidra.program.model.symbol.RefType;
 import ghidra.program.model.symbol.Reference;
+import ghidra.program.model.symbol.SourceType;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -145,7 +146,9 @@ public class ExportCharDecomp extends GhidraScript {
                 }
                 fs.append("]");
 
-                w.print((first ? "" : ",\n") + "{\"rva\": " + rva + ", \"size\": " + size + ", \"name\": " + q(f.getName())
+                // Ghidra's own placeholder names (FUN_00101234) are not recovered names: export them as unnamed.
+                String name = f.getSymbol().getSource() == SourceType.DEFAULT ? "" : f.getName();
+                w.print((first ? "" : ",\n") + "{\"rva\": " + rva + ", \"size\": " + size + ", \"name\": " + q(name)
                         + ", \"calls\": " + longs(calls) + ", \"strings\": " + strs(strings) + ", \"consts\": " + longs(consts)
                         + ", \"fields\": " + fs + ", \"data_refs\": " + longs(dataRefs)
                         + ", \"asm\": " + q(asm.toString()) + ", \"c\": " + q(c) + "}");

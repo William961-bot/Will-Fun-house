@@ -19,14 +19,16 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shlex
 import sys
 from pathlib import Path
 
 from . import capture, queries, report, traces as T
-from .ledger import Ledger, _off
+from .addr import check_expr, check_location
+from .ledger import CheckError, Ledger, _off
 from .staticdb import StaticDB
-from .workspace import completeness, load_config, save_config
+from .workspace import apply_setting, check_tick, completeness, load_config, save_config
 
 
 def out(obj):
@@ -65,26 +67,29 @@ def cmd_init(a):
         cfg["target"]["attach"] = a.attach
     if a.cwd:
         cfg["target"]["cwd"] = a.cwd
+    if a.modules:
+        apply_setting(cfg, "target.modules", a.modules, w)
     if a.baseline:
         cfg["baseline"] = a.baseline
     if a.character:
         cfg["character"] = a.character
     save_config(w, cfg)
     (w / "traces").mkdir(exist_ok=True)
-    Ledger(w)
+    Ledger(w).close()
     print(f"workspace ready: {w.resolve()}")
 
 
 def cmd_set(a):
     w = Path(a.work)
     cfg = load_config(w)
+    stored = {}
     for kv in a.pairs:
-        k, _, v = kv.partition("=")
-        if k not in cfg:
-            sys.exit(f"unknown key {k!r}; keys: {sorted(cfg)}")
-        cfg[k] = int(v, 0) if k == "snap_size" else v
+        k, sep, v = kv.partition("=")
+        if not sep:
+            sys.exit(f"expected KEY=VALUE, got {kv!r}")
+        stored[k] = apply_setting(cfg, k, v, w)  # all pairs validated before anything is saved
     save_config(w, cfg)
-    out({k: cfg[k] for k in (kv.partition("=")[0] for kv in a.pairs)})
+    out(stored)
 
 
 def cmd_static(a):
@@ -96,14 +101,24 @@ def cmd_static(a):
     else:
         from . import static_lite
         export = static_lite.export(Path(cfg["binary"]), cfg.get("module"))
-    StaticDB.build(w / "static.db", export)
+    StaticDB.build(w / "static.db", export).close()
     print(f"{len(export['functions'])} functions from {export['source']} export -> {w / 'static.db'}")
 
 
 def cmd_record(a):
     w = Path(a.work)
-    cfg = load_config(w)
-    led = Ledger(w)
+    with Ledger(w) as led:
+        _record(a, w, load_config(w), led)
+
+
+def _record(a, w, cfg, led):
+    # Validate every address before the game is touched.
+    if a.char_base:
+        check_expr(a.char_base)
+    if a.tick:
+        check_tick(a.tick, w)
+    for b in a.snap_base or []:
+        check_expr(b)
     coverage = not a.no_coverage
     if coverage and (a.watch or a.files):
         # Stalker runs relocated copies of the game's code, so watchpoint pcs and return addresses would
@@ -130,14 +145,16 @@ def cmd_record(a):
             if not feats.hooks:
                 sys.exit("--hooks auto needs at least one earlier recording with coverage")
         elif a.hooks.startswith("@"):
-            feats.hooks = [line.strip() for line in Path(a.hooks[1:]).read_text().splitlines() if line.strip()]
+            feats.hooks = [check_location(line) for line in Path(a.hooks[1:]).read_text().splitlines() if line.strip()]
         else:
-            feats.hooks = a.hooks.split(",")
+            feats.hooks = [check_location(h) for h in a.hooks.split(",")]
         if not feats.char_base:
             print("note: no char_base set, hooks will count calls but can't spot the character argument")
     for spec in a.watch or []:
         expr, _, size = spec.rpartition(":")
-        feats.watch.append({"expr": expr, "size": int(size), "kind": "w"})
+        if size not in ("1", "2", "4", "8"):
+            sys.exit(f"--watch {spec!r}: size must be 1, 2, 4 or 8 bytes")
+        feats.watch.append({"expr": check_expr(expr), "size": int(size), "kind": "w"})
     path = capture.record(w, a.label, _target(cfg, a), feats, a.seconds, prompt=a.prompt, keep_alive=a.keep_alive,
                           delay=a.delay)
     led.register_trace(path)
@@ -162,85 +179,101 @@ def _led(a) -> Ledger:
     return Ledger(Path(a.work))
 
 
+def _static(led: Ledger):
+    if not led.static:
+        sys.exit("no static database: run `chardecomp static` first")
+    return led.static
+
+
 def cmd_diff(a):
-    led = _led(a)
     cfg = load_config(Path(a.work))
-    out(queries.diff(led.trace(a.action), led.trace(a.baseline or cfg["baseline"]), led.static, a.limit))
+    with _led(a) as led:
+        out(queries.diff(led.trace(a.action), led.trace(a.baseline or cfg["baseline"]), led.static, a.limit))
 
 
 def cmd_methods(a):
-    out(T.char_methods(_led(a).trace(a.label))[: a.limit])
+    with _led(a) as led:
+        out(T.char_methods(led.trace(a.label))[: a.limit])
 
 
 def cmd_rates(a):
-    out(T.rates(_led(a).trace(a.label))[: a.limit])
+    with _led(a) as led:
+        out(T.rates(led.trace(a.label))[: a.limit])
 
 
 def cmd_fields(a):
-    out(T.changing_fields(_led(a).trace(a.label), a.obj, _where(a.where)))
+    with _led(a) as led:
+        out(T.changing_fields(led.trace(a.label), a.obj, _where(a.where)))
 
 
 def cmd_runs(a):
-    out(T.window_runs(_led(a).trace(a.label), _off(a.offset), a.type, a.obj, _where(a.where)))
+    with _led(a) as led:
+        out(T.window_runs(led.trace(a.label), _off(a.offset), a.type, a.obj, _where(a.where)))
 
 
 def cmd_watch(a):
-    led = _led(a)
-    out(queries.watch_rows(led.trace(a.label), led.static))
+    with _led(a) as led:
+        out(queries.watch_rows(led.trace(a.label), led.static))
 
 
 def cmd_files(a):
-    led = _led(a)
-    out(queries.file_rows(led.trace(a.label), led.static))
+    with _led(a) as led:
+        out(queries.file_rows(led.trace(a.label), led.static))
 
 
 def cmd_show(a):
-    led = _led(a)
-    if not led.static:
-        sys.exit("run `chardecomp static` first")
-    out(led.static.describe(a.func, max_code=a.max_code))
+    with _led(a) as led:
+        out(_static(led).describe(a.func, max_code=a.max_code))
 
 
 def cmd_search(a):
-    out(_led(a).static.search(a.text))
+    with _led(a) as led:
+        out(_static(led).search(a.text))
 
 
 def cmd_claim(a):
     checks = json.loads(Path(a.checks[1:]).read_text() if a.checks.startswith("@") else a.checks)
     if isinstance(checks, dict):
         checks = [checks]
-    try:
-        out(_led(a).add(a.kind, a.subject, a.name, a.statement or "", checks, ctype=a.type or ""))
-    except ValueError as e:
-        sys.exit(str(e))
+    with _led(a) as led:
+        try:
+            out(led.add(a.kind, a.subject, a.name, a.statement or "", checks, ctype=a.type or ""))
+        except ValueError as e:
+            sys.exit(str(e))
 
 
 def cmd_claims(a):
-    out(_led(a).claims(status=a.status, kind=a.kind))
+    with _led(a) as led:
+        out(led.claims(status=a.status, kind=a.kind))
 
 
 def cmd_retract(a):
-    _led(a).retract(a.id)
+    with _led(a) as led:
+        led.retract(a.id)
     print(f"claim {a.id} removed")
 
 
 def cmd_forget(a):
-    _led(a).forget(a.label)
+    with _led(a) as led:
+        led.forget(a.label)
     print(f"trace {a.label} unregistered; claims citing it will fail verification")
 
 
 def cmd_verify(a):
-    out(_led(a).verify_all())
+    with _led(a) as led:
+        out(led.verify_all())
 
 
 def cmd_status(a):
     w = Path(a.work)
-    out(completeness(w, Ledger(w), load_config(w)))
+    with Ledger(w) as led:
+        out(completeness(w, led, load_config(w)))
 
 
 def cmd_report(a):
     w = Path(a.work)
-    p = report.write(w, Ledger(w), load_config(w))
+    with Ledger(w) as led:
+        p = report.write(w, led, load_config(w))
     print(f"wrote {p}, {p.parent / 'character.h'} and {p.parent / 'names.json'}")
 
 
@@ -263,8 +296,10 @@ def main(argv=None):
     s = cmd("init", cmd_init, "create or update a workspace")
     s.add_argument("--binary"), s.add_argument("--module"), s.add_argument("--spawn"), s.add_argument("--attach")
     s.add_argument("--cwd"), s.add_argument("--baseline"), s.add_argument("--character")
+    s.add_argument("--modules", help="comma-separated modules holding game code (default: the main executable)")
 
-    s = cmd("set", cmd_set, "set config values: char_base=EXPR tick=module+0xRVA baseline=LABEL ...")
+    s = cmd("set", cmd_set, "set config values: char_base=EXPR tick=module+0xRVA target.spawn=CMD "
+                            "target.modules=a.dll,b.dll require_identity=true ...")
     s.add_argument("pairs", nargs="+")
 
     s = cmd("static", cmd_static, "build the static database (built-in exporter, or --ghidra-json)")
@@ -313,8 +348,9 @@ def main(argv=None):
     s.add_argument("text")
 
     s = cmd("claim", cmd_claim, "add a claim; it is verified only if every check passes")
-    s.add_argument("--kind", required=True, choices=["function", "field", "move", "asset", "note"])
-    s.add_argument("--subject", required=True, help="module+0xRVA, field offset, move name or file path")
+    s.add_argument("--kind", required=True, choices=["function", "field", "move", "asset", "identity", "note"])
+    s.add_argument("--subject", required=True,
+                   help="module+0xRVA, field offset, move name, file path, or (identity) the base expression")
     s.add_argument("--name", required=True), s.add_argument("--statement"), s.add_argument("--type", help="field type: i32 f32 ...")
     s.add_argument("--checks", required=True, help="JSON list of checks, or @file")
     s = cmd("claims", cmd_claims, "list claims")
@@ -335,7 +371,20 @@ def main(argv=None):
     s.add_argument("--no-capture", action="store_true", help="don't ask the player for new recordings")
 
     a = p.parse_args(argv)
-    a.fn(a)
+    try:
+        a.fn(a)
+    except Exception as e:
+        # Expected failures (bad input, missing evidence, the game or Frida refusing) end with one line.
+        # Anything else is a bug in chardecomp and keeps its traceback; CHARDECOMP_DEBUG=1 shows all of them.
+        if os.environ.get("CHARDECOMP_DEBUG") or not _expected(e):
+            raise
+        sys.exit(f"error: {type(e).__name__}: {e}")
+
+
+def _expected(e: Exception) -> bool:
+    # ValueError covers ConfigError, AddressError and UnsupportedBinary; Frida's errors live in frida/_frida.
+    return isinstance(e, (ValueError, OSError, LookupError, CheckError)) or \
+        type(e).__module__.split(".")[0] in ("frida", "_frida")
 
 
 if __name__ == "__main__":

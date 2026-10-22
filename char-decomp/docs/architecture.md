@@ -10,13 +10,14 @@ and `docs/adr/` for decisions.
 | `cli.py` | 22 subcommands; argument parsing; prints JSON | everything below (agent and static_lite lazily) |
 | `capture.py` | Frida session, `record()` one labelled trace, `scan()` value + pointer scan | `frida` (lazy), `frida_agent.js` |
 | `frida_agent.js` | in-process recorder: coverage (Stalker), hooks, per-tick snapshots, watchpoints, file I/O, scans | Frida 17 JS API |
-| `traces.py` | parse traces; pure analyses: coverage diff, char methods, rates, series, windows, RLE, changing fields | stdlib |
+| `addr.py` | address-expression and code-location validation (mirrors `evalExpr` in the JS agent) | stdlib |
+| `traces.py` | parse traces (formats 1 and 2); pure analyses: coverage diff, char methods, rates, series, windows, RLE, changing fields | stdlib |
 | `queries.py` | traces joined with the static DB (watch rows, file rows, diff with names) | traces, staticdb |
 | `static_lite.py` | built-in static export (PE/ELF x86/x64): bounds, calls, strings, consts, `[reg+off]` fields | lief, capstone |
 | `ghidra/*.java` | Ghidra export (same JSON schema + decompiled C) and name apply-back | Ghidra 11 |
 | `staticdb.py` | SQLite view of a static export | sqlite3 |
-| `ledger.py` | evidence ledger: traces pinned by SHA-256, claims, 12 check kinds, policy | traces, staticdb, capture.sha256 |
-| `workspace.py` | `config.json`; observed set and completeness | traces, ledger |
+| `ledger.py` | evidence ledger: traces pinned by SHA-256, claims (incl. identity), 15 check kinds, policy | traces, staticdb, capture.sha256 |
+| `workspace.py` | `config.json` (validated settings), observed set, completeness, identity per trace | traces, ledger, staticdb, addr |
 | `report.py` | `CHARACTER.md`, `character.h`, `names.json` from verified claims | ledger, staticdb, workspace |
 | `agent.py` | Claude tool-runner agent; 16 tools over one workspace | anthropic (lazy), capture, queries, report, traces, ledger, workspace |
 

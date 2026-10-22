@@ -1,13 +1,13 @@
 [project]
 name = "chardecomp"
-version = "0.1.0"
+version = "0.2.0"
 description = "Evidence-first decomp of one game character: every finding is checked against recorded traces"
 requires-python = ">=3.10"
 dependencies = ["frida>=17", "lief>=0.15", "capstone>=5"]
 
 [project.optional-dependencies]
 agent = ["anthropic>=0.75"]
-dev = ["pytest"]
+dev = ["pytest", "pytest-cov", "ziglang"]
 
 [project.scripts]
 chardecomp = "chardecomp.cli:main"

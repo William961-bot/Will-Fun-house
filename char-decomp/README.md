@@ -54,12 +54,31 @@ Addresses are `module+0xRVA`, so recordings from different runs line up despite 
 | `called_with_char` | `static_field` (F reads/writes [reg+off]) |
 | `writes` (watchpoint hit inside F) | `static_const` (F uses an immediate) |
 | `rle` (exact per-frame runs inside each window, e.g. while state == attack) | `static_string` (F references a string) |
-| `changes`, `value_change` | |
+| `changes`, `value_change`, `field_equals` | |
+| `tick_rate`, `base_resolves` (snapshot health) | |
 | `opens_file` (optionally by caller F) | |
 
 Minimum evidence: a **function** needs `executed`/`called_with_char`/`writes`; a **field** needs a
-dynamic check on that same offset; a **move** needs `rle`; an **asset** needs `opens_file`. Static checks
-back names up but never stand alone. A window clipped by the start or end of a recording is ignored.
+dynamic check on that same offset; a **move** needs `rle`; an **asset** needs `opens_file`; an **identity**
+needs `tick_rate` plus an anchor on object 0. Static checks back names up but never stand alone. A window
+clipped by the start or end of a recording is ignored.
+
+### Identity: proving the snapshots show the character
+
+Snapshots read whatever `char_base` points at, once per call of `tick`. Setting those is not proof, so an
+**identity claim** proves them: its subject is the base expression, and it needs a `tick_rate` check (the tick
+runs at the game's frame rate, no gaps in the tick sequence) and an anchor on object 0 (`field_equals` on a value
+you can see in game, such as HP, or a `value_change` you caused). Until one is verified, every snapshot-based
+result says `identity ... is not verified` and the report opens with a warning. `chardecomp set W
+require_identity=true` turns that warning into a failed check (ADR 0003, `docs/adr/`).
+
+```
+chardecomp claim W --kind identity --subject "[Fighter.exe+0x2a3f10]" --name ryo \
+  --statement "Ryo's object: HP 1000 on screen; the tick runs once per frame" \
+  --checks '[{"check":"tick_rate","trace":"heavy_whiff","min_hz":55,"max_hz":65},
+             {"check":"field_equals","trace":"heavy_whiff","offset":"0x4","eq":1000,"at":"first"},
+             {"check":"base_resolves","trace":"heavy_whiff"}]'
+```
 
 ## Install
 
@@ -67,9 +86,12 @@ Python 3.10+.
 
 ```
 cd char-decomp
-pip install -e ".[agent]"      # frida, lief, capstone, anthropic
+pip install -e ".[agent,dev]"  # frida, lief, capstone, anthropic; pytest and zig for the tests
 pytest -q                      # Linux x86-64 with gcc: traces a real stripped binary end to end
+GHIDRA_INSTALL_DIR=/opt/ghidra_11.4.2_PUBLIC pytest -q tests/test_ghidra.py   # also run the Ghidra scripts
 ```
+
+Tests that need zig (cross-compiled PE and AArch64 fixtures) or Ghidra skip, and say so, when those are missing.
 
 Frida needs permission to attach: run as the same user as the game (on Windows, an elevated shell if the
 game runs elevated).
@@ -80,6 +102,7 @@ Use a workspace **outside any repo**: decompiled code and extracted assets are n
 
 ```
 chardecomp init  W --binary "C:/Games/Fighter/Fighter.exe" --spawn "C:/Games/Fighter/Fighter.exe" --character Ryo
+#   game code in DLLs too?  --modules Fighter.exe,GameCore.dll   (or later: chardecomp set W target.modules=...)
 chardecomp static W
 
 # 1. Baseline and one recording per action (you play, it records)
@@ -92,7 +115,7 @@ chardecomp scan W --attach Fighter.exe --type i32 --value 1000
 #   -> bases: [Fighter.exe+0x2a3f10] with HP at +0x4
 chardecomp record W hooks --attach Fighter.exe --seconds 5 --hooks auto --char-base "[Fighter.exe+0x2a3f10]"
 chardecomp rates W heavy; chardecomp methods W hooks     # the tick function: once per frame, gets Ryo
-chardecomp set W "char_base=[Fighter.exe+0x2a3f10]" tick=Fighter.exe+0x41230
+chardecomp set W "char_base=[Fighter.exe+0x2a3f10]" tick=Fighter.exe+0x41230   # validated, not yet proven
 
 # 3. Per-frame state, writers, files
 chardecomp record W heavy_whiff --attach Fighter.exe --seconds 5 --snap --prompt "heavy attack, out of range"
@@ -103,7 +126,7 @@ chardecomp fields W heavy_whiff
 chardecomp runs   W heavy_whiff 0x38 --where 0x18:i32:1    # frame data while state == attack
 chardecomp watch  W writers;  chardecomp files W load;  chardecomp show W Fighter.exe+0x41a10
 
-# 4. Claim what you can prove (or let the agent do it)
+# 4. Prove identity first (see "Identity" above), then claim what you can prove (or let the agent do it)
 chardecomp claim W --kind move --subject heavy --name heavy \
   --statement "13f startup, 4f active, 20f recovery on whiff" \
   --checks '[{"check":"rle","trace":"heavy_whiff","offset":"0x38","where":{"offset":"0x18","type":"i32","eq":1},"expect":[[0,13],[1,4],[0,20]]}]'
@@ -159,20 +182,37 @@ RenderDoc.
 - Keep workspaces, decompiled code and assets private. Many decomp communities don't accept AI-made
   contributions (the author of decomp.wtf archived it for that reason): don't submit this output to them.
 
+## Configuration
+
+`chardecomp set W KEY=VALUE ...` validates every pair before saving any: `char_base` (address expression),
+`tick` (`module+0xRVA`, a function start when `static.db` knows the module), `snap_size`, `require_identity`,
+`baseline`, `character`, `binary`, `module`, and the target's parts `target.spawn`, `target.attach`,
+`target.cwd`, `target.modules` (comma-separated). Configs written by older versions with `target` stored as a
+string are repaired when loaded. CLI errors print one line (`error: Type: message`); set `CHARDECOMP_DEBUG=1`
+for a traceback.
+
+Traces are format 2: snapshots, the hook call sequence, watch hits and file events carry `t`, milliseconds since
+the in-game agent started (1 ms resolution). Format-1 traces (no `format` key) still load and check; their
+`tick_rate` falls back to ticks per recorded second.
+
 ## Status and limits
 
-Tested here (Linux x86-64, Frida 17.24, `pytest`): static export of a stripped ELF, coverage diff, value
-and pointer scan, hooks, per-frame snapshots, watchpoints, file tracing, the ledger (verified, rejected,
-tampered trace) and the report, all checked against the unstripped build's symbols.
+Tested here (Linux x86-64, Frida 17.24, Ghidra 11.4.2, zig 0.17, `pytest`; see `docs/stages/`):
+- static export of a stripped ELF, PE32 and PE32+ (checked against symbols and export tables); AArch64 and
+  other non-x86 files rejected
+- coverage diff, value and pointer scan, hooks, per-frame snapshots with timestamps, watchpoints, file tracing
+- the ledger: verified, rejected and tampered evidence, identity claims and strict mode
+- both Ghidra scripts, headless, against the toy's symbols
+- the agent's 16 tools against real recordings, and `agent.run` with a fake client (request shape, refusal stop)
 
 Not tested here:
-- **Windows.** The agent has Windows paths (`CreateFileW`, `ReadFile`, PE `.pdata` function bounds) but
-  wasn't run on Windows in this environment.
-- **The Ghidra scripts.** Written against the Ghidra 11 API; Ghidra couldn't be downloaded here.
-- **`chardecomp agent` end to end.** Its tools were exercised directly; the API loop needs a key.
+- **Windows.** The Frida agent's Windows paths (`CreateFileW`, `ReadFile`) and Frida on Windows were not run.
+- **The live agent loop** against the Claude API (no key in this environment).
 
 Known limits:
 - The built-in static exporter is x86/x64 only and has no decompiler (use Ghidra or REA for C).
+- Identity covers object 0 of a recording; extra `--snap-base` objects (the opponent) are not proven by it.
+  Base expressions are compared as written, so write them the same way in `set` and `--snap-base`.
 - Coverage follows threads that exist when recording starts. Attach after the game has loaded.
 - Coverage can't share a recording with watchpoints or file tracing (Stalker runs relocated code);
   `record` splits them for you.

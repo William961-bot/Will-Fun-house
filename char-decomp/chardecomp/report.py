@@ -45,6 +45,19 @@ def write(work: Path, ledger: Ledger, cfg: dict) -> Path:
              f"{comp['assets']} assets verified.")
     L.append("")
 
+    unproven = sorted(label for label, i in comp["identity"].items() if not i["verified"])
+    if unproven:
+        L.append(f"> **Identity not verified** for the snapshot recordings {', '.join(unproven)}: nothing yet proves "
+                 "that their object 0 is the character and that their tick runs once per frame, so field and "
+                 "frame-data rows from them may describe the wrong object. Add an identity claim (ADR 0003).")
+        L.append("")
+    idents = by("identity")
+    if idents:
+        L += ["## Identity", "", "| Character base | Statement | Evidence |", "|---|---|---|"]
+        for c in idents:
+            L.append(f"| `{c['subject']}` | {_cell(c['statement'])} | {_evidence(c)} |")
+        L.append("")
+
     L += ["## Traces", "", "| Label | Recorded | SHA-256 |", "|---|---|---|"]
     for r in ledger.db.execute("SELECT * FROM traces ORDER BY recorded_at"):
         L.append(f"| {r['label']} | {r['recorded_at']} | `{r['sha256'][:16]}` |")
