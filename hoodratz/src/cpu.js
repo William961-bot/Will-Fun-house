@@ -9,13 +9,20 @@ class CpuInput extends PlayerInput {
     this.nextDecision = 0; this.threat = ''; this.seenAt = 0; this.defense = 0; this.chain = null; this.throwResponse = null; this.lastSeenNullX = null;
     this.lastSeenPositions = {};
     this.specialDirection = 'special';
+    this.nextDomain = 0;
     for (const b of BUTTONS) { this.held[b] = false; this.pressedAt[b] = this.rawPressedAt[b] = -999; this.pressSerial[b] = 0; }
   }
   random() { this.seed = (Math.imul(this.seed, 1664525) + 1013904223) >>> 0; return this.seed / 4294967296; }
   poll(frame) {
     this.frame = frame;
-    const now = g.phase === 'fight' && !g.inputLocked && !g.paused && !g.hitstopLeft && !g.domainSequence ? this.choose(frame) : {};
+    let now = g.phase === 'fight' && !g.inputLocked && !g.paused && !g.hitstopLeft && !g.domainSequence ? this.choose(frame) : {};
+    const clash=g.domainSequence;
+    if(g.phase==='fight'&&!g.inputLocked&&!g.paused&&!g.hitstopLeft&&clash?.kind==='clash'&&
+        [clash.defender,clash.challenger].includes(this.index))
+      now={attack:frame%CPU_LEVELS[this.level-1].mash===0};
     if (fighters[this.index] && hypnotized(fighters[this.index])) this.adaptHypnosis(now);
+    // COOKIEEEEEEE: levels 4-5 hold their attacks for the pulse (off-beat starts are slow for his opponent).
+    if (this.level >= 4 && duttBeatDomain() && !onBeat()) for (const b of ['attack', 'medium', 'heavy', 'grab']) now[b] = false;
     for (const b of BUTTONS) {
       if (now[b] && !this.held[b]) {
         this.pressedAt[b] = this.rawPressedAt[b] = frame; this.pressSerial[b]++;
@@ -32,6 +39,11 @@ class CpuInput extends PlayerInput {
     if(!hidden)this.lastSeenNullX=seen.x;
     const observedX=hidden?(fighters.length === 3 ? this.lastSeenPositions[opp.index] ?? opp.previousX ?? opp.x : this.lastSeenNullX??opp.x):seen.x;
     const distance = Math.abs(f.x - observedX), forward = observedX > f.x ? 'right' : 'left', back = forward === 'right' ? 'left' : 'right';
+    if(halfslipWatching(f)&&!['hitstun','thrown'].includes(f.state)) {
+      if(distance<220)now[back]=true;
+      if(opp.state==='attack'&&distance<180)now.block=true;
+      return now;
+    }
     if(f.state==='preworkoutDrink') {
       if(distance>180&&f.preworkout<(this.level>=4?75:40)){now.up=true;now.special=true;}return now;
     }
@@ -76,8 +88,7 @@ class CpuInput extends PlayerInput {
       const move = attack ? seen.move : shot.move;
       if (move?.grab || move?.unblockable) { now[this.level >= 3 ? 'up' : back] = true; }
       else if (this.defense < cfg.parry && f.state !== 'block') {
-        const height = attack ? hypnoHeight(opp, move.height) : move.height;
-        now.parry = !this.held.parry; now.down = height === 'low'; now.up = height === 'overhead';
+        now.parry = !this.held.parry;   // parry has no direction
       } else now.block = true;
       return now;
     }
@@ -86,9 +97,8 @@ class CpuInput extends PlayerInput {
     }
     if (frame < this.nextDecision) return now;
     this.nextDecision = frame + cfg.decision;
-    if (actionable && f.kit?.ultimate!=='none' && this.level >= 3 && (f.ultimate >= ULTIMATE_MAX||f.siglarpCopiedUltimate) && !g.montage && this.random() < .5) {
-      now.attack = now.special = true; return now;
-    }
+    const domain=actionable?this.domainChoice(frame):null;
+    if(domain)return domain;
     if (actionable && f.kit && !f.guardBroken && this.random() < cfg.special) {
       if (f.kit.cpuChoice) {
         const choice = f.kit.cpuChoice(f, opp, distance);
@@ -115,6 +125,18 @@ class CpuInput extends PlayerInput {
       if (f.kit?.cpuFakes && this.level >= 3 && !now.grab && this.random() < .25) now.block = true;
     }
     return now;
+  }
+  domainChoice(frame) {
+    const f=fighters[this.index];
+    if((frame<this.nextDomain&&!f.siglarpCopiedUltimate)||f.kit?.ultimate==='none'||(!f.siglarpCopiedUltimate&&f.ultimate<ULTIMATE_MAX)||
+        f.guardBroken||f.hacked||f.koed||DOMAIN_LOCKED.has(f.state)||g.domainSequence||g.montage||
+        this.held.attack||this.held.special)return null;
+    // Infinite practice resources must not restart an active domain or its cinematic.
+    if((g.domain?.owner===f.index&&!f.siglarpCopiedUltimate)||g.hackDomains.some(d=>d.owner===f.index))return null;
+    if(f.kit?.cpuDomainOk?.(f,this.level)===false)return null;   // e.g. Sirnivas won't go ALL IN when low
+    if(this.random()>[.25,.35,.5,.65,.8][this.level-1])return null;
+    this.nextDomain=frame+600;
+    return {attack:true,special:true};
   }
   // Levels 4-5 work out the reversal after two seconds and pre-invert their own inputs.
   adaptHypnosis(now) {

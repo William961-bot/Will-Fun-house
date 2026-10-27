@@ -3,6 +3,18 @@ let runPreviewTimer=null;
 function showScene(name) {
   if(runPreviewTimer!==null){clearInterval(runPreviewTimer);runPreviewTimer=null;}
   setup(); p1.reset(500, 1); p2.reset(820, -1);
+  if(name.startsWith('Halfslip ')) {
+    const {f,opp}=halfslipSetup();g.popups=[];
+    if(name==='Halfslip roster'){g.characters=['halfslip','halfslip'];openCharacterSelect();}
+    if(name==='Halfslip summon'){tap('KeyT');step(60);}
+    if(name==='Halfslip domain'){beginDomain(f.index,g,'halfslip');step(35);}
+    if(name==='Halfslip jump'){f.y=FLOOR-80;f.enter('air');f.stateFrame=5;f.vy=-12;}
+    if(name==='Halfslip backdash'){f.enter('backdash');f.stateFrame=5;}
+    if(name==='Halfslip block'){f.enter('block');}
+    if(name==='Halfslip catapult'){opp.x=f.x+70;press('KeyW');tap('KeyT');release('KeyW');step(14);}
+    if(name==='Halfslip throw'){opp.x=f.x+50;f.startAttack('grab');f.stateFrame=f.move.startup;resolveCombat(f,opp,g);step(30);}
+    g.shakeMag=0;g.flashAlpha=0;g.impactLeft=0;render(ctx,g,fighters,STEP);return;
+  }
   if(name==='Smooth Bench poses'){drawSmoothBenchGallery();return;}
   if(name==='Smooth Bench live') {
     const pair=kinkadeVs(),{f,opp}=pair;f.x=410;opp.x=1050;
@@ -318,7 +330,7 @@ for (const name of ['Title', 'Run styles', 'Run styles paused', 'Run styles mirr
   button.addEventListener('click', () => showScene(name)); sceneControls.append(button);
 }
 document.body.append(sceneControls);
-for(const name of ['Smooth Bench poses','Smooth Bench live']) {
+for(const name of ['Smooth Bench poses','Smooth Bench live','Halfslip roster','Halfslip summon','Halfslip domain','Halfslip jump','Halfslip catapult','Halfslip backdash','Halfslip block','Halfslip throw']) {
   const button=document.createElement('button');button.textContent=name;
   button.addEventListener('click',()=>showScene(name));sceneControls.append(button);
 }

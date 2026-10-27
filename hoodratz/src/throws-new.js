@@ -1,4 +1,5 @@
 // Cinematic damage is dealt once, on release. Slash/stab events are visual beats.
+THROWS.yittyRko={frames:48,distance:44,turnFrom:12,turnAt:24,dropFrom:28};
 THROW_EVENTS.siglarp=(f,v,sf,g)=>{if(sf===24){g.popup('IDENTITY THEFT',v.x,v.y-220,f.stats.color,28);g.ring(v.x,v.y-145,f.stats.color,90,16);}};
 THROW_RELEASE.siglarp=(f,v,g)=>{g.sparks(v.x,v.y-100,f.stats.color,16);};
 THROW_EVENTS.curtis=(f,v,sf,g)=>{
@@ -12,10 +13,13 @@ THROW_RELEASE.curtis=(f,v,g)=>{
 };
 function startRosterThrow(f, victim, g) {
   f.throwFrames = THROWS[f.throwKind].frames; f.throwRecovery = 0;
-  if (!['lancer', 'cheese', 'teo', 'sombra','curtis','kinkade','brainlag'].includes(f.throwKind)) return;
+  if (!['lancer', 'cheese', 'teo', 'sombra','curtis','kinkade','brainlag','halfslip','yittyRko','duttpack','tonka','sirnivas'].includes(f.throwKind)) return;
   f.move = { ...MOVES.grab, fixedDamage: 90, exactThrow: true };
   f.moveMomentum = 0;
   f.throwOrigin = f.x; f.throwFacing = f.facing; f.throwVictimX = clampArena(f.x + 54 * f.facing);
+  if(f.throwKind==='yittyRko') {
+    f.rkoCatchY=f.y;f.rkoVictimCatchY=victim.y;f.vy=0;f.move={...f.move,exactThrow:false,kb:14,launch:-8};
+  }
   if (f.throwKind === 'lancer') {
     const masked = f.masked, count = masked ? 14 : 6;
     f.throwFrames = masked ? LANCER.maskedBarrageFrames : LANCER.barrageFrames;
@@ -27,6 +31,29 @@ function startRosterThrow(f, victim, g) {
   }
 }
 function placeRosterVictim(f, victim) {
+  if(f.throwKind==='duttpack') return placeDunk(f, victim);
+  if(f.throwKind==='tonka') return placeCarToss(f, victim);
+  if(f.throwKind==='sirnivas') return placeSlotSlam(f, victim);
+  if(f.throwKind==='yittyRko') {
+    const spec=THROWS.yittyRko,sf=f.stateFrame;
+    const turn=f.throwCommitted?clamp01((sf-spec.turnFrom)/(spec.turnAt-spec.turnFrom)):0;
+    const fall=f.throwCommitted?clamp01((sf-spec.dropFrom)/(spec.frames-spec.dropFrom)):0;
+    victim.x=clampArena(f.throwOrigin+(40*turn+spec.distance)*f.throwFacing);
+    f.x=clampArena(victim.x-spec.distance*f.throwFacing);f.vx=f.vy=0;
+    f.facing=sf>=spec.turnAt&&f.throwCommitted?-f.throwFacing:f.throwFacing;
+    f.y=f.rkoCatchY-24*Math.sin(turn*Math.PI)*(1-fall)+(FLOOR-f.rkoCatchY)*fall*fall;
+    victim.y=f.y+(f.rkoVictimCatchY-f.rkoCatchY)*(1-clamp01(sf/spec.turnFrom));victim.vx=victim.vy=0;return true;
+  }
+  if(f.throwKind==='halfslip') {
+    const spec=THROWS.halfslip,sf=f.throwCommitted?f.stateFrame:0;
+    const rise=clamp01((sf-spec.tossAt)/(spec.volleyAt-spec.tossAt));
+    const fall=clamp01((sf-spec.slamFrom)/(spec.frames-spec.slamFrom));
+    const volley=sf<spec.volleyAt?0:Math.sin(clamp01((sf-spec.volleyAt)/(spec.spikeAt-spec.volleyAt))*Math.PI*2)*24;
+    const distance=spec.distance+rise*25+volley;
+    victim.x=clampArena(f.throwOrigin+distance*f.throwFacing);
+    victim.y=FLOOR-spec.liftHeight*rise*(1-fall*fall);victim.vx=victim.vy=0;
+    return true;
+  }
   if(f.throwKind==='kinkade') {
     const spec=THROWS.kinkade,sf=f.stateFrame;
     const rise=f.throwCommitted?Math.max(0,Math.min(1,(sf-spec.liftFrom)/(spec.liftAt-spec.liftFrom))):0;
@@ -139,3 +166,164 @@ THROW_EVENTS.brainlag = (f, v, sf, g) => {
 THROW_RELEASE.brainlag = (f, v, g) => {
   g.popup('hehe', f.x, f.y - 205, f.stats.accent || f.stats.color, 24); g.ring(f.x, f.y - 90, f.stats.color, 80, 14);
 };
+THROW_EVENTS.halfslip=(f,v,sf,g)=>{
+  if(!f.throwCommitted)return;
+  if([THROWS.halfslip.tossAt,THROWS.halfslip.volleyAt,48,THROWS.halfslip.spikeAt].includes(sf)) {
+    g.sound(sf===THROWS.halfslip.spikeAt?'heavy':'light');
+    g.sparks(v.x,v.y-100,f.stats.color,10);g.ring(v.x,v.y-100,f.stats.color,55,12);
+    if(sf===THROWS.halfslip.tossAt)g.popup('CLONE VOLLEY!',v.x,v.y-220,f.stats.color,30);
+  }
+};
+THROW_RELEASE.halfslip=(f,v,g)=>{
+  g.ring(v.x,FLOOR-12,f.stats.color,175,22);g.sparks(v.x,FLOOR-30,f.stats.color,24);
+  g.dust(v.x,FLOOR,f.facing,12);g.sound('burst');g.impactFrame(2);
+};
+THROW_EVENTS.yittyRko=(f,v,sf,g)=>{
+  if(f.throwCommitted&&sf===THROWS.yittyRko.turnFrom){g.sound('crowd');g.ring(f.x,f.y-100,f.stats.color,95,18);
+    g.popup('OUTTA NOWHERE!',f.x,Math.max(180,f.y-235),f.stats.color,36);}
+};
+THROW_RELEASE.yittyRko=(f,v,g)=>{
+  v.vx=14*f.throwFacing*knockbackScale(v);
+  v.facing=-f.throwFacing;
+  v.animHint='rkoSlam';
+  f.throwRecovery=28;
+  g.sound('slam');g.floorCrack(v.x);g.dust(v.x,FLOOR,f.facing,14);
+  g.ring(v.x,FLOOR-15,f.stats.color,180,24);g.impactFrame(2);
+  g.popup('OUTTA NOWHERE!',v.x,FLOOR-220,f.stats.color,36);
+};
+// Slam Dunk: overhead hold and two dribbles, a jump to a hoop on the side with room, then the dunk and the drop.
+function dunkHoop(f) {
+  if (f.duttHoop?.owner === f) return f.duttHoop;
+  const spec = THROWS.duttpack, room = d => d > 0 ? WALL_R - HALF_W - f.throwOrigin : f.throwOrigin - WALL_L - HALF_W;
+  const dir = room(f.throwFacing) >= 150 ? f.throwFacing : -f.throwFacing;
+  return f.duttHoop = { owner: f, dir, x: clampArena(f.throwOrigin + 140 * dir), y: FLOOR - spec.hoopHeight, fade: 14, shake: 0 };
+}
+function placeDunk(f, v) {
+  const spec = THROWS.duttpack, sf = f.throwCommitted ? f.stateFrame : 0, hoop = dunkHoop(f), dir = hoop.dir;
+  v.vx = v.vy = 0; f.vx = f.vy = 0;
+  if (!f.throwCommitted) {   // the normal grab, still escapable
+    f.x = clampArena(f.throwOrigin); v.x = clampArena(f.x + spec.distance * f.throwFacing); v.y = FLOOR; return true;
+  }
+  const hangX = clampArena(hoop.x - 34 * dir);
+  if (sf < spec.jumpFrom) {
+    const dribble = spec.dribbles.some(d => sf >= d && sf < d + 5) ? Math.sin((sf % 6) / 5 * Math.PI) * 18 : 0;
+    f.x = clampArena(f.throwOrigin); f.y = FLOOR; f.facing = dir;
+    v.x = f.x + 4 * dir; v.y = FLOOR - 118 - Math.min(1, sf / 10) * 6 + dribble;
+  } else if (sf < spec.dunkAt) {
+    const k = (sf - spec.jumpFrom) / (spec.dunkAt - spec.jumpFrom), arc = Math.sin(k * Math.PI / 2);
+    f.x = f.throwOrigin + (hangX - f.throwOrigin) * EASE.inOut(k); f.y = FLOOR - spec.jumpHeight * arc; f.facing = dir;
+    v.x = f.x + 10 * dir; v.y = f.y - 124;
+  } else if (sf < spec.dropTo) {
+    const q = clamp01((sf - spec.dunkAt) / (spec.dropTo - spec.dunkAt));
+    f.x = hangX; f.y = FLOOR - spec.jumpHeight + 6 * Math.sin(q * Math.PI); f.facing = dir;
+    v.x = hoop.x; v.y = Math.min(FLOOR, hoop.y + 150 + (FLOOR - hoop.y - 150) * q * q);   // squeezed through, feet first up
+  } else {
+    const q = clamp01((sf - spec.dropTo) / Math.max(1, spec.frames - spec.dropTo - 4));
+    f.x = hangX; f.y = FLOOR - spec.jumpHeight * (1 - q * q); v.x = hoop.x; v.y = FLOOR; f.facing = dir;
+  }
+  return true;
+}
+THROW_EVENTS.duttpack = (f, v, sf, g) => {
+  if (!f.throwCommitted) return;
+  const spec = THROWS.duttpack;
+  if (sf === spec.hoopAt) g.sound('ring');
+  if (spec.dribbles.includes(sf)) { g.popup('DRIBBLE', f.x, f.y - 250, '#ff9a3c', 20); g.sound('light'); g.dust(f.x, FLOOR, 0, 4); }
+  if (sf === spec.jumpFrom) { g.dust(f.x, FLOOR, 0, 10); g.sound('whistle'); }
+  if (sf === spec.dunkAt) {
+    const hoop = dunkHoop(f); hoop.shake = 14;
+    g.popup('SLAM DUNK!', hoop.x, hoop.y - 40, '#ffd34d', 44); g.sound('heavy'); g.sound('swish'); g.shake(6);
+    g.hitSpark?.(hoop.x, hoop.y + 10, '#ff9a3c', 1.6, dunkHoop(f).dir); g.camPunch?.(hoop.x, hoop.y + 60, 1.14, 22); g.impactFrame?.(2);
+  }
+  if (sf === spec.dropTo) { g.dust(v.x, FLOOR, 0, 10); g.shake(2); }
+};
+THROW_RELEASE.duttpack = (f, v, g) => {
+  if (f.duttHoop) f.duttHoop.fade = 14;
+  f.y = FLOOR; g.ring(v.x, FLOOR - 20, '#ffd34d', 120, 18);
+};
+
+// Car Toss: his SUV pulls up past the victim, they're shoved in, it tears off and crashes off-screen,
+// and the victim flies back in to land near him. The car is drawn only (f.tonkaCar), never a hitbox.
+function tonkaCarState(f) {
+  const spec = THROWS.tonka, sf = f.throwCommitted ? f.stateFrame : 0, dir = f.throwFacing;
+  const park = clampArena(f.throwOrigin + (spec.distance + 70) * dir), edge = dir > 0 ? WALL_R + 260 : WALL_L - 260;
+  const from = dir > 0 ? WALL_R + 300 : WALL_L - 300;
+  let x = from;
+  if (sf >= spec.carAt && sf < spec.carIn) x = from + (park - from) * EASE.out((sf - spec.carAt) / (spec.carIn - spec.carAt));
+  else if (sf >= spec.carIn && sf < spec.driveFrom) x = park;
+  else if (sf >= spec.driveFrom) x = park + (edge - park) * EASE.in(clamp01((sf - spec.driveFrom) / (spec.crashAt - spec.driveFrom)));
+  return { x, dir, show: f.throwCommitted && sf >= spec.carAt && sf < spec.crashAt + 2, hidden: f.throwCommitted && sf >= spec.stuffAt && sf < spec.returnFrom };
+}
+function placeCarToss(f, v) {
+  const spec = THROWS.tonka, sf = f.throwCommitted ? f.stateFrame : 0, dir = f.throwFacing;
+  f.x = clampArena(f.throwOrigin); f.vx = f.vy = 0; v.vx = v.vy = 0;
+  const near = clampArena(f.x + spec.distance * dir), land = clampArena(f.x + 80 * dir), edge = clampArena(dir > 0 ? WALL_R : WALL_L);
+  f.tonkaCar = tonkaCarState(f);
+  if (sf < spec.carIn) { v.x = near; v.y = FLOOR; }
+  else if (sf < spec.stuffAt) { v.x = near + (f.tonkaCar.x - near) * clamp01((sf - spec.carIn) / (spec.stuffAt - spec.carIn)) * .6; v.y = FLOOR; }
+  else if (sf < spec.returnFrom) { v.x = edge; v.y = FLOOR; }   // inside the car / off at the crash (not drawn)
+  else {   // thrown back in from the crash, tumbling in an arc
+    const k = clamp01((sf - spec.returnFrom) / (spec.landAt - spec.returnFrom));
+    v.x = clampArena(edge + (land - edge) * k); v.y = FLOOR - Math.sin(k * Math.PI) * 140;
+  }
+  return true;
+}
+THROW_EVENTS.tonka = (f, v, sf, g) => {
+  if (!f.throwCommitted) return;
+  const spec = THROWS.tonka;
+  if (sf === spec.carAt) g.sound('honk');
+  if (sf === spec.stuffAt) { g.popup('GET IN.', f.x, f.y - 215, '#ffffff', 26); g.sound('grab'); }
+  if (sf === spec.driveFrom) { g.dust(f.tonkaCar?.x ?? f.x, FLOOR, -f.throwFacing, 12); g.sound('whistle'); }
+  if (sf === spec.crashAt) {
+    const ex = f.throwFacing > 0 ? WALL_R - 60 : WALL_L + 60;
+    g.sound('crash'); g.shake(8); g.popup('CRASH!', ex, FLOOR - 230, '#ff6a3d', 46); g.camPunch?.(ex, FLOOR - 120, 1.08, 16);
+    g.sparks(ex, FLOOR - 80, '#ffb36b', 20);
+  }
+  if (sf === spec.landAt - 1) { g.dust(v.x, FLOOR, 0, 10); g.hitSpark?.(v.x, FLOOR - 60, '#7dff3a', 1.2, f.throwFacing); }
+};
+THROW_RELEASE.tonka = (f, v) => { f.tonkaCar = null; v.y = FLOOR; };
+
+// Slot Machine Slam: a slot machine pops up on the side with room, the victim is stuffed inside, the reels spin with
+// their head in the windows, and a (cosmetic, always) JACKPOT ejects them. The machine is drawn only (f.sirnMachine).
+function slotSlamMachine(f) {
+  if (f.sirnMachine?.live && f.sirnMachine.origin === f.throwOrigin) return f.sirnMachine;
+  const room = d => d > 0 ? WALL_R - HALF_W - f.throwOrigin : f.throwOrigin - WALL_L - HALF_W;
+  const dir = room(f.throwFacing) >= 170 ? f.throwFacing : -f.throwFacing;
+  return f.sirnMachine = { live: true, origin: f.throwOrigin, dir, x: clampArena(f.throwOrigin + 130 * dir), fade: 16 };
+}
+function slotSlamLanding(m) {
+  const land = clampArena(m.x + 90 * m.dir);
+  return Math.abs(land - m.x) < 40 ? clampArena(m.x - 70 * m.dir) : land;
+}
+function placeSlotSlam(f, v) {
+  const spec = THROWS.sirnivas, sf = f.throwCommitted ? f.stateFrame : 0, m = slotSlamMachine(f), dir = m.dir;
+  f.x = clampArena(f.throwOrigin); f.y = FLOOR; f.vx = f.vy = 0; v.vx = v.vy = 0;
+  const grabX = clampArena(f.x + spec.distance * f.throwFacing), frontX = clampArena(f.x + spec.distance * dir);
+  if (!f.throwCommitted || sf < spec.machineAt) { v.x = grabX; v.y = FLOOR; return true; }   // the normal grab, still escapable
+  if (sf < spec.stuffFrom) {   // swung round to face the machine if it's behind him
+    const k = EASE.inOut(clamp01((sf - spec.machineAt) / (spec.stuffFrom - spec.machineAt)));
+    v.x = grabX + (frontX - grabX) * k; v.y = FLOOR - (grabX !== frontX ? Math.sin(k * Math.PI) * 40 : 0); f.facing = k > .5 ? dir : f.throwFacing;
+  } else if (sf < spec.stuffAt) {
+    const k = EASE.in(clamp01((sf - spec.stuffFrom) / (spec.stuffAt - spec.stuffFrom)));
+    v.x = frontX + (m.x - frontX) * k; v.y = FLOOR; f.facing = dir;
+  } else if (sf < spec.jackpotAt) { v.x = m.x; v.y = FLOOR; f.facing = dir; }   // inside the machine (not drawn)
+  else {
+    const land = slotSlamLanding(m), k = clamp01((sf - spec.jackpotAt) / (spec.landAt - spec.jackpotAt));
+    v.x = clampArena(m.x + (land - m.x) * k); v.y = FLOOR - Math.sin(k * Math.PI) * 170; f.facing = dir;
+  }
+  return true;
+}
+THROW_EVENTS.sirnivas = (f, v, sf, g) => {
+  if (!f.throwCommitted) return;
+  const spec = THROWS.sirnivas, m = f.sirnMachine;
+  if (sf === spec.machineAt) { g.sound('reel'); g.dust(m.x, FLOOR, 0, 10); g.popup('PLACE YOUR BET', m.x, FLOOR - 300, '#ffd34d', 22); }
+  if (sf === spec.stuffAt) { g.popup('INSERT COIN', m.x, FLOOR - 300, '#ffffff', 26); g.sound('grab'); g.shake(2); }
+  if (sf > spec.stuffAt && sf <= spec.spinTo && sf % 4 === 0) g.sound('reel');
+  if ([36, 46, 55].includes(sf)) g.popup('KA-CHUNK', m.x + (sf % 3 - 1) * 30, FLOOR - 320, '#ff4d5e', 24, `chunk${f.index}`);
+  if (sf === spec.jackpotAt) {
+    g.popup('JACKPOT!', m.x, FLOOR - 330, '#ffd34d', 48); g.sound('jackpot'); g.shake(6);
+    g.hitSpark?.(m.x, FLOOR - 150, '#ffd34d', 1.6, m.dir); g.camPunch?.(m.x, FLOOR - 140, 1.14, 22); g.sparks(m.x, FLOOR - 200, '#ffd34d', 26);
+    f.coinShowerAt = g.frame;
+  }
+  if (sf === spec.landAt - 1) g.dust(v.x, FLOOR, 0, 10);
+};
+THROW_RELEASE.sirnivas = (f, v) => { if (f.sirnMachine) f.sirnMachine.live = false; v.y = FLOOR; };

@@ -1,12 +1,13 @@
 // Effects only. Audio is unlocked by a trusted key press; simulation never depends on it.
 const sound = {
-  context: null, master: null, muted: false, volume: AUDIO.initialVolume,
+  context: null, master: null, muted: false, volume: AUDIO.initialVolume, files: {},
   unlock() {
     const Context = window.AudioContext || window.webkitAudioContext;
     if (!Context) return;
     try {
       if (!this.context) { this.context = new Context(); this.master = this.context.createGain(); this.master.connect(this.context.destination); this.setVolume(this.volume); }
       if (this.context.state === 'suspended') this.context.resume().catch(() => {});
+      for (const name of Object.keys(SOUND_FILES)) this.file(name);   // load recorded effects up front
     } catch (_) { /* Audio availability must never interrupt the game. */ }
   },
   setVolume(value) {
@@ -14,9 +15,22 @@ const sound = {
     if (this.master) this.master.gain.value = this.muted ? 0 : this.volume;
   },
   toggleMute() { this.muted = !this.muted; this.setVolume(this.volume); },
+  // <audio> elements, because fetch() of local files fails when the game runs from file://.
+  file(name) {
+    if (this.files[name] || typeof Audio === 'undefined') return this.files[name];
+    const el = this.files[name] = new Audio(SOUND_FILES[name].file);
+    el.preload = 'auto'; el.addEventListener('error', () => { el.broken = true; });
+    return el;
+  },
   play(name) {
     if (!this.context || this.context.state !== 'running' || this.muted || !this.volume) return;
+    if (SOUND_FILES[name]) {
+      const el = this.file(name);
+      if (el && !el.broken) { el.volume = Math.min(1, this.volume * (SOUND_FILES[name].volume ?? 1)); el.currentTime = 0; el.play().catch(() => {}); return; }
+      name = SOUND_FILES[name].fallback;
+    }
     const event = SOUND_EVENTS[name]; if (!event) return;
+    for (const layer of SOUND_LAYERS[name] || []) this.play(layer);
     const [from, to, duration, type] = event, ctx = this.context, now = ctx.currentTime;
     const gain = ctx.createGain(); gain.gain.setValueAtTime(name === 'crowd' ? AUDIO.envelopeFloor : 0.18, now);
     if (name === 'crowd') gain.gain.exponentialRampToValueAtTime(0.18, now + duration * 0.2);

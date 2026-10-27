@@ -9,8 +9,8 @@ function curtisHeavyWall(index=0,away=-1,attacker='rip') {
   opp.startAttack('heavy');opp.stateFrame=opp.move.startup;const pt=hitPoint(opp,f);
   assert(pt,'heavy contact');applyHit(opp,f,pt,g);return pair;
 }
-check('Curtis selection, mirror palette, athletic normals, CPU tiers and fifteen-hit/practice routes join the thirteen-fighter roster',()=>{
-  pickCharacters(['curtis','curtis']);assert(ROSTER.length===13&&p1.kit===CURTIS_ABILITIES,'new fighter');
+check('Curtis selection, mirror palette, athletic normals, CPU tiers and fifteen-hit/practice routes join the seventeen-fighter roster',()=>{
+  pickCharacters(['curtis','curtis']);assert(ROSTER.length===17&&p1.kit===CURTIS_ABILITIES,'new fighter');
   assert(p2.stats.color===CHARACTERS.curtis.altColor&&p1.hp===MAX_HP,'mirror/health');
   openCharacterSelect();assert(charSelect.cursor.every(i=>ROSTER[i]==='curtis'),'both selection slots');
   for(const name of Object.keys(MOVES)) {

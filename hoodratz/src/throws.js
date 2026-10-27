@@ -6,13 +6,14 @@
 //   GoonerPrime - shows them something on his laptop; a ghost made of code scares their soul out (+XP).
 
 function throwKind(f) {
+  if(f.move?.throwKind&&THROWS[f.move.throwKind])return f.move.throwKind;
   const id=f.stats.id==='siglarp'?(f.siglarpThrowId||opponentOf(f).stats.id):f.stats.id;
   return THROWS[id]?id:'haze';
 }
 
 function startThrow(att, def, g, label) {
   att.throwTarget = def.index;
-  att.siglarpIdentity=att.stats.id==='siglarp'&&!att.siglarpLarp;
+  att.siglarpIdentity=att.stats.id==='siglarp'&&!att.siglarpLarp&&!att.move?.commandGrab&&!att.move?.airGrab;
   if(att.siglarpIdentity){att.siglarpThrowId=def.stats.id;att.siglarpActionId=def.stats.id==='siglarp'?null:def.stats.id;siglarpPrepare(att,def.stats.id);}
   att.throwKind = throwKind(att);
   att.throwCommitted = false;

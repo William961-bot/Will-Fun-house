@@ -9,7 +9,7 @@ const scope = vm.createContext({
   window: { addEventListener(type, fn) { (listeners[type] ||= []).push(fn); }, dispatchEvent(e) { for (const fn of listeners[e.type] || []) fn(e); } },
   document: { getElementById() { return { style: {}, getContext() { return {}; } }; } },
 });
-for (const file of ['config', 'moves', 'input', 'cpu', 'audio', 'practice', 'practice-cpu', 'characters/haze', 'characters/rip', 'characters/gooner', 'characters/yitty', 'characters/roster-support', 'characters/lancer', 'characters/cheese', 'characters/teo', 'characters/null', 'characters/sombra', 'characters/curtis', 'characters/siglarp', 'characters/kinkade', 'characters/brainlag', 'fighter', 'combo-system', 'combat', 'throws', 'throws-new', 'render', 'animation', 'render-fx', 'domains', 'render-domains', 'render-practice', 'side-select', 'character-select', 'projectiles', 'render-yitty', 'render-new-roster', 'render-style', 'render-null', 'render-sombra', 'render-curtis', 'render-siglarp', 'render-kinkade', 'render-brainlag', 'main']) {
+for (const file of ['config', 'moves', 'input', 'cpu', 'audio', 'music', 'practice', 'practice-cpu', 'characters/haze', 'characters/rip', 'characters/gooner', 'characters/yitty', 'characters/roster-support', 'characters/lancer', 'characters/cheese', 'characters/teo', 'characters/null', 'characters/sombra', 'characters/curtis', 'characters/siglarp', 'characters/kinkade', 'characters/brainlag', 'characters/duttpack', 'characters/tonka', 'characters/sirnivas', 'characters/halfslip', 'fighter', 'combo-system', 'combat', 'throws', 'throws-new', 'render', 'animation', 'render-fx', 'domains', 'render-domains', 'render-practice', 'side-select', 'character-select', 'projectiles', 'render-yitty', 'render-new-roster', 'render-style', 'render-null', 'render-sombra', 'render-curtis', 'render-siglarp', 'render-kinkade', 'render-brainlag', 'mocap', 'mocap/shuffle', 'render-duttpack', 'stages', 'render-tonka', 'render-sirnivas', 'match-menu', 'render-halfslip', 'main']) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'src', file + '.js'), 'utf8'), scope, { filename: file + '.js' });
 }
 vm.runInContext(fs.readFileSync(path.join(__dirname, 'milestone5.js'), 'utf8'), scope, { filename: 'milestone5.js' });
@@ -43,11 +43,21 @@ vm.runInContext(fs.readFileSync(path.join(__dirname, 'curtis.js'), 'utf8'), scop
 vm.runInContext(fs.readFileSync(path.join(__dirname, 'siglarp.js'), 'utf8'), scope, { filename: 'siglarp.js' });
 vm.runInContext(fs.readFileSync(path.join(__dirname, 'kinkade.js'), 'utf8'), scope, { filename: 'kinkade.js' });
 vm.runInContext(fs.readFileSync(path.join(__dirname, 'brainlag.js'), 'utf8'), scope, { filename: 'brainlag.js' });
+vm.runInContext(fs.readFileSync(path.join(__dirname, 'duttpack.js'), 'utf8'), scope, { filename: 'duttpack.js' });
+vm.runInContext(fs.readFileSync(path.join(__dirname, 'tonka.js'), 'utf8'), scope, { filename: 'tonka.js' });
+vm.runInContext(fs.readFileSync(path.join(__dirname, 'sirnivas.js'), 'utf8'), scope, { filename: 'sirnivas.js' });
+vm.runInContext(fs.readFileSync(path.join(__dirname, 'hit-feel.js'), 'utf8'), scope, { filename: 'hit-feel.js' });
+vm.runInContext(fs.readFileSync(path.join(__dirname, 'music.js'), 'utf8'), scope, { filename: 'music.js' });
+vm.runInContext(fs.readFileSync(path.join(__dirname, 'match-menu.js'), 'utf8'), scope, { filename: 'match-menu.js' });
 vm.runInContext(fs.readFileSync(path.join(__dirname, 'animation-smooth.js'), 'utf8'), scope, { filename: 'animation-smooth.js' });
 vm.runInContext(fs.readFileSync(path.join(__dirname, 'three-player.js'), 'utf8'), scope, { filename: 'three-player.js' });
+vm.runInContext(fs.readFileSync(path.join(__dirname, 'halfslip.js'), 'utf8'), scope, { filename: 'halfslip.js' });
+vm.runInContext(fs.readFileSync(path.join(__dirname, 'cpu-domains.js'), 'utf8'), scope, { filename: 'cpu-domains.js' });
+vm.runInContext(fs.readFileSync(path.join(__dirname, 'rko.js'), 'utf8'), scope, { filename: 'rko.js' });
 const results = vm.runInContext('testResults', scope);
 for (const result of results) console.log(`${result.passed ? 'PASS' : 'FAIL'} ${result.name}${result.error ? ': ' + result.error : ''}`);
 process.exitCode = results.some(result => !result.passed) ? 1 : 0;
+
 
 
 

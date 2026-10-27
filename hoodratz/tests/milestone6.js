@@ -77,7 +77,8 @@ check('perfect and early parries grant 15 and 5 without hit/drain rewards', () =
     setup(); p2.startParry('high'); p2.stateFrame = frame; strike();
     near(p2.ultimate, gain); near(p1.ultimate, 0); near(p2.guard, 100);
   }
-  setup(); p2.startParry('low'); strike(); near(p1.ultimate, 3); near(p2.ultimate, 2); near(p2.guard, 100);
+  // No directions any more: any parry counts against a high, low or overhead.
+  for (const name of ['light', 'low', 'overhead']) { setup(); p2.startParry(); strike(name); near(p2.ultimate, 15); near(p1.ultimate, 0); }
 });
 
 check('combo wall bounce grants attacker 5 once; movement bounce grants none', () => {

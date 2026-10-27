@@ -3,11 +3,13 @@
 Copy everything below the line into the AI model that will build the character.
 
 > **Written for the current game:**
-> - 13 fighters (Brainlag is the newest) and 336 regression checks.
+> - 13 fighters (Brainlag is the newest) and 353 regression checks.
 > - Medium attack, tap/hold Heavy, air combos and a separate Burst meter.
 > - CPU levels 1-5, an anime camera and hit sparks.
 >
-> **Two parts are deliberately blank** (marked `[BLANK]`): his three specials and his domain's gameplay effect. Ask the user about them before building those parts, or build everything else and leave clearly marked stubs.
+> **Already built:** Duttpack is in the game (see "Duttpack's abilities" in `README.md`). This prompt is kept as the original spec.
+>
+> **Every part is specified.** If anything is unclear, ask the user rather than guessing.
 
 ---
 
@@ -37,7 +39,7 @@ The project is in `hoodratz/`.
 - Match the existing code style: short comments that explain *why*, and the same naming and idioms as the other kits.
 
 **Don't break anything**
-- All 336 existing checks in `node tests/run.cjs` must still pass, plus your new ones.
+- All 353 existing checks in `node tests/run.cjs` must still pass, plus your new ones.
 - All 13 current fighters must keep working: Haze, Rip, GoonerPrime, YittyMack, Lancer, Blue Cheese, Teo1910, Null, Somhack, Curtis, Siglarp, Kinkade and Brainlag.
 - The tests that assert `ROSTER.length===13` must be updated to 14.
 
@@ -236,17 +238,63 @@ Describe and name it in our own words in code comments and the README. Don't nam
 
 | Slot | Ability | Label |
 |---|---|---|
-| Special | **[BLANK]** | |
+| Special | **Free Kick** (curving projectile) | `'KICK'` |
 | Down + Special | **Hype Shuffle** (counter) | `'SHUFFLE'` |
 | Up + Special | **Pigeon Strut** (rushing attack) | `'STRUT'` |
 
-**Ask the user** what Special does before building it. If it stays blank, ship him with only Hype Shuffle and Pigeon Strut:
-- Leave the `special` hook out of the kit, and out of `cooldowns` and `labels`.
-- Make sure the HUD, CPU and Siglarp all handle a kit with two specials.
-  - The CPU only picks abilities where `f.kit[key]` exists.
-  - Check whatever draws the three icons for missing slots.
-
 Use his `drawMeter` slot to show the beat (see below).
+
+#### Free Kick (Special, cooldown 4 s)
+
+His only ranged attack: he places a soccer ball and curls a shot at you.
+
+**Aiming.** Up + Special and Down + Special are his other moves, so the curve is chosen **during the wind-up**, not when Special is pressed:
+- Press Special (neutral), and he starts the wind-up.
+- While he winds up, **hold Up** to dip the ball over the top, or **hold Down** to skim it along the floor. Read the held direction on the kick frame.
+- Up and Down here never jump, crouch or start another special; he's locked in the wind-up state.
+- On a controller, do the same with the stick or d-pad.
+
+| Held on the kick frame | Flight | Hits |
+|---|---|---|
+| Nothing | Straight at chest height | `'high'` |
+| Up | Rises, then dips sharply down onto their head | `'overhead'` |
+| Down | Skims along the floor, bouncing once | `'low'` |
+
+The defender has to read the curve to parry it. Blocking works on all three.
+
+**Timing**
+- A 14-frame wind-up: he drops the ball, plants, spreads his arms and swings his leg way back. That's the penalty-kick pose from his Heavy, but shorter.
+- On frame 14 the ball launches; he follows through, with 16 frames of recovery.
+- The ball flies at about 13 px/frame and despawns at the wall or after 120 frames.
+- 50 damage, short hitstun, small knockback.
+- **One ball at a time:** he can't kick again while his ball is on screen.
+- Grounded only.
+
+**How it's drawn**
+- A white soccer ball with dark patches, spinning in the direction it curves.
+- A faint gold speed trail: layered strokes, no `shadowBlur`.
+
+**Code**
+- Spawn it with `spawnProjectile` (`kind:'soccerBall'`), like Teo's bottle and Null's spear.
+- The curve is the projectile's own `vy` path, updated each tick in `src/projectiles.js` or a `duttpack` update hook, deterministically.
+- Its `move.height` matches the table.
+- Tuning goes in `DUTTPACK`: `kickStartup`, `kickRecovery`, `kickSpeed`, `kickDamage`, `kickCooldown`, `kickLife`.
+- It must work when Siglarp copies it.
+- It must work inside Brainlag's Complete Hypnosis: a hypnotised Duttpack's ball flies backwards unless aimed away, through the existing `spawnProjectile` rule.
+
+**CPU**
+- Uses it at long range (over 300 px) with no ball already out.
+- Levels 3-5 pick the curve with the seeded RNG, so it's not always straight.
+
+**Tests**
+- Each curve hits with the right height (`high`, `overhead`, `low`) for 50 damage.
+- The direction is read from the wind-up, not the press: holding Up when pressing Special still starts Pigeon Strut.
+- One ball at a time; the 4 s cooldown.
+- Parries of the right height deflect it.
+- Blocking costs guard and deals no damage.
+- It despawns at walls.
+- The poses are finite on every frame.
+- Siglarp's copy works.
 
 #### Pigeon Strut (Up + Special, cooldown 7 s)
 
@@ -336,15 +384,16 @@ The user picked this from a reference: a goofy dance turned into a counter. You 
 - The poses are finite on every frame.
 - Siglarp's copy counters too.
 
-Ideas for the blank Special slot, for reference only; don't build them unless the user picks them:
+Ideas the user saw but didn't pick, for reference only; don't build them:
 - **Chest Pass:** a basketball projectile that bounces off walls.
 - **Stiff Arm:** an armored shove.
 - **Crossover:** a dodge to their other side.
 - **Hail Mary:** a delayed falling football.
-- **Free Kick:** kicks a soccer ball that curves (bends up or down) toward the opponent.
 - **Header:** a forward-diving soccer header that launches.
 - **Street Brawler Finisher:** a brawler-game-style dramatic finisher. It works only on a staggered or wall-bounced opponent, with a freeze-frame, a slow-motion zoom and a big impact. Use an original name, e.g. "HYPE FINISHER".
 - **Grab Something:** picks up a nearby prop (a traffic cone or bike) and swings it, like a street-brawler hero.
+- **Ankle Breaker:** a crossover that trips them.
+- **Alley-Oop:** a two-press lob and slam.
 
 ### Signature grab: Slam Dunk
 
@@ -376,7 +425,9 @@ Every other throw must keep working exactly as it is, including YittyMack's chai
 
 He uses an arena domain: **Attack + Special at full meter**, with the standard 60-frame cutscene and the normal clash rules against other arena domains.
 
-`DOMAIN_NAMES.duttpack` and `DOMAIN_SUBTITLES.duttpack` are **[BLANK]**: ask the user for a name. A suggested placeholder is `'BEAT DROP'` / `'TURN IT UP · STAY ON BEAT'`.
+- `DOMAIN_NAMES.duttpack = 'COOKIEEEEEEE'`: the user's name, spelled exactly like that (seven E's).
+- `DOMAIN_SUBTITLES.duttpack = 'STAY ON BEAT · OFF BEAT, OFF FEET'`.
+- Check the 76 px cutscene title fits at 1280 wide; shrink the font for this name only if it doesn't.
 
 #### The pop animation (the user's main request)
 
@@ -388,77 +439,75 @@ The domain cutscene is him hyping himself up as the music starts.
 
 Use `rosterDomainPose` for the static part, plus a `pose` hook that samples the bounce from the cutscene's frame counter.
 
-#### The music: the user's song, with a synth beat as backup
+#### The music: the user's song
 
-**His domain plays a song the user supplied:**
-- The file is `assets/music/duttpack.mp3` (already in the project).
-- It is copyrighted and for the user's personal copy only. The folder is git-ignored; **never commit it, embed it as base64, or copy it anywhere else.**
-- The game must still work perfectly if the file is missing, so build the synth beat below as the fallback.
+The game already has a domain song player, `src/music.js`. Haze's domain uses it; read "Domain songs" in the README. **Don't write another player.**
 
-**Playing the file**
-- Use an `HTMLAudioElement` (`new Audio('assets/music/duttpack.mp3')`), not `fetch` + `decodeAudioData`: the game runs from `file://`, where `fetch` of local files fails but `<audio>` works.
-- Create it once on first use, set `preload = 'auto'`, and `load()` it early (e.g. when Duttpack is picked) so it starts instantly on the beat drop.
-- Start it at `DUTTPACK.songStart` seconds. Default to 0; it's a tuning number so the user can jump straight to the drop.
-- Set `loop = true` in case the domain outlasts the clip.
-- Its volume follows the game's volume and mute (`sound.volume`, `sound.muted`), re-checked live: on volume keys, toggling mute and pausing.
-- Fade out over ~0.5 s by stepping `volume` down, then `pause()` and reset `currentTime`.
-- `play()` returns a promise that can reject (autoplay rules, missing file). Catch it, and fall back to the synth beat.
-  - The game already unlocks audio on the first key press, so by the time anyone pops a domain, playback is allowed.
-- Listen for the element's `error` event too: a missing or unplayable file switches to the synth beat for the rest of the session.
+- The user's song is already at `assets/music/duttpack.mp3`. That folder is git-ignored and personal-use only; **never commit the song, embed it as base64, or copy it anywhere else.**
+- Add one entry to `DOMAIN_MUSIC` in `src/config.js`: `duttpack: { file: 'assets/music/duttpack.mp3', start: 0, volume: .8, delay: 15 }`.
+- **The beat drop.** His song should start on the beat drop at **frame 15** of the cutscene, not frame 0. Add optional `delay` support to `music.want()`: during a cutscene, return the type only once `DOMAIN.cutsceneFrames - seq.framesLeft >= delay`. Haze has no `delay`, so his song still starts at frame 0.
+- Fades, pause, mute/volume, KO, round reset and clash handling already work through the player.
+- A missing file just means a silent domain; that's the existing behaviour.
+- Siglarp larping his domain plays it too, because the player keys off the domain type.
 
-**Where it goes.** Put this in `src/music.js` behind the same `music.start('duttpack')` / `music.stop(fade)` API, so the rest of the game doesn't care whether the song or the synth is playing.
+**Tests.** Extend `tests/music.js`:
+- `music.want(g)` is `null` for frames 0-14 of his cutscene and `'duttpack'` from frame 15 through the end of the domain.
+- Haze still starts at frame 0.
 
-**Tests.** Node has no `Audio`, so guard it; the tests still only check that start and stop were asked for at the right moments.
+#### The domain's gameplay effect: On the Beat
 
-#### Fallback: an original "Pierre Bourne style" beat, synthesized
+The user picked this: a rhythm-game twist for the domain's normal **8 seconds**.
 
-Used only when the song file is missing or can't play.
+**The beat clock**
+- The beat comes from **game frames, never the audio clock**, so logic stays deterministic and testable.
+- `beatFrame = (g.frame - g.domain.startFrame) % framesPerBeat`, where `framesPerBeat = 3600 / DUTTPACK.bpm`. Store `startFrame` in `beginDomain`.
+- Use a non-integer period and round to the nearest beat, so beats don't drift.
+- **On beat** means within `DUTTPACK.beatWindow` frames (default **±5**) of a beat.
+- `DUTTPACK.bpm` should match his song, "Hacked My Instagram". Start at **140** and leave a comment that the user can tune it.
+- `DUTTPACK.beatOffset` (frames) shifts the grid so beat 1 lines up with where the song is when the domain starts. The song starts at cutscene frame 15 (its `delay`), 45 frames before the domain begins.
+- The beat clock pauses with the game, freezes in hit-stop and resets with the round, like every other logic timer.
+- Pausing does pause the song too, but it may drift a few frames after long pauses. That's acceptable; never resync logic to the audio.
 
-**Write a small looping synth music player** in a new `src/music.js`, loaded after `audio.js`:
+**His hits on the beat are crits**
+- Any hit he lands while on beat does **+50% damage** (`DUTTPACK.beatBonus`): normals, specials, Free Kick contact and the grab release.
+- Do it through his kit's `damageScale(f, victim, move)` hook, active only during `ownDomain(f)`.
+- Feedback for each on-beat hit:
+  - an **"ON BEAT!"** popup in gold;
+  - +3 frames of hit-stop;
+  - `g.camPunch` (small) and a bigger `g.hitSpark`.
+- Off-beat hits are normal damage with no penalty.
 
-- `music.start(id)` / `music.stop(fadeSeconds)`.
-- It uses `sound.context` and `sound.master`, so the existing mute and volume keys control it. Re-check `sound.muted` and `sound.volume` live.
-- It schedules notes ahead with `context.currentTime`, using a standard lookahead scheduler on `setInterval` (~25 ms tick, ~0.1 s lookahead), so it never drifts or stutters with the frame rate.
-- It must never throw if audio is locked or unsupported. Do what `sound.play` does.
+**The opponent's off-beat attacks are sluggish**
+- When the opponent **starts** an attack, special or grab **off** the beat, it gets **+4 startup frames** (`DUTTPACK.offBeatDelay`). They visibly stumble: a small render-only lurch in their pose, and a grey "OFF BEAT" popup on the first one only, so it's not spammy.
+- Attacks started on the beat are normal speed. A good player can learn the rhythm and fight back.
+- Hook it in `Fighter.startAttack` (and `kitAttack` / ability starts) with a helper like `offBeatDelay(f)`. This keeps the same single-choke-point pattern as Brainlag's `hypnotized` helpers. Read the delay into the copied move's `startup`; **never mutate shared `MOVES` objects**.
+- Applies to keyboard, controller and CPU opponents alike.
 
-**The beat.** An original 2-bar or 4-bar loop at **~140 BPM, half-time feel**, in the spirit of that producer's spacey, bouncy sound:
+**What players see**
+- A **beat ring** pulses on the floor under **both** fighters: it snaps out on each beat and shrinks toward the next. Gold under him, white under the opponent.
+- The ring is drawn from the same frame-based beat clock, so the visual is always truthful even if the music drifts.
+- Duttpack's idle bounce and his Hype Shuffle land exactly on the ring's pulse during the domain.
+- The equalizer strip in the atmosphere (below) pulses with the same clock.
 
-- **Lead.** A plucky, bell-like synth melody with a short decay, using a triangle or sine wave plus a quiet octave-up partial. Bouncy, playful, slightly off-kilter rhythm.
-- **Pad.** A soft, airy pad or chord under it, with a slow attack and lowpass filter, quiet.
-- **808.** Sine with a pitch drop and long decay, following the root notes, slightly distorted with a `WaveShaper`.
-- **Drums.**
-  - Kick and snare/clap from filtered noise.
-  - Rolling hi-hats with triplet rolls every few bars, from short highpassed noise.
-- **His tag.** At the very start, a short **original** goofy tag, e.g. a pitched-up synth "DUTT-PACK!" made from two quick sine blips plus a noise burst, or a popup. Never imitate a real producer's tag.
+**CPU**
+- As Duttpack, levels 4-5 try to time attacks to land on beat: they prefer starting moves so the active frame falls in the window.
+- As the opponent, levels 4-5 try to start attacks on beat; levels 1-3 ignore the beat.
+- All deterministic through the seeded RNG.
 
-Write the notes as data in config (e.g. `DUTTPACK_BEAT = { bpm, bars, lead:[[step,note,len]...], bass:[...], hats:[...] }`) so the user can tweak the melody.
+**Clash, Siglarp and Brainlag**
+- Normal arena-domain clash rules apply.
+- If Siglarp larps this domain, the bonus and penalty follow whoever owns it.
+- Inside Brainlag's Complete Hypnosis it isn't active, since only one domain exists at a time.
 
-**When it plays**
-- It starts on the beat drop at frame 15 of his cutscene, and when Siglarp larps his domain.
-- The rest of the game's sound effects keep playing over it.
-- It stops with a ~0.5 s fade when the domain ends, on KO, on round reset, on pause/title, and if another domain wins a clash.
-- In a domain clash it starts only if his side wins.
-- Pause should pause or stop it. Resume can restart it from the top if simpler.
+**Tuning** (in `DUTTPACK`): `bpm`, `beatOffset`, `beatWindow`, `beatBonus`, `offBeatDelay`.
 
-**Rules**
-- Music is presentation only. Logic must never read it, and tests must pass with no `AudioContext` in node. Guard every call.
-- In node tests, assert that the player was *asked* to start and stop at the right moments: stub `music.start` / `music.stop` and record the calls.
-
-#### The domain's gameplay effect: [BLANK]
-
-The user left what the domain *does* blank.
-
-- Ask them before building it.
-- If it stays blank, make it **presentation only** for its normal 8 seconds: music, atmosphere and his on-beat bounce. No gameplay changes.
-- Keep the code structured so an effect can be dropped into `updateDomain` / the kit later.
-
-**Ideas the user saw** (reference only):
-- **Everything moves to the beat:** on-beat hits are stronger.
-- **Basketball court:** hoops on the walls for dunks.
-- **Football field:** tackles and touchdowns.
-- **Forced dance party.**
-
-If you do build an on-beat mechanic later, take the beat timing from **game frames** (`g.frame` against BPM), never from the audio clock, so logic stays deterministic.
+**Tests**
+- The beat clock lands on beat at `startFrame + n * framesPerBeat` (± window) and not between.
+- An on-beat hit does 1.5× the same off-beat hit.
+- An opponent attack started off beat has +4 startup; on beat it's unchanged, and shared `MOVES` are untouched.
+- Nothing applies outside the domain, after it ends, or on round reset.
+- The beat clock freezes during pause and hit-stop.
+- CPU levels still close distance and deal damage.
 
 #### Atmosphere (`render-domains.js` hook, render-only, cheap)
 
@@ -471,7 +520,7 @@ If you do build an on-beat mechanic later, take the beat timing from **game fram
 ## How a character plugs in
 
 - **`src/config.js`:**
-  - `CHARACTERS`, `ROSTER`, the `DUTTPACK` object and `DUTTPACK_BEAT`.
+  - `CHARACTERS`, `ROSTER`, the `DUTTPACK` object and his `DOMAIN_MUSIC` entry.
   - `THROWS`, `DOMAIN_NAMES`, `DOMAIN_SUBTITLES`.
   - `SOUND_EVENTS` (add a `'tag'` blip if useful).
 - **`src/characters/duttpack.js`:** the kit, `CHARACTER_ABILITIES.duttpack`, with `reset`, `update`, `cpuChoice`, `pose`, `drawBody` and `drawMeter`.
@@ -479,15 +528,12 @@ If you do build an on-beat mechanic later, take the beat timing from **game fram
 - **`src/render-duttpack.js`:**
   - Poses: the hype-hands idle, walk, run, guard and signature timelines.
   - Body details, the portrait, the domain atmosphere and the cutscene confetti.
-- **`src/music.js`:** the synth music player.
-- **`src/domains.js`:**
-  - Start the music when his domain begins, including through Siglarp.
-  - Stop it in `updateDomain`'s end path, `endRosterDomain` and on clash loss.
-  - Also stop it in `startRound`, KO and pause in `src/main.js`.
+- **`src/music.js`:** the existing domain song player (add `delay` support only).
+- **`src/domains.js`:** his domain's begin/update/end branches. The music player starts and stops itself from the domain state, so no music calls go here.
 - **`src/throws-new.js` / `src/animation.js`:** his grab.
 - **Script tags:**
-  - Add `<script>` tags for `src/music.js`, `src/characters/duttpack.js` and `src/render-duttpack.js` to `index.html` **and** `tests/all.html`, in the same positions as Brainlag's.
-  - Add `'music'`, `'characters/duttpack'` and `'render-duttpack'` to the file list in `tests/run.cjs`.
+  - Add `<script>` tags for `src/characters/duttpack.js` and `src/render-duttpack.js` to `index.html` **and** `tests/all.html`, in the same positions as Brainlag's.
+  - Add `'characters/duttpack'` and `'render-duttpack'` to the file list in `tests/run.cjs`.
   - Add `tests/duttpack.js` to both test loaders.
 
 ## Tests (`tests/duttpack.js`)
@@ -514,13 +560,9 @@ Use the existing helpers: `rosterVs`, `pickCharacters`, `step`, `press`, `releas
 
 **Domain**
 - The cutscene pose is finite.
-- The music is asked to start exactly once, on the beat drop.
-- It stops when the domain ends, on KO, on round reset and on clash loss.
-- It starts when Siglarp larps his domain.
+- `music.want(g)` is `null` before frame 15 of his cutscene, `'duttpack'` from the beat drop to the end of the domain, and `null` after KO, round reset and a lost clash.
+- `music.want(g)` is `'duttpack'` when Siglarp larps his domain.
 - The atmosphere and fade-out draw with a stub canvas without throwing.
-
-**Without audio**
-- With no `AudioContext` (node), `music.start` and `music.stop` don't throw.
 
 **CPU**
 - Levels 1-5 close distance and deal damage. This is already covered by the roster loop; make sure it passes.
@@ -531,7 +573,7 @@ Use the existing helpers: `rosterVs`, `pickCharacters`, `step`, `press`, `releas
 ## Finish
 
 1. Run `node tests/run.cjs`. Everything must pass; report the new total.
-2. Open the game in a browser. Play him, pop his domain and **listen**: the user's song should start on the beat drop. Rename the file temporarily and check that the synth beat takes over. Then check:
+2. Open the game in a browser. Play him, pop his domain and **listen**: the user's song should start on the beat drop. Then check:
    - The mute and volume keys control it.
    - It stops when the domain ends.
 3. Take screenshots of:
@@ -545,6 +587,5 @@ Use the existing helpers: `rosterVs`, `pickCharacters`, `step`, `press`, `releas
 4. Update `README.md`:
    - the roster count and test count;
    - a "Duttpack's abilities" section covering the idle dance, music, domain and the inspiration credit;
-   - how to swap the song: replace `assets/music/duttpack.mp3` and set `songStart`. Note that the file is personal-use only and git-ignored;
-   - how to edit `DUTTPACK_BEAT`.
-5. Summarize what you built, which `[BLANK]` parts you left as stubs or asked about, and any tuning changes.
+   - that his song is set in `DOMAIN_MUSIC`, like Haze's;
+5. Summarize what you built, the BPM and beat offset you settled on, and any tuning changes.

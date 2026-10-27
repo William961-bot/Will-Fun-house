@@ -18,23 +18,30 @@ function projectileAttacker(p) {
 function updateProjectiles(g) {
   for (const p of g.projectiles) {
     p.x += p.vx; p.age++;
+    if (p.kind === 'soccerBall') { updateSoccerBall(p); if (p.dead) continue; }
+    if (p.kind.startsWith('tonka')) { updateTonkaProjectile(p, g); if (p.dead) continue; }
     if (p.kind === 'bottle') { p.vy += .3; p.y += p.vy; if (p.y >= FLOOR - 10) { p.dead = true; shatterBottle(p, g); continue; } }
     if (--p.framesLeft <= 0 || p.x < WALL_L - p.box.w || p.x > WALL_R + p.box.w) { p.dead = true; continue; }
+    // Multi-hit and pass-through summons (Tonka's swarm, truck, horses) wait between hits.
+    if (p.rehitAt > p.age || (p.pierce && p.hitsLeft <= 0)) continue;
     const decoy = g.clouds.find(c => c.owner !== p.owner && c.decoy && boxesOverlap(projectileBox(p), hurtBox(c.decoy)));
     if (decoy) {
       g.smokePuff(decoy.decoy.x, decoy.decoy.y - 90, HAZE.smokeRadius / 2);
       decoy.decoy = null; p.dead = true; g.popup('DECOY', p.x, p.y - 60, '#8ef5b0', 28); continue;
     }
-    const def = opponentsOf(fighters[p.owner], true).filter(v => !v.invincible && v.state !== 'throw' && !v.phased && !v.comboCapped && boxesOverlap(projectileBox(p), hurtBox(v)))
+    const def = [...opponentsOf(fighters[p.owner], true),...allHalfslipClones().filter(c=>c.index!==p.owner)].filter(v => !v.invincible && v.state !== 'throw' && !v.phased && !v.comboCapped && boxesOverlap(projectileBox(p), hurtBox(v)))
       .sort((a, b) => Math.abs(a.x - p.x) - Math.abs(b.x - p.x) || a.index - b.index)[0];
     if (!def) continue;
+    if(def.isMinion) { p.dead=true;dismissHalfslipClone(def,g);if(p.kind==='bottle')shatterBottle(p,g);continue; }
     const att = projectileAttacker(p), pt = { x: p.x, y: p.y };
-    p.dead = true;
+    // Ordinary projectiles break on their first hit; hitsLeft/pierce let a summon keep going.
+    p.hitsLeft = (p.hitsLeft ?? 1) - 1;
+    if (p.hitsLeft > 0) p.rehitAt = p.age + (p.rehitEvery || 8); else if (!p.pierce) p.dead = true;
     if (p.kind === 'bottle' && def.state !== 'parry') shatterBottle(p, g);
     if (['block', 'blockstun'].includes(def.state) && !def.guardBroken) {
       def.framesSinceHit = 0; def.blockAttacker = att.index; def.enter('blockstun'); def.timer = Math.round(p.move.hitstun * BLOCK.stunScale); def.vx = BLOCK.pushback * att.facing;
       guardDrain(def, p.blockGuard, fighters[p.owner], g); g.sound('block'); g.sparks(p.x, p.y, '#a8dcff', 6);
-      g.popup('BLOCK', def.x, def.y - 205, '#a8dcff', 22); continue;
+      g.popup('BLOCK', def.x, def.y - 205, '#a8dcff', 22); blockedHitHooks(att, def, g); continue;
     }
     // Parries deflect the ball, not the distant thrower. The normal parry rewards still apply.
     const hp = def.hp, meter = att.ultimate;
@@ -54,6 +61,9 @@ function drawFootball(ctx, x, y, angle = 0, scale = 1) {
 function drawProjectiles(ctx, g) {
   drawNullProjectiles(ctx,g);
   drawRosterProjectiles(ctx, g);
+  drawSoccerBalls(ctx, g);
+  drawTonkaProjectiles(ctx, g);
+  drawSirnivasProjectiles(ctx, g);
   for (const p of g.projectiles) if (p.kind === 'football') {
     ctx.save(); ctx.strokeStyle = '#ffd4a066'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(p.x - p.vx * 3, p.y); ctx.lineTo(p.x, p.y); ctx.stroke(); ctx.restore();
     drawFootball(ctx, p.x, p.y, p.age * .7);

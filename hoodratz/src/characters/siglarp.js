@@ -12,8 +12,8 @@ function siglarpPrepare(f,id,opponent=null) {
     const fields=new Set();
     CHARACTER_ABILITIES[id].reset?.(new Proxy(f,{set(o,k,v){fields.add(k);o[k]=v;return true;}}));
     if(opponent) {
-      for(const key of fields)if(opponent[key]!==undefined)f[key]=siglarpClone(opponent[key]);
-      for(const key of ['high','numb','debug','xp','untouchable','relentless','audible','stillFrames'])
+      for(const key of fields)if(key!=='halfslipClones'&&opponent[key]!==undefined)f[key]=siglarpClone(opponent[key]);
+      for(const key of ['high','numb','debug','xp','untouchable','relentless','stillFrames'])
         f[key]=opponent[key]||0;
       f.history=[];f.tauntQueued='';
       if(id==='null'&&f.nullMark)f.nullMark.target=opponent.index;
@@ -114,7 +114,7 @@ function updateSiglarpWorld(g,timers=true) {
       const b=f.beacon;b.vy+=.55;b.x=clampArena(b.x+b.vx);b.y+=b.vy;
       if(b.y>=FLOOR){b.y=FLOOR;b.vx=b.vy=0;}
     }
-    if(f.stats.id==='siglarp')for(const [id,fields] of [['rip',['relentless']],['haze',['numb']],['gooner',['debug','untouchable']],['yitty',['audible']]])
+    if(f.stats.id==='siglarp')for(const [id,fields] of [['rip',['relentless']],['haze',['numb']],['gooner',['debug','untouchable']]])
       if(f.siglarpActionId!==id&&f.siglarpUltimateId!==id)for(const key of fields)f[key]=Math.max(0,(f[key]||0)-1);
     if(f.stats.id==='siglarp'&&f.siglarpActionId!=='lancer'&&f.siglarpUltimateId!=='lancer'&&f.masked) {
       f.mask=Math.max(0,f.mask-100/LANCER.maskFrames);if(f.mask<=1e-9)f.masked=false;
@@ -176,9 +176,9 @@ const SIGLARP_ABILITIES=CHARACTER_ABILITIES.siglarp={
   upSpecial(f,opp) {
     f.siglarpCounterPose=poseFor(opp,opp.animationFrame);return openAbility(f,'siglarpCounter',SIGLARP.counterFrames);
   },
-  avoid(f,m,g) {
+  avoid(f,m,g,att) {
     if(f.state!=='siglarpCounter'||m.grab||m.unparryable||f.stateFrame<SIGLARP.counterFrom||f.stateFrame>SIGLARP.counterThrough)
-      return siglarpBorrowedHook(f,'avoid',[m,g],false);
+      return siglarpBorrowedHook(f,'avoid',[m,g,att],false);
     const opp=opponentOf(f);f.x=clampArena(opp.x+58*opp.facing);f.facing=-opp.facing;
     f.siglarpReplyName=opp.moveName;
     const original={...m,box:{x:0,y:-175,w:120,h:175},startup:1,active:1,recovery:24,step:0,grab:false};

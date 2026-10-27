@@ -123,6 +123,8 @@ const g = {
   speedLines(pt) { this.lines.push({ x: pt.x, y: pt.y, life: FX.speedLineFrames, seed: Math.random() * 6 }); },
   onKO() {
     if (this.phase !== 'fight') return;
+    for(const f of fighters)if(f.koed||fighters.filter(v=>!v.koed).length<=1)clearHalfslipClones(f,this);
+    if(fighters.filter(v=>!v.koed).length<=1&&this.domain?.type==='halfslip') { endRosterDomain(this.domain,this);this.domain=null; }
     if (fighters.length === 3) {
       for (const f of fighters) if (f.koed) {
         f.enter('ko'); f.move = null;
@@ -185,6 +187,8 @@ function startMatch(practice = false, sources = [{ type: 'keyboard', layout: 0 }
   for (const f of fighters) f.input = practice && f.index === 1 ? new PracticeInput(1) : sources[f.index]?.type === 'cpu' ? new CpuInput(f.index, sources[f.index].level) : new PlayerInput(f.index, sources[f.index]);
   for (const f of fighters) { f.ultimate = 0; f.burstMeter = BURST.rechargeFrames; }
   g.wins = fighters.map(() => 0);
+  g.matchSerial = (g.matchSerial || 0) + 1;
+  pickStage(g);   // Tonka's matches get one of his stages (presentation only)
   g.round = 1;
   startRound();
 }
@@ -300,8 +304,7 @@ function tick() {
       if (--g.phaseTimer <= 0) endRound();
       break;
     case 'matchOver':
-      if (g.phaseTimer > 0) g.phaseTimer--;
-      else if (fighters.some(f => f.input.pressed('attack'))) startMatch(false, g.inputSources);
+      if (g.phaseTimer > 0) g.phaseTimer--;   // then the rematch menu opens (match-menu.js)
       break;
   }
 
@@ -309,8 +312,10 @@ function tick() {
   if(g.phase==='fight')updateSiglarpWorld(g);
   if(g.phase==='fight')updatePreworkoutWorld(g);
   updateFighters(g);
+  if(g.phase==='fight')updateHalfslipClones(g);
   for (const [a, b] of fighterPairs()) pushApart(a, b);
   if (g.phase === 'fight') for (const [a, b] of fighterPairs()) { if (g.phase !== 'fight') break; resolveCombat(a, b, g); }
+  if(g.phase==='fight')resolveHalfslipClones(g);
   if (g.phase === 'fight') {
     for (const f of fighters) for (const victim of opponentsOf(f, true)) resolveSpear(f, victim, g);
     updateProjectiles(g); updateRosterWorld(g); updateMontage(g);
@@ -331,6 +336,7 @@ window.addEventListener('keydown', e => {
     if (['Enter', 'Escape', 'F2'].includes(e.code)) { e.preventDefault(); showTitle(); }
     return;
   }
+  if (e.code !== 'Escape' && matchMenuKey(e.code)) { e.preventDefault(); return; }
   if (e.code === 'KeyM') sound.toggleMute();
   else if (e.code === 'KeyO') {
     g.settings.impactFrames = !g.settings.impactFrames;
@@ -350,15 +356,15 @@ window.addEventListener('keydown', e => {
   else if (g.practice && e.code === 'KeyI') g.practice.infinite = !g.practice.infinite;
   else if (e.code === 'Tab') { g.showHelp = !g.showHelp; g.paused = g.showHelp; }
   else if (e.code === 'Escape' && !g.showHelp && g.phase !== 'matchOver') g.paused = !g.paused;
-  else if (e.code === 'Enter' && g.phase === 'matchOver') startMatch(false, g.inputSources);
 });
 
 window.addEventListener('pointerdown', e => {
   if (e.target !== canvas) return;
   sound.unlock();
-  if (!['title', 'quit', 'charSelect'].includes(g.phase) && !g.practice) return;
   const rect = canvas.getBoundingClientRect();
   const x = (e.clientX - rect.left) * W / rect.width, y = (e.clientY - rect.top) * H / rect.height;
+  if (matchMenuClick(x, y)) return;
+  if (!['title', 'quit', 'charSelect'].includes(g.phase) && !g.practice) return;
   if (g.phase === 'title' || g.phase === 'quit') { homeMenuClick(x, y); return; }
   if (g.phase === 'charSelect') { characterSelectClick(x, y); return; }
   if(g.practice)practiceClick(x,y);
@@ -373,6 +379,7 @@ function loop(now) {
   while (acc >= STEP && steps < ROUND.maxSteps) { tick(); acc -= STEP; steps++; }
   if (steps === ROUND.maxSteps) acc = 0;
   render(ctx, g, fighters, dt);
+  music.sync(g, dt);
   requestAnimationFrame(loop);
 }
 

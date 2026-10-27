@@ -1,6 +1,9 @@
 // Jersey, boots and football are canvas art; no real team, player or wrestling branding.
 function yittyPose(f, t, frame) {
   if (g.domainSequence?.kind === 'montageOpener' && g.domainSequence.owner === f.index) return AB.flex;
+  if(f.state==='throwRecover'&&f.throwKind==='yittyRko')return sampleTrack([
+    [0,YITTY_RKO_LAND],[6,YITTY_RKO_LAND],[17,CROUCH,'out'],[28,STAND]
+  ],frame);
   if (f.state === 'idle') return pose(idleAnim(t), { eB: [-24, -104], hB: [-20, -119] });
   if (f.state === 'walk') return pose(walkAnim(t * .7), { eB: [-24, -88], hB: [-16, -74], oy: Math.sin(t * .2) * 2 });
   if (f.state === 'deepBall') return sampleTrack([
@@ -10,7 +13,11 @@ function yittyPose(f, t, frame) {
   if (f.state === 'spear') return sampleTrack([[0, A.squat], [YITTY.spearLowFrom,
     pose(AB.rocket, { head: [42, -52], neck: [28, -48], hip: [-12, -32], hF: [64, -38], eF: [40, -30], hB: [-14, -36], eB: [-26, -36] }), 'snap']], frame);
   if (f.state === 'spearRecover') return sampleTrack([[0, AB.palmSlam], [YITTY.spearRecovery, STAND]], frame);
-  if (f.state === 'audibleCall') return pose(AB.flex, { hF: [18, -144], hB: [-18, -144], oy: Math.sin(t * .8) * 2 });
+  if(f.state==='attack'&&f.moveName==='rko')return sampleTrack([
+    [0,STAND],[6,pose(CROUCH,{hF:[-20,-83],hB:[-35,-77]})],
+    [8,pose(AIR,{hF:[65,-143],eF:[35,-124],hB:[45,-125],eB:[16,-112],kF:[38,-60],fF:[58,-28],rot:.12}),'snap'],
+    [20,pose(AIR,{hF:[65,-143],eF:[35,-124],hB:[45,-125],eB:[16,-112]})],
+    [32,pose(AIR,{hF:[35,-100],hB:[-28,-95]}),'out']],frame);
   return null;
 }
 function suplexPose(f, who, frame) {
@@ -31,6 +38,26 @@ function suplexPose(f, who, frame) {
     [slam, { ...TH.limp, ox: -distance * 2, oy: 45, rot: -Math.PI / 2 }, 'snap'],
   ], frame);
   return { ...victimPose, ox: (victimPose.ox || 0) + distance - root };
+}
+const YITTY_RKO_LAND=pose(STAND,{head:[-25,-35],neck:[-8,-30],hip:[30,-18],
+  eB:[-32,-32],hB:[-52,-28],eF:[-10,-50],hF:[-36,-38],kF:[58,-16],fF:[80,-6],kB:[47,-10],fB:[67,-2]});
+const YITTY_RKO_VICTIM_LAND=pose(STAND,{head:[-8,-28],neck:[-23,-28],hip:[-60,-22],
+  eF:[-12,-20],hF:[13,-8],eB:[-26,-18],hB:[-4,-5],kF:[-85,-16],fF:[-111,-5],kB:[-84,-5],fB:[-102,-2]});
+function rkoThrowPose(f,who,frame) {
+  const spec=THROWS.yittyRko;
+  if(who==='att') {
+    if(frame<spec.turnAt)return sampleTrack([
+      [0,pose(STAND,{hF:[55,-140+(f.rkoVictimCatchY??f.y)-(f.rkoCatchY??f.y)],eF:[30,-120],hB:[36,-120]})],
+      [12,pose(STAND,{hF:[55,-140],eF:[30,-120],hB:[36,-120]})],
+      [23,pose(STAND,{head:[8,-145],neck:[3,-130],hF:[48,-140],hB:[35,-145],kF:[30,-38],fF:[40,-4]})]],frame);
+    return sampleTrack([[24,pose(STAND,{head:[-8,-145],hB:[-50,-140],eB:[-30,-118],hF:[-30,-125]})],
+      [28,pose(AIR,{head:[-8,-139],neck:[-3,-123],hB:[-50,-134],eB:[-30,-112],hF:[-30,-119],kF:[40,-46],fF:[54,-15]})],
+      [48,YITTY_RKO_LAND,'in']],frame);
+  }
+  return sampleTrack([[0,pose(TH.held,{head:[-12,-143]})],[12,pose(TH.held,{head:[-12,-143]})],
+    [24,pose(STAND,{head:[-8,-145],neck:[4,-130],hip:[17,-73],hF:[-34,-115],hB:[-27,-129]})],
+    [28,pose(AIR,{head:[-8,-139],neck:[4,-124],hip:[17,-67],hF:[-34,-109],hB:[-27,-123]})],
+    [48,YITTY_RKO_VICTIM_LAND,'in']],frame);
 }
 function drawYittyBody(ctx, f, p, t) {
   const point = j => { const [x, y] = posedPoint(p, j); return [f.x + x * f.facing, f.y + y]; };
@@ -121,7 +148,6 @@ function drawYittyHud(ctx, g) {
       ctx.fillStyle = '#d6e2ff'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'left'; ctx.fillText('MORALE PRESSURE', x, 126);
       for (let i = 0; i < YITTY.maxMorale; i++) { ctx.fillStyle = i < f.morale ? '#ff6b4a' : '#36425c'; ctx.fillRect(x + 120 + i * 15, 118, 10, 8); }
     }
-    if (f.audible) { ctx.fillStyle = f.stats.color; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = hudAlign(f); ctx.fillText(`AUDIBLE ${(f.audible / 60).toFixed(1)}s · 4 SUPLEXES`, hudTextX(f,hudStart(f),180), 238); }
     if (f.state === 'throw' && f.suplex) {
       const victim = opponentOf(f), chain = f.suplex, threshold = YITTY.mashThresholds[Math.min(chain.count - 1, YITTY.mashThresholds.length - 1)];
       const x = victim.x - 60, y = victim.y - 225;

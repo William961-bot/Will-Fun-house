@@ -1,10 +1,10 @@
-check('Blue Cheese dread: distance, proximity, vanish, hits, missed normals and wrong parry gains',()=>{
+check('Blue Cheese dread: distance, proximity, vanish, hits, missed normals and missed parry gains',()=>{
   rosterVs('cheese');p2.dread=40;for(let i=0;i<60;i++)updateRosterWorld(g);near(p2.dread,43);
   p2.x=600;for(let i=0;i<60;i++)updateRosterWorld(g);near(p2.dread,37);
   p1.enter('vanished');for(let i=0;i<60;i++)updateRosterWorld(g);near(p2.dread,52);
   p1.enter('idle');incoming('light',p1,p2);near(p2.dread,57);
   p2.enter('idle');p2.x=900;p2.startAttack('medium');step(13);assert(p2.dread>=63,'whiff');
-  p2.enter('parry');p2.parryDir='low';const before=p2.dread;incoming('light',p1,p2);near(p2.dread-before,11);
+  p2.enter('idle');p2.startParry();p2.stateFrame=MOVE.parryFrames-1;const before=p2.dread;p2.update(p1,g);near(p2.dread-before,CHEESE.whiffDread);
 });
 check('Blue Cheese dread: thresholds slow movement and shrink perfect parry; scare waits for a free victim',()=>{
   rosterVs('cheese');p2.dread=33;near(rosterSpeed(p2),.92);p2.dread=66;near(perfectWindow(p2),3);

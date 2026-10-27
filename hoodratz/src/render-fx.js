@@ -9,7 +9,7 @@ function drawCharacterGuard(ctx,f,p,t) {
   const struck=f.state==='blockstun', age=f.stateFrame;
   if (!struck || age>=8) return;
   const [hx,hy]=posedPoint(p,'hF'), id=f.stats.id, life=1-age/8;
-  const colors={ haze:'#a3ffd0',rip:'#ffd46d',gooner:'#39ff7a',yitty:'#c8ddff',lancer:f.masked?'#ff6680':'#d9f4ff',cheese:'#d9efac',teo:'#ffd38a',null:f.stats.color };
+  const colors={ haze:'#a3ffd0',rip:'#ffd46d',gooner:'#39ff7a',yitty:'#c8ddff',lancer:f.masked?'#ff6680':'#d9f4ff',cheese:'#d9efac',teo:'#ffd38a',null:f.stats.color,sirnivas:'#ffd34d' };
   const x=hx+(id==='lancer'?16:id==='gooner'?15:8), y=hy+(id==='lancer'?-58:id==='cheese'?-28:id==='gooner'?28:0);
   ctx.save();ctx.translate(f.x,f.y);ctx.scale(f.facing*(f.stats.drawScale||1),f.stats.drawScale||1);
   ctx.globalAlpha*=life;ctx.strokeStyle=colors[id]||f.stats.color;ctx.fillStyle=ctx.strokeStyle;
@@ -201,7 +201,7 @@ const DEBUG_ACTIONS = {
 };
 function debugAction(f) {
   if (f.state === 'attack') return f.moveName.replace(/([a-z])([A-Z])/g,'$1 $2').toUpperCase() + ({ high: ' ▶', low: ' ▼', overhead: ' ▲' }[f.move.height] || '');
-  if (f.state === 'parry') return 'PARRY ' + { high: '▶', low: '▼', overhead: '▲' }[f.parryDir];
+  if (f.state === 'parry') return 'PARRY';
   return DEBUG_ACTIONS[f.state] || '';
 }
 function drawDebugReadout(ctx, g) {

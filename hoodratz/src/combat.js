@@ -1,6 +1,13 @@
 // Hit resolution: attacks, directional parries, grabs, heavies, trades and clashes.
 
+// A fighter whose domain is starting, clashing or running can't build ultimate until it ends.
+function domainLocksMeter(f, game) {
+  const seq = game?.domainSequence;
+  return game?.domain?.owner === f.index || seq?.owner === f.index || seq?.defender === f.index || seq?.challenger === f.index;
+}
 function gainMeter(f, amount) {
+  if(f.isMinion)return;
+  if (domainLocksMeter(f, typeof g === 'undefined' ? null : g)) return;
   f.ultimate = Math.min(ULTIMATE_MAX, f.ultimate + amount);
 }
 // Older characters store a knockback multiplier in weight; new mass-based stats can override it.
@@ -38,7 +45,8 @@ function hitPoint(att, def) {
   if (att.fake && att.projectileOwner === undefined) return null;   // Brainlag's fakes never touch anything
   if (att.kit?.attackActive?.(att)===false) return null;
   if (def.phased && !m.grab) return null;   // GoonerPrime untouchable / Bullet Time glitch: only grabs touch him
-  if (m.grab && (!def.grounded || def.state === 'hitstun' || def.state === 'blockstun')) return null;
+  if(m.grab&&(m.commandGrab?['throw','thrown'].includes(def.state):m.airGrab?def.grounded||['throw','thrown'].includes(def.state):
+      !def.grounded||def.state==='hitstun'||def.state==='blockstun'))return null;
 
   const box = attackBox(att), hurt = hurtBox(def);
   const ax0 = box.x, ax1 = ax0 + box.w, ay0 = box.y, ay1 = ay0 + box.h;
@@ -95,19 +103,19 @@ function applyHit(att, def, pt, g) {
   if (g.domainSequence) return;
   if (def.invincible) return;
   const m = att.move;
-  if (sawAvoids(def, m) || def.kit?.avoid?.(def, m, g)) { att.moveHit = true; return; }
+  if (sawAvoids(def, m) || def.kit?.avoid?.(def, m, g, att)) { att.moveHit = true; return; }
   att.moveHit = true;
   att.hitTargets?.add(def.index);
   // Grabs beat parry and block, then play out as a throw (throws.js).
   if (m.grab) return startThrow(att, def, g, ['parry', 'block', 'blockstun'].includes(def.state) && !def.guardBroken ? 'GRABBED' : '');
   if (def.state === 'parry' && !def.guardBroken) {
     if (m.unparryable) return landHit(att, def, pt, g, 0, 'UNPARRYABLE');
+    // Parry has no direction: one button beats highs, lows and overheads alike, so only the timing matters.
+    // The pose still turns to meet the attack's height.
     const heavy = m.height === 'heavy';
-    const parryHeight = heavy ? (m.air ? 'overhead' : 'high') : hypnoHeight(att, m.height);
-    // Debug Mode: GoonerPrime's parry reads the attack, so the direction is always right and the perfect window grows.
+    def.parryDir = heavy ? (m.air ? 'overhead' : 'high') : hypnoHeight(att, m.height);
+    // Debug Mode: GoonerPrime's parry reads the attack, widening the perfect window.
     const debugging = def.debug > 0;
-    if (debugging) def.parryDir = parryHeight;
-    if (def.parryDir !== parryHeight) { opponentWhiff(def); def.kit?.onParryMiss?.(def, g); return landHit(att, def, pt, g, COMBAT.wrongStun, 'WRONG GUESS'); }
     // Heavy has no safe early deflect and Debug Mode cannot widen its two-tick window.
     if (heavy) return def.stateFrame < COMBAT.heavyParryWindow ? perfectParry(att, def, pt, g) : landHit(att, def, pt, g, 0, 'HEAVY PARRY MISSED');
     // Parry frames 0-3 (the first 4) are the perfect window.
@@ -129,15 +137,17 @@ function blockHit(att, def, pt, g) {
   const cornered = Math.min(def.x - WALL_L, WALL_R - def.x) <= GUARD.cornerDistance;
   def.framesSinceHit = 0;
   def.blockAttacker = att.index;
+  def.pressureClone = att.isMinion ? att : null;
   def.enter('blockstun');
   def.timer = Math.round(m.hitstun * BLOCK.stunScale);
   def.vx = BLOCK.pushback * hitFacing(att);
-  guardDrain(def, (m.blockGuard ?? BLOCK.guardDrain) + (cornered ? BLOCK.cornerDrain : 0) + (att.relentless > 0 ? RIP.guardDrain : 0), realAttacker(att), g);
+  guardDrain(def, (m.blockGuard ?? BLOCK.guardDrain) + (cornered ? BLOCK.cornerDrain : 0) + (att.relentless > 0 ? RIP.guardDrain : 0), att.isMinion ? att : realAttacker(att), g);
   g.hitstop(Math.max(2, m.hitstop - 2));
   g.sparks(pt.x, pt.y, '#c8d0ff', 5);
   if (att.kit === GOONER_ABILITIES) g.codeBurst(pt.x, pt.y, 4);
   g.popup('BLOCK', def.x, def.y - 205, '#c8d0ff', 22, `block${def.index}`);
   g.sound('block'); recordFrameData(att, def, 'block', g);
+  blockedHitHooks(att, def, g);
 }
 
 // Parry during blockstun: a free shove to end the pressure.
@@ -145,6 +155,7 @@ function pushblock(def, att, g) {
   def.enter('deflect'); def.timer = BLOCK.pushblockFrames; def.animHint = 'pushblock';
   const away = Math.sign(att.x - def.x) || def.facing;
   att.enter('deflect'); att.timer = BLOCK.pushblockAttackerStun; att.vx = BLOCK.pushblockPush * away;
+  if(att.isMinion)dismissHalfslipClone(att,g);
   g.hitstop(IMPACT.parryHitstop);
   g.sparks(def.x + 40 * away, def.y - 110, '#c8d0ff', 10);
   g.popup('PUSHBLOCK', def.x, def.y - 215, '#c8d0ff', 30);
@@ -154,6 +165,7 @@ function pushblock(def, att, g) {
 
 // Combo breaker: the defender (already in 'burst') is invincible while the attacker is blown away.
 function burst(def, att, g) {
+  for(const c of allHalfslipClones())if(c.index!==def.index&&Math.hypot(c.x-def.x,c.y-def.y)<220)dismissHalfslipClone(c,g);
   const away = Math.sign(att.x - def.x) || def.facing;
   def.vx = 0;
   if (!def.grounded) def.vy = Math.min(def.vy, 0);
@@ -182,12 +194,12 @@ function landHit(att, def, pt, g, extraStun, label) {
   const m = att.move;
   const scale = COMBO_SCALE[Math.min(def.combo, COMBO_SCALE.length - 1)] * (def.wallBounced ? COMBO_LIMIT.bounceScale : 1);
   if (m.steal) { gainMeter(realAttacker(att), Math.min(TEO.stealMeter, def.ultimate)); def.ultimate = Math.max(0, def.ultimate - TEO.stealMeter); lootBottle(realAttacker(att), g); }
-  const baseDamage = m.exactThrow ? m.fixedDamage : (m.fixedDamage ?? m.dmg * att.stats.dmg) * damageScale(att, def, m) * moraleDamageScale(att) * scale * (1 + COMBAT.momentumDamage * att.moveMomentum / MOVE.maxMomentum);
+  const baseDamage = m.exactThrow || m.exactDamage ? m.fixedDamage : (m.fixedDamage ?? m.dmg * att.stats.dmg) * damageScale(att, def, m) * moraleDamageScale(att) * scale * (1 + COMBAT.momentumDamage * att.moveMomentum / MOVE.maxMomentum);
   const dmg = Math.round(baseDamage*takenDamageScale(def));
   def.hp = Math.max(0, def.hp - dmg);
   def.framesSinceHit = 0;
   const cornered = Math.min(def.x - WALL_L, WALL_R - def.x) <= GUARD.cornerDistance;
-  if (!m.steal) { gainMeter(att, METER_GAIN.hit); gainMeter(def, METER_GAIN.takenHit); }
+  if (!m.steal) { if(!m.noMeter)gainMeter(att, METER_GAIN.hit); gainMeter(def, METER_GAIN.takenHit); }
   const numb = def.numb > 0 && !m.unblockable;
   const armored = (def.relentless > 0 || numb || def.kit?.armor?.(def, m, g)) && !m.grab && def.hp > 0;
   if (!armored) {
@@ -210,7 +222,11 @@ function landHit(att, def, pt, g, extraStun, label) {
   }
 
   g.hitstop(m.hitstop);
-  g.sound(m.grab ? 'grab' : m.unblockable ? 'heavy' : 'light');
+  const heavyHit = m.unblockable || m.hitstop >= HIT_FEEL.heavyHitstop;
+  g.sound(m.grab ? 'grab' : heavyHit ? 'hitHeavy' : 'hit');
+  // Presentation only (render.js hitJolt). A projectile's attacker is a stand-in, so the distant thrower doesn't recoil.
+  att.recoil = { frame: g.frame, dir: -hitFacing(att), size: heavyHit ? HIT_FEEL.heavyRecoil : HIT_FEEL.recoil };
+  def.jolt = { frame: g.frame, size: heavyHit ? HIT_FEEL.heavyShake : HIT_FEEL.shake };
   if (m.shake) g.shake(m.shake);
   g.sparks(pt.x, pt.y, att.stats.color, m.grab ? 10 : 6 + m.hitstop);
   g.hitSpark?.(pt.x, pt.y, att.stats.color, m.unblockable ? 1.8 : m.grab ? 0.8 : 0.55 + m.hitstop * 0.08, att.facing);
@@ -234,6 +250,7 @@ function landHit(att, def, pt, g, extraStun, label) {
   else owner.kit?.onHit?.(owner, def, dmg, att.moveName, g);
   def.kit?.onTakenHit?.(def, m, dmg, g);
   if(!armored)armAbilityNormalLink(att,def,att.moveName,dmg);
+  allInHit(owner, def, dmg, g);   // ALL IN tracks damage and KOs (src/characters/sirnivas.js)
 
   if (def.hp <= 0) {
     if (g.practice) { recordFrameData(att, def, 'hit', g); def.hp = def.maxHp; def.enter('idle'); def.vx = 0; def.vy = 0; return; }

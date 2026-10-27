@@ -25,6 +25,11 @@ const WALL_BOUNCE = {
 // with the defender recovering first instead of looping.
 const CORNER_PROTECTION = { hitstunScale: 0.75 };
 const COMBO_LIMIT = { beforeBounce: 10, afterBounce: 5, total: 15, bounceScale: 0.5 };
+// Tonka only: 50 hits as five 10-hit loops. His wall bounces drop the victim at the wall (reboundSpeed)
+// and reopen the launcher and air extension; the air-extension window shrinks by one frame every
+// windowShrinkEvery bounces, down to minWindow, so the last loops need tighter timing.
+const TONKA_COMBO = { total: 50, perLoop: 10, bounces: 4, reboundSpeed: .05, windowShrinkEvery: 2, minWindow: 2,
+  capHold: 70, resetStun: 60, resetPop: -6, resetPull: 70 };   // Bell Reset (tonka.js)
 const AIR_EXTENSION = { window: 4, hopSpeed: 13 };
 const GUARD = {
   max: 100, cornerDistance: 80,
@@ -82,15 +87,16 @@ const CPU_LEVELS = [
 ];
 const YITTY = {
   drawScale: 1.08, tossFrames: 150,
-  slamAt: 32, chainWindow: 4, audibleWindow: 6, suplexDamage: [70, 85, 100, 110],
-  mashThresholds: [8, 6, 6], maxSuplexes: 3, audibleSuplexes: 4,
+  slamAt: 32, chainWindow: 4, suplexDamage: [70, 85, 100],
+  mashThresholds: [8, 6, 6], maxSuplexes: 3,
   escapeVictimFrames: 12, escapeAttackerFrames: 18, escapePush: 7,
   ballWindup: 14, ballRecovery: 18, ballSpeed: 14, ballDamage: 50, ballStun: 18, ballGuard: 6,
   ballCooldown: 210, ballLife: 100, ballOffset: 48, ballHeight: 116, ballBox: { w: 30, h: 16 }, ballKnockback: 5,
   spearCooldown: 360, spearSpeed: 13, spearLowFrom: 4, spearThrough: 20, spearHeight: 70,
   spearDamage: 60, spearStun: 24, spearKnockback: 3, spearRecovery: 22, spearGrabWindow: 10,
   spearBox: { x: 12, y: -64, w: 76, h: 54 },
-  audibleCall: 24, audibleFrames: 240, audibleCooldown: 600,
+  rkoStartup:8, rkoActive:12, rkoRecovery:28, rkoCooldown:360,
+  rkoSpeed:7, rkoLift:7,
   openerFrames: 40, montageFrames: 480, chantEvery: 90, maxMorale: 5, moraleDamage: .06,
   moraleGuard: .15, moraleRecover: 240, perfectWindows: [4, 3, 2], montageMeter: 5,
   moraleWindowAt: [2, 4],
@@ -140,9 +146,16 @@ const CAMERA = { closeZoom: 0.07, closeRange: 600, follow: 0.08, punchRate: 0.35
 const SPARK_FX = { life: 12, heavyLife: 18, heavySize: 1.5 };
 // Fighters moving further than this in one tick (rewind, flash step, round reset) jump instead of sliding.
 const TWEEN_TELEPORT = 90;
-const PRACTICE_MODES = ['Stand', 'Parry high', 'Parry low', 'Cycle parry', 'Repeat light', 'Grab in range', 'Heavy', 'Block'];
+const PRACTICE_MODES = ['Stand', 'Parry', 'Perfect parry', 'Parry or block', 'Repeat light', 'Grab in range', 'Heavy', 'Block'];
 const AUDIO = { initialVolume: 0.35, volumeStep: 0.1, envelopeFloor: 0.001 };
+// Hit feel (presentation only): the attacker bounces back a few pixels on a landed hit, and the victim
+// shakes in place while the hit-stop freezes the game. Heavy = unblockable or hit-stop of 7+ frames.
+const HIT_FEEL = { recoil: 7, heavyRecoil: 14, recoilFrames: 8, shake: 3.5, heavyShake: 6, heavyHitstop: 7 };
+// Landed hits are a thump plus a short noise crack on top; heavies add a deep boom.
+const SOUND_LAYERS = { hit: ['hitCrack'], hitHeavy: ['hitHeavyCrack', 'hitBoom'] };
 const SOUND_EVENTS = {
+  hit: [210, 70, 0.08, 'triangle'], hitCrack: [3400, 900, 0.035, 'noise'],
+  hitHeavy: [130, 35, 0.16, 'sawtooth'], hitHeavyCrack: [2600, 450, 0.07, 'noise'], hitBoom: [75, 30, 0.28, 'sine'],
   light: [180, 65, 0.09, 'triangle'], heavy: [100, 30, 0.2, 'sawtooth'], grab: [130, 45, 0.16, 'triangle'],
   parry: [1200, 750, 0.13, 'sine'], perfect: [880, 1760, 0.3, 'sine'], wall: [75, 28, 0.2, 'triangle'],
   break: [2200, 100, 0.3, 'noise'], round: [440, 660, 0.25, 'triangle'], ko: [220, 55, 0.5, 'sawtooth'],
@@ -158,7 +171,7 @@ const CHARACTERS = {
     walk: 3.4, walkBack: 3.0, runMax: 11.0, dmg: 1.1, weight: 1.25, knockbackScale: 1 / 1.25, drawScale: YITTY.drawScale,
     home: { u: 0.24, v: 0.17, label: 'TAILGATE · BOSTON' }, title: 'The grappler',
     blurb: 'Lives for game day and German suplexes. Once he grabs you, you are going to Suplex City.',
-    moves: ['Special: Deep Ball', 'Down + Special: Spear Tackle', 'Up + Special: Audible', 'Ultimate: Hate Montage'] },
+    moves: ['Special: Deep Ball', 'Down + Special: Spear Tackle', 'Up + Special: RKO', 'Ultimate: Hate Montage'] },
   haze: { id: 'haze', name: 'HAZE', color: '#8ef5b0', dark: '#3f8f62', altColor: '#c49bff', altDark: '#6f4fa8',
     walk: 3.6, walkBack: 3.2, runMax: 11.2, dmg: 0.9, weight: 1.0,
     home: { u: 0.50, v: 0.24, label: 'SMOKE LOUNGE · AMSTERDAM' },
@@ -282,5 +295,79 @@ CHARACTERS.brainlag={id:'brainlag',name:'BRAINLAG',color:'#9b6cff',dark:'#4b2f8f
 THROWS.brainlag={frames:76,distance:54,enterFrom:12,enterAt:22,slaps:[30,38,44],uppercutAt:52,exitFrom:60,exitAt:68};
 DOMAIN_NAMES.brainlag='COMPLETE HYPNOSIS';DOMAIN_SUBTITLES.brainlag='UP IS DOWN · LEFT IS RIGHT · NOTHING IS REAL';
 Object.assign(SOUND_EVENTS,{snap:[2600,1800,.05,'square'],glitch:[420,90,.14,'square'],tada:[520,1040,.28,'sine'],hypno:[180,90,.6,'sine']});
-const ROSTER = ['haze', 'rip', 'gooner', 'yitty', 'lancer', 'cheese', 'teo', 'null', 'sombra', 'curtis', 'siglarp', 'kinkade', 'brainlag'];
+// Domain songs (assets/music/ is git-ignored: personal files, never commit them). start = seconds into the song.
+// Songs start at a random spot each domain (start: used only until the song's length is known).
+const DOMAIN_MUSIC = { haze: { file: 'assets/music/haze.mp3', start: 0, volume: .8 },
+  // delay: cutscene frames before the song starts (Duttpack's beat drops 15 frames in).
+  duttpack: { file: 'assets/music/duttpack.mp3', start: 0, volume: .8, delay: 15 },
+  // Tonka has one song per random domain variant (keyed type_variant).
+  tonka_wasteland: { file: 'assets/music/tonka-wasteland.mp3', start: 0, volume: .8 },
+  tonka_bellCity: { file: 'assets/music/tonka-bellCity.mp3', start: 0, volume: .8 },
+  tonka_farmhouse: { file: 'assets/music/tonka-farmhouse.mp3', start: 0, volume: .8 } };
+const MUSIC_FADE_MS = 500;
+// Duttpack: basketball/soccer hype man. Free Kick, Hype Shuffle (counter), Pigeon Strut, Slam Dunk, COOKIEEEEEEE.
+const DUTTPACK = { idleBeat: 36,
+  kickStartup: 14, kickRecovery: 16, kickSpeed: 13, kickDamage: 50, kickCooldown: 240, kickLife: 120,
+  shuffleStartup: 4, shuffleFrom: 4, shuffleThrough: 36, shuffleFrames: 40, shuffleWhiff: 20, shuffleCooldown: 360, shuffleDamage: 60,
+  strutStartup: 8, strutFrames: 26, strutSpeed: 220 / 26, peckEvery: 7, peckDamage: 15, finalPeckDamage: 35,
+  strutRecovery: 20, strutCooldown: 420,
+  // On the Beat. bpm should match his song ("Hacked My Instagram"); tune bpm/beatOffset by ear.
+  bpm: 140, beatOffset: 0, beatWindow: 5, beatBonus: 1.5, offBeatDelay: 4 };
+DOMAIN_MUSIC.duttpack.bpm = DUTTPACK.bpm;   // his song starts on a whole beat (src/music.js)
+CHARACTERS.duttpack={id:'duttpack',name:'DUTTPACK',color:'#c8102e',dark:'#7a0a1c',altColor:'#d4a64a',altDark:'#8a6a2a',
+  accent:'#d4a64a',altAccent:'#c8102e',
+  walk:3.9,walkBack:3.2,runMax:12,dmg:1,weight:1,
+  home:{u:.09,v:.36,label:'THE BAY · SAN FRANCISCO'},title:'The hype man',
+  blurb:'Never stops dancing. When the beat drops, so do you.',
+  moves:['Special: Free Kick (hold Up/Down to curve)','Down: Hype Shuffle · Up: Pigeon Strut','Grab: Slam Dunk','Domain: COOKIEEEEEEE']};
+THROWS.duttpack={frames:72,distance:54,hoopAt:12,dribbles:[16,22],jumpFrom:26,dunkAt:44,dropTo:58,jumpHeight:150,hoopHeight:300};
+DOMAIN_NAMES.duttpack='COOKIEEEEEEE';DOMAIN_SUBTITLES.duttpack='STAY ON BEAT · OFF BEAT, OFF FEET';
+Object.assign(SOUND_EVENTS,{kick:[180,60,.16,'triangle'],coo:[700,420,.18,'sine'],swish:[3000,600,.14,'noise']});
+// Tonka: a masked summoner. Bell meter, Unbothered armor, Bell Drop / Truck Ram / Green Swarm, Car Toss, three random domains.
+const TONKA = { bellsMax: 3, unbotheredRecharge: 180, armorMaxDamage: 65, steepleEvery: 300, steepleFrames: 60,
+  bellStartup: 10, bellRecovery: 14, bellFall: 24, bellDamage: 70, ringDamage: 20, bellCooldown: 300, bellSpread: 120,
+  truckStartup: 18, truckRecovery: 16, truckSpeed: 22, truckDamage: 80, truckCooldown: 480, empTruckSpeed: 30, empTruckDamage: 100,
+  swarmStartup: 12, swarmRecovery: 16, swarmSpeed: 9, swarmDamage: 20, swarmHits: 3, empSwarmHits: 5, swarmEvery: 5, swarmCooldown: 300,
+  suvEvery: 120, suvWarn: 20, suvDamage: 40, suvSpeed: 24, cityBellEvery: 90, cityBellDamage: 50,
+  horseEvery: 150, horseDamage: 35, horseSpeed: 18, farmCooldownRate: 2 };
+const TONKA_DOMAINS = { wasteland: { name: 'WASTELAND', sub: 'NO BRAKES · NO MERCY' },
+  bellCity: { name: 'BELL CITY', sub: 'THE BELLS NEVER STOP' },
+  farmhouse: { name: 'BURNING FARMHOUSE', sub: 'SEE RIGHT THROUGH YOU' } };
+const TONKA_VARIANTS = Object.keys(TONKA_DOMAINS);
+// color/altColor are his HUD colours (readable); his body is drawn black (white in a mirror) through the kit's bodyColor.
+CHARACTERS.tonka={id:'tonka',name:'TONKA',color:'#7dff3a',dark:'#3d8f1a',altColor:'#e9ecef',altDark:'#9aa1a8',
+  accent:'#7dff3a',altAccent:'#7dff3a',
+  walk:3.4,walkBack:3,runMax:11,dmg:.95,weight:1.15,knockbackScale:1/1.15,
+  home:{u:.55,v:.62,label:'BELL CITY · SOMEWHERE AT NIGHT'},title:'The summoner',
+  blurb:'Hands in his pockets. The bells, the truck and the swarm do the talking.',
+  moves:['Special: Bell Drop','Down: Truck Ram · Up: Green Swarm','Grab: Car Toss · 3 bells = EMPOWERED','Domain: 3 random arenas']};
+THROWS.tonka={frames:76,distance:54,carAt:10,carIn:22,stuffAt:30,driveFrom:34,crashAt:50,returnFrom:58,landAt:72};
+DOMAIN_NAMES.tonka='TONKA';DOMAIN_SUBTITLES.tonka='';
+Object.assign(SOUND_EVENTS,{bell:[140,120,.9,'sine'],honk:[330,300,.3,'square'],hooves:[90,60,.12,'triangle'],crash:[900,80,.45,'noise']});
+// Recorded sound effects: personal files in assets/sfx/ (git-ignored). A missing file plays the synth `fallback` instead.
+const SOUND_FILES = { tonkaBell: { file: 'assets/sfx/tonka-bell.mp3', volume: .9, fallback: 'bell' } };   // his Bell Drop
+// His two stages: any match with Tonka in it is fought on one, picked at random. Personal images (git-ignored).
+// floor: where the image's ground is, as a fraction of its height.
+const STAGES = { tonkaFarmhouse: { file: 'assets/stages/tonka-farmhouse.webp', floor: .8, effects: 'fire' },
+  tonkaCity: { file: 'assets/stages/tonka-city.webp', floor: .86, effects: 'city' } };
+// Sirnivas: a meme trader. The $SIRN stock price, Slot Machine / Invest / Buy the Dip, Slot Machine Slam, ALL IN.
+// Every gamble rolls his seeded luckSeed, so matches stay repeatable.
+const SIRNIVAS = { stockStart: 50, stockHit: 6, stockTaken: 8, stockDrift: 1 / 60, driftDelay: 120, bull: 70, bear: 30,
+  bullDamage: 1.15, bullSpeed: 1.1, bearDamage: .9, bearSpeed: .95, historyEvery: 6, historyLength: 30, reactFrames: 36,
+  slotPull: 8, slotStops: [14, 20, 26], slotFire: 30, slotRecovery: 16, slotCooldown: 360,
+  odds: { neutral: { jackpot: .10, bust: .15 }, bull: { jackpot: .20, bust: .10 }, bear: { jackpot: .05, bust: .25 } },
+  coinDamage: 45, coinSpeed: 12, jackpotDamage: 90, jackpotSpeed: 7, bustDamage: 30, bustStagger: 20, bustStock: 10,
+  investFrames: 10, investCost: 50, investMinHp: 60, investLife: 240, investBonus: 50, investStock: 15, investCooldown: 480,
+  dipFrom: 3, dipThrough: 20, dipWhiff: 20, dipBase: 40, dipPerPoint: .6, dipStock: 20, dipCooldown: 360,
+  allInCost: .4, crashFloor: .7 };
+CHARACTERS.sirnivas={id:'sirnivas',name:'SIRNIVAS',color:'#00d26a',dark:'#00733a',altColor:'#ffe7a3',altDark:'#a08440',
+  accent:'#ffd34d',altAccent:'#00d26a',
+  walk:3.8,walkBack:3.2,runMax:11.8,dmg:1,weight:1,
+  home:{u:.275,v:.33,label:'TRADING FLOOR · NEW YORK'},title:'The degen trader',
+  blurb:'Stocks only go up. Bet it all, buy the dip, pray for a jackpot.',
+  moves:['Special: Slot Machine (seeded luck)','Down: Invest 50 HP · Up: Buy the Dip','Grab: Slot Machine Slam · $SIRN stock','Domain: ALL IN']};
+THROWS.sirnivas={frames:80,distance:54,machineAt:10,stuffFrom:18,stuffAt:30,spinTo:55,jackpotAt:60,landAt:74};
+DOMAIN_NAMES.sirnivas='ALL IN';DOMAIN_SUBTITLES.sirnivas='BET IT ALL · WATCH YOUR STOCK CRASH';
+Object.assign(SOUND_EVENTS,{coin:[2100,2600,.12,'sine'],reel:[900,700,.04,'square'],jackpot:[520,1560,.5,'triangle'],bust:[260,40,.5,'sawtooth']});
+const ROSTER = ['haze', 'rip', 'gooner', 'yitty', 'lancer', 'cheese', 'teo', 'null', 'sombra', 'curtis', 'siglarp', 'kinkade', 'brainlag', 'duttpack', 'tonka', 'sirnivas'];
 Object.assign(SOUND_EVENTS, { smg: [620, 180, .055, 'noise'], hack: [900, 1500, .16, 'square'], emp: [100, 1300, .4, 'sawtooth'] });

@@ -5,6 +5,9 @@ function drawDomainAtmosphere(ctx, g) {
   if(drawCurtisDomain(ctx,g,domain))return;
   if(drawNullDomain(ctx,g,domain))return;
   if(drawBrainlagDomain(ctx,g,domain))return;
+  if(drawDuttpackDomain(ctx,g,domain))return;
+  if(drawTonkaDomain(ctx,g,domain))return;
+  if(drawSirnivasDomain(ctx,g,domain))return;
   if (drawRosterDomain(ctx, g, domain)) return;
   ctx.save();
   if (!g.domain) ctx.globalAlpha = domain.framesLeft / DOMAIN.fadeFrames;
@@ -24,7 +27,7 @@ function drawDomainOverlay(ctx, g) {
   ctx.save(); ctx.textAlign = 'center';
   if (g.domain) {
     ctx.fillStyle = fighters[g.domain.owner].stats.color; ctx.font = 'bold 14px sans-serif';
-    ctx.fillText(`${DOMAIN_NAMES[g.domain.type]}  ${(g.domain.framesLeft / 60).toFixed(1)}s`, W / 2, 122);
+    ctx.fillText(`${domainName(g.domain.type, g.domain.variant)}  ${(g.domain.framesLeft / 60).toFixed(1)}s`, W / 2, 122);
     drawBar(ctx, W / 2 - 140, 130, 280, 5, g.domain.framesLeft / (g.domain.maxFrames || DOMAIN.activeFrames), 0, fighters[g.domain.owner].stats.color, false);
     if(g.domain.type==='siglarp') {
       const f=fighters[g.domain.owner];ctx.font='bold 12px sans-serif';ctx.fillStyle='#f1eaff';
@@ -45,8 +48,8 @@ function drawDomainOverlay(ctx, g) {
   } else if (seq.kind === 'cutscene') {
     ctx.fillStyle = '#08080e99'; ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = fighters[seq.owner].stats.color; ctx.font = 'bold 32px sans-serif'; ctx.fillText('DOMAIN EXPANSION', W / 2, 215);
-    ctx.font = 'bold 76px Impact, sans-serif'; ctx.fillText(DOMAIN_NAMES[seq.type], W / 2, 310);
-    ctx.font = '20px sans-serif'; ctx.fillText(DOMAIN_SUBTITLES[seq.type], W / 2, 360);
+    ctx.font = 'bold 76px Impact, sans-serif'; ctx.fillText(domainName(seq.type, seq.variant), W / 2, 310);
+    ctx.font = '20px sans-serif'; ctx.fillText(domainSubtitle(seq.type, seq.variant), W / 2, 360);
   }
   ctx.restore();
 }

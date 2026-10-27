@@ -18,6 +18,8 @@ class Fighter {
 
   // Picked on the character select screen; `alt` gives player 2 the mirror-match colours.
   setCharacter(id, alt = false) {
+    this.halfslipClones=[];
+    this.pressureClone=null;this.comboClone=null;
     this.preworkout=0;
     this.pumpNormals=new Set();this.benchPumped=false;this.benchSecond=false;
     this.siglarpBaseStats=null;this.siglarpBaseCooldowns=null;this.siglarpLarp=false;
@@ -30,6 +32,8 @@ class Fighter {
   }
 
   reset(x, facing) {
+    this.halfslipClones=[];
+    this.pressureClone=null;this.comboClone=null;
     if(this.siglarpBaseStats)siglarpRestoreIdentity(this);
     this.x = x; this.y = FLOOR; this.vx = 0; this.vy = 0; this.facing = facing;
     this.hp = this.maxHp; this.hpShown = this.maxHp;
@@ -42,7 +46,7 @@ class Fighter {
     this.choking = 0; this.passOut = false; this.slowed = false; this.wasCreamed = false;   // grab after-effects; slowed is set by physics each tick
     this.thrownBy = null; this.throwKind = ''; this.throwEscape = null; this.throwCommitted = false;
     this.throwTarget = null; this.combatTarget = null;
-    this.suplex = null; this.audible = 0; this.spearHitUntil = -1;
+    this.suplex = null; this.spearHitUntil = -1;
     this.morale = 0; this.moraleRecovery = 0;
     this.high = 0; this.numb = 0;
     this.preworkout=0;
@@ -53,13 +57,14 @@ class Fighter {
     this.relentless = 0; this.relentlessStarted = -1;
     this.mirrorPassed = false; this.mirrorBounce = false;
     this.previousX = x;
+    this.recoil = null; this.jolt = null;   // hit-feel render offsets (render.js hitJolt)
     this.timeAccumulator = 0; this.animationFrame = 0; this.domainPending = false;
     this.state = 'idle'; this.stateFrame = 0;
     this.move = null; this.moveName = ''; this.moveHit = false; this.moveMomentum = 0;
     this.hitTargets = new Set();
     this.chainUsed = new Set();
     this.combo = 0;          // hits taken in the current combo (drives damage scaling)
-    this.wallBounced = false;
+    this.wallBounced = false; this.wallBounces = 0; this.bellResets = 0; this.capHold = 0;
     this.bounceHits = 0;
     this.comboCapped = false;
     this.comboAttacker = null;
@@ -109,10 +114,11 @@ class Fighter {
     else if (state !== 'air' || this.state !== 'jumpsquat') this.jumpStartedAt = -999;
     if (['hitstun','thrown'].includes(this.state) && !['hitstun','thrown'].includes(state) && !this.comboHeld) {
       this.combo = 0;
-      this.wallBounced = false;
+      this.wallBounced = false; this.wallBounces = 0; this.bellResets = 0; this.capHold = 0;
       this.bounceHits = 0;
       this.comboCapped = false;
       this.comboAttacker = null;
+      this.comboClone = null;
       this.overheadLaunched = false;
       this.mirrorBounce = false;
       this.comboAirExtended = false;
@@ -133,7 +139,8 @@ class Fighter {
     let inp = g.inputLocked ? NO_INPUT : !this.domainPending ? actual : {
       held: actual.held, consume: b => actual.consume(b),
       specialDirection: actual.specialDirection,
-      pressed: (b, buffer) => !['attack', 'special'].includes(b) && actual.pressed(b, buffer),
+      // Mid-combo Light comes out at once (no chord wait); Special can still complete the chord from the new attack.
+      pressed: (b, buffer) => (b === 'attack' ? opp.state === 'hitstun' && opp.comboAttacker === this.index : b !== 'special') && actual.pressed(b, buffer),
     };
     // Complete Hypnosis: directions and Light/Heavy swap (they still face Brainlag normally).
     if (hypnotized(this)) inp = reversedInput(inp);
@@ -217,9 +224,9 @@ class Fighter {
         break;
       }
       case 'jumpsquat': {
-        // 3 frames before leaving the ground: up + parry/attack here becomes an overhead instead of a jump.
+        // 3 frames before leaving the ground: up + attack here becomes an overhead, and up + parry still parries.
         if (!this.jumpFromRun) this.vx *= MOVE.jumpFriction;
-        if (!this.guardBroken && inp.pressed('parry', BUFFER)) { inp.consume('parry'); this.startParry('overhead'); break; }
+        if (!this.guardBroken && inp.pressed('parry', BUFFER)) { inp.consume('parry'); this.startParry(); break; }
         if (inp.pressed('attack', BUFFER)) { inp.consume('attack'); this.startAttack('overhead'); break; }
         // Up + Special starts with an up press, so it would always be read as a jump: turn the jump start into it.
         if (this.trySpecial(inp)) break;
@@ -329,7 +336,10 @@ class Fighter {
         if (this.tryBurst(inp)) break;
         if (this.grounded) this.vx *= MOVE.hitFriction;
         this.hitstun--;
-        if (!this.comboHeld && (this.hitstun <= 0 || (this.comboCapped && this.grounded))) this.endHitstun();
+        // At a Tonka loop's cap the victim stays pinned for a moment so he can land and Bell Reset (tonka.js).
+        const held = this.comboCapped && this.grounded && tonkaResetPending(this) && ++this.capHold <= TONKA_COMBO.capHold;
+        if (held && this.hitstun < 1) this.hitstun = 1;
+        if (!this.comboHeld && (this.hitstun <= 0 || (this.comboCapped && this.grounded && !held))) this.endHitstun();
         break;
       }
       case 'ko':
@@ -361,7 +371,7 @@ class Fighter {
     if (this.tryHeavy(inp)) return true;
     if (inp.pressed('parry', BUFFER)) {
       inp.consume('parry');
-      if (this.startParry(inp.held.up ? 'overhead' : inp.held.down ? 'low' : 'high')) return true;
+      if (this.startParry()) return true;
     }
     if (this.state !== 'block' && !this.guardBroken && inp.held.block && this.grounded) { this.enter('block'); return true; }
     if (opt.jump && inp.pressed('up', MOVE.jumpBuffer)) {
@@ -412,6 +422,8 @@ class Fighter {
     if (this.guardBroken || this.hacked || !inp.pressed('special', BUFFER)) return false;
     const direction = inp.held.down ? 'downSpecial' : inp.held.up ? 'upSpecial' : inp.specialDirection || 'special';
     const key = direction === 'upSpecial' && !this.kit?.upSpecial ? 'special' : direction;
+    // Tonka's Bell Reset works mid-combo, grounded or airborne, before the usual special rules apply.
+    if (key === 'downSpecial' && this.kit?.comboReset?.(this, opponentOf(this), g, chain)) { inp.consume('special'); return true; }
     const airSpecial = !this.grounded && !!this.kit?.airSpecials?.includes(key);
     const jumpChord = !airSpecial && key === 'upSpecial' && ['jumpsquat', 'air'].includes(this.state) && g.frame - this.jumpStartedAt <= BUFFER;
     if (!this.grounded && !jumpChord && !airSpecial) return false;
@@ -435,8 +447,12 @@ class Fighter {
   }
 
   startAttack(name, frame = 0) {
+    leaveHalfslipDomain(this,g);
     this.fake = false; this.hypnoAim = hypnoAiming(this);
     this.move = this.kit?.moveFor?.(this, name, MOVES[name]) ?? MOVES[name];
+    // Duttpack's domain: attacks started off the beat come out late. Copy the move; shared MOVES never change.
+    const late = offBeatDelay(this);
+    if (late) this.move = { ...this.move, startup: this.move.startup + late };
     this.moveName = name;
     this.moveHit = false;
     this.hitTargets.clear();
@@ -460,16 +476,16 @@ class Fighter {
     const chord = (inp.held.block && inp.pressed('parry', BLOCK.chordFrames)) || (inp.held.parry && inp.pressed('block', BLOCK.chordFrames));
     if (!chord) return false;
     inp.consume('parry'); inp.consume('block');
-    const attacker = fighters[this.comboAttacker] || opponentOf(this);
+    const attacker = this.comboClone || fighters[this.comboAttacker] || opponentOf(this);
     this.burstMeter = 0;
     this.enter('burst');
     burst(this, attacker, g);
     return true;
   }
 
-  startParry(dir) {
+  // Parry is a single non-directional button; parryDir only picks the pose (it turns to meet the attack on contact).
+  startParry(dir = 'high') {
     if (this.guardBroken) return false;
-    if (hypnotized(this)) dir = HYPNO_HEIGHT[dir] || dir;
     this.parryDir = dir;
     this.enter('parry');
     return true;
@@ -509,7 +525,7 @@ class Fighter {
     if(this.moveName==='airMedium'&&(this.input.pressSerial.up||0)>this.airExtendSerial) {
       this.airExtendSerial=this.input.pressSerial.up||0;
       if(sf<recStart)inp.consume('up');
-      else if(sf<recStart+AIR_EXTENSION.window&&inp.pressed('up',BUFFER)&&this.moveHit&&!this.moveAbsorbed&&
+      else if(sf<recStart+airExtensionWindow(opponentOf(this))&&inp.pressed('up',BUFFER)&&this.moveHit&&!this.moveAbsorbed&&
           !this.grounded&&!opponentOf(this).comboAirExtended&&opponentOf(this).state==='hitstun'&&
           opponentOf(this).comboAttacker===this.index&&!opponentOf(this).comboCapped) {
         inp.consume('up');opponentOf(this).comboAirExtended=true;
@@ -545,7 +561,8 @@ class Fighter {
 
   physics(g) {
     const wasAir = this.y < FLOOR;
-    const lifted=this.state==='thrown'&&fighters[this.thrownBy]?.throwKind==='kinkade';
+    const lifted=(this.state==='thrown'&&['kinkade','halfslip','yittyRko','duttpack','sirnivas'].includes(fighters[this.thrownBy]?.throwKind))||
+      (this.state==='throw'&&['yittyRko','duttpack'].includes(this.throwKind));
     if ((wasAir || this.vy < 0) && !lifted && !this.kit?.suspendGravity?.(this)) this.vy += GRAV;
     if (this.choking > 0 && !['hitstun', 'thrown', 'knockdown', 'ko'].includes(this.state)) this.choking--;
     const creamed = inCream(this, g);
@@ -563,14 +580,14 @@ class Fighter {
       this.vy = 0;
       if (wasAir) g.dust(this.x, FLOOR, 0, this.state === 'hitstun' ? 10 : 6);
       if (wasAir && (this.state === 'air' || (this.state === 'attack' && this.move.air))) {
-        this.landTime = this.state === 'attack' ? MOVE.attackLandFrames : MOVE.landFrames;
+        this.landTime = this.state === 'attack' ? (this.move.landingRecovery??MOVE.attackLandFrames) : MOVE.landFrames;
         this.enter('land');
       }
     }
     const lo = WALL_L + HALF_W, hi = WALL_R - HALF_W;
     if (this.x <= lo && this.vx < 0) { this.x = lo; this.hitWall(1, g); }
     if (this.x >= hi && this.vx > 0) { this.x = hi; this.hitWall(-1, g); }
-    if (this.state === 'hitstun' && !this.comboHeld && this.comboCapped && this.grounded) this.endHitstun();
+    if (this.state === 'hitstun' && !this.comboHeld && this.comboCapped && this.grounded && !(tonkaResetPending(this) && this.capHold < TONKA_COMBO.capHold)) this.endHitstun();
   }
 
   hitWall(away, g) {
@@ -578,14 +595,17 @@ class Fighter {
       this.vx = Math.abs(this.vx) * WALL_BOUNCE.reboundSpeed * away;
       this.facing = away;
       this.enter('rebound');
-    } else if (this.state === 'hitstun' && !this.wallBounced && (this.mirrorBounce || Math.abs(this.vx) >= WALL_BOUNCE.hitSpeed)) {
-      this.vx = Math.abs(this.vx) * WALL_BOUNCE.comboSpeed * away;
+    } else if (this.state === 'hitstun' && wallBouncesLeft(this) && (this.mirrorBounce || Math.abs(this.vx) >= WALL_BOUNCE.hitSpeed)) {
+      this.vx = Math.abs(this.vx) * (tonkaCombo(this) ? TONKA_COMBO.reboundSpeed : WALL_BOUNCE.comboSpeed) * away;
       this.vy = WALL_BOUNCE.launch;
       this.hitstun += WALL_BOUNCE.extraStun;
-      this.wallBounced = true;
       this.mirrorBounce = false;
-      this.bounceHits = 0;
-      this.comboCapped = this.combo >= COMBO_LIMIT.total;
+      if (tonkaCombo(this)) beginTonkaLoop(this, g);
+      else {
+        this.wallBounced = true; this.wallBounces++;
+        this.bounceHits = 0;
+        this.comboCapped = this.combo >= COMBO_LIMIT.total;
+      }
       if (this.comboAttacker !== null) {
         const attacker = fighters[this.comboAttacker];
         gainMeter(attacker, METER_GAIN.wallBounce);

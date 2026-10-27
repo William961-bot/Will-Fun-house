@@ -29,11 +29,16 @@ check('title starts fights and practice; dummy modes stand, parry, cycle, light,
   showTitle(); assert(g.phase === 'title', 'no title'); press('Enter'); release('Enter'); assert(g.phase === 'charSelect', 'player selection'); press('Enter'); release('Enter'); assert(g.phase === 'intro' && !g.practice, 'fight selection');
   showTitle(); press('KeyP'); release('KeyP'); press('Enter'); release('Enter'); press('Enter'); release('Enter'); assert(g.practice && p2.input instanceof PracticeInput, 'practice selection');
   g.phase = 'fight'; g.inputLocked = false; step(); assert(p2.state === 'idle', 'standing dummy');
-  for (const [mode, dir] of [[2, 'high'], [3, 'low']]) {
-    press('Digit' + mode); release('Digit' + mode); step(); assert(p2.state === 'parry' && p2.parryDir === dir, 'parry mode ' + mode);
-  }
-  press('Digit4'); release('Digit4');
-  for (const direction of ['high', 'low', 'overhead', 'high']) { p2.enter('idle'); step(); assert(p2.parryDir === direction, 'cycle ' + direction); }
+  press('Digit2'); release('Digit2'); step(); assert(p2.state === 'parry', 'parry mode');
+  // Perfect parry: waits, then parries your committed attack right as it lands.
+  press('Digit3'); release('Digit3'); p2.enter('idle'); p1.x = p2.x - 60; step(3); assert(p2.state === 'idle', 'waits for an attack');
+  p1.startAttack('light'); for (let i = 0; i < 8 && p1.state === 'attack'; i++) step();
+  assert(p1.state === 'stagger' && p2.hp === MAX_HP, 'perfect parry mode');
+  // Parry or block: alternates on each of your attacks.
+  press('Digit4'); release('Digit4'); const answers = [];
+  for (let n = 0; n < 2; n++) { p1.enter('idle'); p2.enter('idle'); g.hitstopLeft = 0; p1.x = p2.x - 60; step(2); p1.startAttack('light'); let seen = '';
+    for (let i = 0; i < 10; i++) { step(); if (['parry', 'block', 'blockstun'].includes(p2.state)) seen ||= p2.state === 'parry' ? 'parry' : 'block'; } answers.push(seen); }
+  assert(answers.includes('parry') && answers.includes('block'), 'parry or block: ' + answers);
   press('Digit5'); release('Digit5'); step(); assert(p2.moveName === 'light' && p2.state === 'attack', 'light dummy');
   press('Digit6'); release('Digit6'); p1.x = 300; p2.x = 900; step(); assert(p2.state === 'idle', 'out of range grab');
   p2.x = p1.x + 60; step(2); assert(p2.moveName === 'grab' && p2.state === 'attack', 'grab dummy');

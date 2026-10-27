@@ -96,7 +96,7 @@ check('every fighter preserves low guard on clean normals, air attacks and throw
   } } finally { g.characters=characters;setup(); }
 });
 
-check('Heavy and Air Heavy parries require the correct direction within exactly two frames for every fighter',()=>{
+check('Heavy and Air Heavy parries need exactly a two-frame window, from any direction, for every fighter',()=>{
   const characters=g.characters.slice();
   try {
     for(const id of ROSTER) for(const name of ['heavy','airHeavy']) for(const frame of [0,1,2,8]) for(const correct of [true,false]) {
@@ -105,8 +105,8 @@ check('Heavy and Air Heavy parries require the correct direction within exactly 
       p2.startParry(correct?(name==='airHeavy'?'overhead':'high'):'low');p2.stateFrame=frame;
       p1.startAttack(name);p1.stateFrame=p1.move.startup;p1.vx=0;
       applyHit(p1,p2,{x:p2.x,y:FLOOR-100},g);
-      const success=correct&&frame<2;
-      assert((p2.hp===p2.maxHp)===success,id+' '+name+' frame '+frame+' direction '+correct);
+      const success=frame<2;   // the pose direction no longer matters, only the timing
+      assert((p2.hp===p2.maxHp)===success,id+' '+name+' frame '+frame+' pose '+correct);
       near(p2.guard,37);
       if(success) {
         assert(p1.state==='stagger'&&p2.state==='idle'&&p1.timer>=COMBAT.perfectStagger,'punish');
@@ -141,16 +141,16 @@ check('real keyboard and RT inputs parry ground and air heavies; pause and hit-s
     p1.startAttack('heavy');applyHit(p1,p2,{x:p2.x,y:FLOOR-100},g);near(p2.hp,MAX_HP);
   } finally { navigator.getGamepads=originalPads;g.characters=characters;setup(); }
 });
-check('Debug Mode cannot widen heavy parries; blocking, wrong heights and guard break still lose to heavies',()=>{
+check('Debug Mode cannot widen heavy parries; blocking, late parries and guard break still lose to heavies',()=>{
   for(const frame of [1,2,5]) {
     setup();p2.debug=100;p2.startParry('low');p2.stateFrame=frame;strike('heavy');
     assert((p2.hp===MAX_HP)===(frame===1),'Debug timing '+frame);
     assert(p2.parryDir==='high','Debug reads ground height');
   }
-  for(const name of ['heavy','airHeavy']) for(const defense of ['block','wrong','broken']) {
+  for(const name of ['heavy','airHeavy']) for(const defense of ['block','late','broken']) {
     setup();p2.guard=50;
     if(defense==='broken')p2.guardBroken=20;
-    p2.enter(defense==='block'?'block':'parry');p2.parryDir=name==='heavy'?'overhead':'high';
+    p2.enter(defense==='block'?'block':'parry');if(defense==='late')p2.stateFrame=COMBAT.heavyParryWindow;
     strike(name);assert(p2.hp<MAX_HP,'heavy beats '+defense);near(p2.guard,50);
   }
 });

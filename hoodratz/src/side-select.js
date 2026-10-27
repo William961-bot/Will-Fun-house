@@ -19,7 +19,7 @@ function padMenuState(pad) {
   const b = i => !!pad.buttons[i]?.pressed;
   return { left: (pad.axes[0] || 0) < -.5 || b(14), right: (pad.axes[0] || 0) > .5 || b(15),
     up: (pad.axes[1] || 0) < -.5 || b(12), down: (pad.axes[1] || 0) > .5 || b(13),
-    start: b(9) || b(0), back: b(1), playerCount: b(8), modePrevious: b(4), modeNext: b(5) };
+    start: b(9) || b(0), back: b(1), pause: b(9), playerCount: b(8), modePrevious: b(4), modeNext: b(5) };
 }
 function pollDeviceMenu() {
   const pads = connectedPads();
@@ -33,6 +33,7 @@ function pollDeviceMenu() {
     }
     if (g.phase === 'quit' && ((now.start && !old.start) || (now.back && !old.back))) { showTitle(); return; }
     if (g.phase === 'charSelect') characterSelectPad(pad, now, old);
+    else matchMenuPad(now, old);
   }
   for (const slot of deviceMenu.previous.keys()) if (!pads.some(p => p.index === slot)) deviceMenu.previous.delete(slot);
 }

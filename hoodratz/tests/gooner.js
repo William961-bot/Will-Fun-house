@@ -61,7 +61,7 @@ check('Debug Mode lasts two seconds and reads the opponent', () => {
   goonerVsRip(); press('KeyW'); press('KeyT'); step(); release('KeyT'); release('KeyW');
   assert(p1.debug > GOONER.debugFrames - 3 && p1.cooldowns.upSpecial === GOONER.debugCooldown, 'Debug Mode on');
   p2.startAttack('low'); assert(debugAction(p2) === 'LOW ▼', debugAction(p2));
-  p2.startParry('overhead'); assert(debugAction(p2) === 'PARRY ▲', debugAction(p2));
+  p2.startParry(); assert(debugAction(p2) === 'PARRY', debugAction(p2));
   p2.enter('creamDeploy'); assert(debugAction(p2) === 'FONG CREAM', 'cream read');
   p2.enter('idle');
   step(GOONER.debugFrames); assert(p1.debug === 0, 'expires');
@@ -178,16 +178,16 @@ check('GoonerPrime animations are finite: coding idle, typing walk, hand sign, d
   g.domainSequence = null;
 });
 
-check('Debug Mode auto-parry: parry always picks the right direction and the perfect window doubles', () => {
+check('Debug Mode auto-parry: the perfect window doubles', () => {
   goonerVsRip();
   p1.debug = 60; p1.startParry('high'); p1.stateFrame = COMBAT.perfectWindow + 2;
   p2.startAttack('low'); p2.stateFrame = p2.move.startup;
   applyHit(p2, p1, { x: p1.x, y: p1.y - 30 }, g);
-  assert(p2.state === 'stagger' && p1.hp === MAX_HP, 'wrong-direction parry became a perfect parry');
-  goonerVsRip(); p1.debug = 0; p1.startParry('high');
+  assert(p2.state === 'stagger' && p1.hp === MAX_HP, 'a late parry became a perfect parry');
+  goonerVsRip(); p1.debug = 0; p1.startParry(); p1.stateFrame = COMBAT.perfectWindow + 2;
   p2.startAttack('low'); p2.stateFrame = p2.move.startup;
   applyHit(p2, p1, { x: p1.x, y: p1.y - 30 }, g);
-  assert(p1.state === 'hitstun', 'without Debug the guess still matters');
+  assert(p1.state === 'deflect' && p2.state === 'deflect', 'without Debug the same timing is only an early parry');
   goonerVsRip(); p1.debug = 60; p1.startParry('high');
   p2.startAttack('grab'); p2.stateFrame = p2.move.startup;
   applyHit(p2, p1, { x: p1.x, y: p1.y - 100 }, g);
@@ -269,14 +269,10 @@ check('aura stance fills XP at 5 per second; a hit stops it', () => {
   assert(p1.untouchable > 0, 'aura can fill the bar');
 });
 
-check('missing a parry costs XP: whiffs and wrong guesses, never below zero', () => {
+check('missing a parry costs XP, never below zero', () => {
   goonerVsRip(); p1.xp = 50; p1.startParry('high');
   step(MOVE.parryFrames + 1);
   assert(p1.state === 'parryRecover' && p1.xp === 50 - GOONER.xpMissedParry, `whiff: ${p1.xp}`);
-  goonerVsRip(); p1.xp = 50; p1.startParry('high');
-  p2.startAttack('low'); p2.stateFrame = p2.move.startup;
-  applyHit(p2, p1, { x: p1.x, y: p1.y - 30 }, g);
-  assert(p1.xp === 50 - GOONER.xpMissedParry, `wrong guess: ${p1.xp}`);
   goonerVsRip(); p1.xp = 4; p1.startParry('high'); step(MOVE.parryFrames + 1);
   assert(p1.xp === 0, 'floors at zero');
   goonerVsRip(); p1.xp = 50; p1.startParry('high');

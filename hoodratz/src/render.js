@@ -157,10 +157,28 @@ function smoothPose(f, t, dt) {
   return f.pose;
 }
 
+// Hit feel: the attacker's small bounce back after landing a hit (held through the hit-stop, then easing out),
+// and the victim's shake while the game is frozen on the hit. Render-only offsets; logic positions never move.
+function hitJolt(f, g) {
+  let dx = 0;
+  const r = f.recoil, since = r ? g.frame - r.frame : Infinity;
+  if (since >= 0 && since < HIT_FEEL.recoilFrames) dx += r.dir * r.size * (1 - since / HIT_FEEL.recoilFrames) ** 2;
+  const j = f.jolt;
+  if (j && g.hitstopLeft > 0 && g.frame === j.frame) dx += (Math.floor(performance.now() / 25) % 2 ? 1 : -1) * j.size;
+  return dx;
+}
 function drawFighter(ctx, f, t, dt, g) {
+  const dx = f.jolting ? 0 : hitJolt(f, g);
+  if (!dx) return drawFighterAt(ctx, f, t, dt, g);
+  f.jolting = true; f.x += dx;
+  try { return drawFighterAt(ctx, f, t, dt, g); } finally { f.x -= dx; f.jolting = false; }
+}
+function drawFighterAt(ctx, f, t, dt, g) {
   if(f.stats.id==='siglarp'&&f.siglarpActionId&&f.siglarpActionId!=='siglarp')
     return withSiglarpKit(f,f.siglarpActionId,()=>drawFighter(ctx,f,t,dt,g));
   if(drawIllusions(ctx,f,t,dt,g))return;
+  if(tonkaHidesVictim(f))return;   // inside his car during Car Toss
+  if(sirnivasHidesVictim(f))return;   // inside the slot machine during Slot Machine Slam
   if(nullHidden(f,g)&&!f.isAfterimage&&!f.isDecoy){drawNullEffects(ctx,f,g);return;}
   if (f.state === 'vanished' || (f.state === 'throw' && f.throwKind === 'lancer' && f.stateFrame >= 8 && f.stateFrame < f.throwFrames - 8)) return;
   const domainHidden = !f.isDecoy && hotbox(f, g);
@@ -207,7 +225,8 @@ function drawFighter(ctx, f, t, dt, g) {
   const heavyWindup = f.state === 'attack' && f.move.unblockable && f.stateFrame < f.move.startup;
   // Hit flash lasts 3 frames; the frozen Goon Su hold would otherwise keep the victim white.
   const flashWhite = f.state === 'hitstun' && f.stateFrame < 3 && g.domainSequence?.kind !== 'goonHold';
-  const body = flashWhite ? '#ffffff' : (f.kit?.bodyColor || f.stats.color);
+  const bodyColor = typeof f.kit?.bodyColor === 'function' ? f.kit.bodyColor(f) : f.kit?.bodyColor;   // a body colour separate from the HUD colour
+  const body = flashWhite ? '#ffffff' : (bodyColor || f.stats.color);
 
   const bodyAlpha = ctx.globalAlpha;
   if (heavyWindup) {
@@ -221,7 +240,7 @@ function drawFighter(ctx, f, t, dt, g) {
   }
 
   ctx.lineWidth = 7;
-  ctx.strokeStyle = flashWhite ? '#ffffff' : (f.kit?.bodyDark || f.stats.dark);
+  ctx.strokeStyle = flashWhite ? '#ffffff' : ((typeof f.kit?.bodyDark === 'function' ? f.kit.bodyDark(f) : f.kit?.bodyDark) || f.stats.dark);
   limb('neck', 'eB', 'hB');
   limb('hip', 'kB', 'fB');
   ctx.strokeStyle = body;
@@ -243,6 +262,7 @@ function drawFighter(ctx, f, t, dt, g) {
 
 // Readability: parry shields, attack direction arrows, stagger stars.
 function drawIndicators(ctx, f, t, hidden = false, hideShield = false) {
+  if(f.isMinion)return;
   const HEIGHTS = { overhead: -165, high: -115, low: -40 };
   ctx.save();
   const escape = f.state === 'thrown' && fighters[f.thrownBy]?.throwEscape;
@@ -305,6 +325,7 @@ function fillArenaBackground(ctx, bottom = H) {
 function drawArena(ctx) {
   const z = arenaZoom(), left = WALL_L - 100, right = WALL_R + 100;
   const top = Math.min(-40, FLOOR - FLOOR / z - 40), bottom = FLOOR + (H - FLOOR) / z + 40;
+  if (drawStage(ctx, g, left, top, right, bottom)) return;
   const bg = ctx.createLinearGradient(0, 0, 0, H);
   bg.addColorStop(0, '#171726');
   bg.addColorStop(1, '#0c0c14');
@@ -612,17 +633,16 @@ function drawOverlay(ctx, g, fighters) {
     ctx.fillRect(0, 0, W, H);
     ctx.font = 'bold 96px Impact, "Arial Black", sans-serif';
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(`${g.result} WINS`, W / 2, 330);
-    ctx.font = '22px sans-serif';
-    ctx.fillText('Press Enter or Attack to rematch', W / 2, 390);
+    ctx.fillText(`${g.result} WINS`, W / 2, 300);
   }
   if (g.paused && !g.showHelp) {
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.fillRect(0, 0, W, H);
     ctx.font = 'bold 72px Impact, "Arial Black", sans-serif';
     ctx.fillStyle = '#ffffff';
-    ctx.fillText('PAUSED', W / 2, 360);
+    ctx.fillText('PAUSED', W / 2, 200);
   }
+  drawMatchMenu(ctx);
   if (g.showHelp) drawHelp(ctx, fighters);
   ctx.restore();
 }
@@ -665,7 +685,7 @@ function drawHelp(ctx, fighters) {
   ctx.fillText('Medium: V / K / A (Cross). Down + Medium = Low Medium. Heavy: H / slash / Y (Triangle), press once.', 80, 400);
 
   const tips = [
-    'Parry direction = the direction you hold: up for overheads, neutral for highs, down for lows.',
+    'Parry has no direction: it beats highs, lows and overheads. Timing is everything: late = PERFECT, early = deflect.',
     'A parry pressed just before the hit is PERFECT: the attacker staggers and you get a free punish.',
     'Heavy parry: just 2 frames before impact. Neutral for ground Heavy, Up for Air Heavy. Grabs beat parry.',
     'Grab escapes ordinary throws within 10 frames: fresh press, not hold. Yitty suplexes keep mash escape.',
@@ -762,6 +782,7 @@ function renderFight(ctx, g, fighters, dt) {
   drawFloorCracks(ctx, g);
   drawCream(ctx, g);
   drawRosterFloor(ctx, g);
+  drawHalfslipClones(ctx,g,dt);
   drawDust(ctx, g);
   for (const f of fighters) {
     drawFighter(ctx, f, g.frame, dt, g);
@@ -775,6 +796,9 @@ function renderFight(ctx, g, fighters, dt) {
   drawThrowFx(ctx, g);
   drawRosterThrowFx(ctx, g);
   drawBrainlagFx(ctx, g);
+  drawDuttpackFx(ctx, g);
+  drawTonkaFx(ctx, g);
+  drawSirnivasFx(ctx, g);
   drawCutsceneFx(ctx, g);
   drawRings(ctx, g);
   drawHitSparks(ctx, g);

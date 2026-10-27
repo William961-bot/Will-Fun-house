@@ -3,11 +3,36 @@ function countComboHit(att, def) {
   realAttacker(att).combatTarget = def.index;
   def.combo++;
   def.comboAttacker = realAttacker(att).index;
+  def.comboClone = att.isMinion ? att : null;
   def.mirrorBounce = false;
   if (def.wallBounced) def.bounceHits++;
-  def.comboCapped = def.combo >= COMBO_LIMIT.total || (def.wallBounced
-    ? def.bounceHits >= COMBO_LIMIT.afterBounce : def.combo >= COMBO_LIMIT.beforeBounce);
+  def.comboCapped = tonkaCombo(def)
+    ? def.combo >= TONKA_COMBO.total || (def.wallBounced ? def.bounceHits : def.combo) >= TONKA_COMBO.perLoop
+    : def.combo >= COMBO_LIMIT.total || (def.wallBounced
+      ? def.bounceHits >= COMBO_LIMIT.afterBounce : def.combo >= COMBO_LIMIT.beforeBounce);
 }
+// Tonka's loop combos (TONKA_COMBO) apply only while the real Tonka owns the combo.
+function tonkaCombo(def) { return def.comboAttacker !== null && fighters[def.comboAttacker]?.stats.id === 'tonka'; }
+function airExtensionWindow(def) {
+  if (!tonkaCombo(def)) return AIR_EXTENSION.window;
+  return Math.max(TONKA_COMBO.minWindow, AIR_EXTENSION.window - Math.floor(def.wallBounces / TONKA_COMBO.windowShrinkEvery));
+}
+// Starts the next 10-hit loop of Tonka's combo: from a wall bounce or a Bell Reset (tonka.js). The launcher
+// and the air extension are back; the cap now counts post-loop hits.
+function beginTonkaLoop(def, g) {
+  def.capHold = 0;
+  def.wallBounced = true; def.wallBounces++;
+  def.bounceHits = 0;
+  def.comboCapped = def.combo >= TONKA_COMBO.total;
+  def.overheadLaunched = false; def.comboAirExtended = false;
+  if (!def.comboCapped) g.popup('LOOP ' + (def.wallBounces + 1), def.x, def.y - 230, fighters[def.comboAttacker].stats.color, 30, 'tonkaLoop' + def.index);
+}
+// True while the capped victim of a Tonka loop can still be Bell Reset: three bells and loops to spare.
+function tonkaResetPending(def) {
+  return tonkaCombo(def) && def.wallBounces < TONKA_COMBO.bounces && def.combo < TONKA_COMBO.total &&
+    (fighters[def.comboAttacker].bells || 0) >= TONKA.bellsMax;
+}
+function wallBouncesLeft(def) { return tonkaCombo(def) ? def.wallBounces < TONKA_COMBO.bounces : !def.wallBounced; }
 const ABILITY_LINK_STATES = {
   nullSpearWindup: NULL.spearStartup, crescentWindup: LANCER.waveWindup,
   deepBall: YITTY.ballWindup, bottleWindup: TEO.throwWindup, spear: 0, virusWindup: SOMBRA.virusStartup,
@@ -45,6 +70,6 @@ function airExtensionReady(f) {
   // Rendering observes the previous tick; a fresh press executes on the next one.
   return f.state === 'attack' && f.moveName === 'airMedium' && f.moveHit && !f.moveAbsorbed && !f.grounded &&
     f.stateFrame >= f.move.startup + f.move.active - 1 &&
-    f.stateFrame < f.move.startup + f.move.active + AIR_EXTENSION.window - 1 &&
+    f.stateFrame < f.move.startup + f.move.active + airExtensionWindow(opp) - 1 &&
     opp.state === 'hitstun' && opp.comboAttacker === f.index && !opp.comboAirExtended && !opp.comboCapped;
 }

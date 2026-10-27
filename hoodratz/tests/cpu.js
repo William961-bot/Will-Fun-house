@@ -18,7 +18,7 @@ check('each CPU level closes distance and deals damage with every roster fighter
   for (const id of ROSTER) for (let level = 1; level <= 5; level++) {
     cpuMatch(level, id); const stats = p2.stats; step(1200);
     assert(p1.hp < MAX_HP || g.wins[1] > 0, id + ' level ' + level + ' attacks');
-    assert(p2.stats === stats && p2.hp <= MAX_HP && !g.practice, 'normal combat stats');
+    assert(g.characters[1]===stats.id && p2.hp <= p2.maxHp && !g.practice, 'chosen character and normal health, including Siglarp transformations');
   }
 });
 check('higher CPU levels react sooner to committed attacks, without reading held human buttons', () => {

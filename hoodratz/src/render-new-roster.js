@@ -73,6 +73,9 @@ function rosterDomainPose(f) {
   if(f.stats.id==='siglarp')return pose(STAND,{hF:[5,-148],eF:[30,-125],hB:[-18,-82],head:[0,-150]});
   if(f.stats.id==='curtis')return pose(STAND,{hF:[0,-174],eF:[22,-140],hB:[-25,-85],head:[4,-147]});
   if(f.stats.id==='brainlag')return BRAINLAG_POSES.oneEye;
+  if(f.stats.id==='duttpack')return duttpackCutscenePose();
+  if(f.stats.id==='tonka')return TK.steeple;
+  if(f.stats.id==='sirnivas')return sirnivasCutscenePose();
   if (f.stats.id === 'lancer') return pose(NR.swordRest,{hF:[30,-80],eF:[28,-100],hB:[28,-84]});
   if (f.stats.id === 'cheese') return pose(NR.knifeRest,{head:[8,-148],rot:.04});
   if (f.stats.id === 'teo') return pose(STAND,{hF:[34,-202],eF:[26,-166],head:[10,-156],hB:[-20,-86]});
@@ -183,6 +186,7 @@ function drawRosterFear(ctx,g) {
   
 }
 function drawRosterDomain(ctx,g,domain) {
+  if(domain.type==='halfslip')return drawHalfslipDomain(ctx,g,domain);
   if(!['lancer','cheese','teo'].includes(domain.type))return false;
   ctx.save();if(!g.domain)ctx.globalAlpha=domain.framesLeft/DOMAIN.fadeFrames;
   if(domain.type==='lancer'){

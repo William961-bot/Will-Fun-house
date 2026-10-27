@@ -189,7 +189,8 @@ function drawPortrait(ctx, id, x, y, size) {
   ctx.beginPath(); ctx.moveTo(cx - size * 0.38, y + size); ctx.lineTo(cx - size * 0.18, y + size * 0.74);
   ctx.lineTo(cx + size * 0.18, y + size * 0.74); ctx.lineTo(cx + size * 0.38, y + size); ctx.stroke();
   ctx.strokeStyle = ch.color; ctx.beginPath(); ctx.moveTo(cx, y + size * 0.74); ctx.lineTo(cx, y + size); ctx.stroke();
-  ctx.fillStyle = CHARACTER_ABILITIES[id]?.bodyColor || ch.color; ctx.beginPath(); ctx.arc(cx, y + size * 0.45, size * 0.2, 0, Math.PI * 2); ctx.fill();
+  const bodyColor = CHARACTER_ABILITIES[id]?.bodyColor;
+  ctx.fillStyle = (typeof bodyColor === 'function' ? bodyColor({ stats: ch }) : bodyColor) || ch.color; ctx.beginPath(); ctx.arc(cx, y + size * 0.45, size * 0.2, 0, Math.PI * 2); ctx.fill();
   // A detail per fighter: Haze's smoke wisp, Rip's angry brows, GoonerPrime's shades.
   ctx.fillStyle = '#0a1230'; ctx.strokeStyle = '#0a1230'; ctx.lineWidth = 3;
   if (id === 'yitty') {
@@ -212,7 +213,11 @@ function drawPortrait(ctx, id, x, y, size) {
   } else if(id==='kinkade') {drawKinkadePortrait(ctx,cx,y,size,ch.color);
   } else if(id==='siglarp') {drawSiglarpMask(ctx,cx,y+size*.45,size/72);
   } else if(id==='curtis') {drawCurtisPortrait(ctx,cx,y,size,ch.color);
+  } else if(id==='halfslip') {drawHalfslipPortrait(ctx,cx,y,size,ch);
   } else if(id==='brainlag') {drawBrainlagPortrait(ctx,cx,y,size,ch);
+  } else if(id==='duttpack') {drawDuttpackPortrait(ctx,cx,y,size,ch);
+  } else if(id==='tonka') {drawTonkaPortrait(ctx,cx,y,size,ch);
+  } else if(id==='sirnivas') {drawSirnivasPortrait(ctx,cx,y,size,ch);
   } else if(id==='sombra') {drawSombraPortrait(ctx,cx,y,size,ch.color);
   } else if(id==='null') {drawNullPortrait(ctx,cx,y,size,ch.color);
   } else if (['lancer', 'cheese', 'teo'].includes(id)) { drawRosterPortrait(ctx, id, cx, y, size);
@@ -260,7 +265,7 @@ function drawCharacterSelect(ctx, dt = 1000 / 60) {
   drawBigFighter(ctx, 1, dt);
 
   // Portrait grid with 1P / 2P cursors.
-  const size = ROSTER.length > 4 ? 82 : 104, gap = 8, n = ROSTER.length, gx = (W - (n * size + (n - 1) * gap)) / 2, gy = 372;
+  const gap = 8, n = ROSTER.length, size = Math.min(n>4?82:104,Math.floor((W-80-(n-1)*gap)/n)), gx = (W - (n * size + (n - 1) * gap)) / 2, gy = 372;
   charSelect.hits = [];
   if (!charSelect.practice) drawPlayerCountButtons(ctx);
   ROSTER.forEach((id, i) => {
@@ -337,7 +342,7 @@ function drawThreePlayerSelect(ctx, dt) {
     ctx.font = '12px sans-serif'; wrapText(ctx, ch.moves.slice(0, 2).join(' · '), 196).slice(0, 4).forEach((line, i) => ctx.fillText(line, x + 170, 224 + i * 18));
     ctx.fillStyle = color; ctx.font = 'bold 17px sans-serif'; ctx.fillText(charSelect.locked[slot] ? 'READY!' : 'CHOOSE A FIGHTER', x + 170, 309);
   }
-  const size = 82, gap = 8, gx = (W - (ROSTER.length * (size + gap) - gap)) / 2, gy = 354;
+  const gap = 8, size = Math.min(82,Math.floor((W-80-(ROSTER.length-1)*gap)/ROSTER.length)), gx = (W - (ROSTER.length * (size + gap) - gap)) / 2, gy = 354;
   ROSTER.forEach((id, i) => {
     const x = gx + i * (size + gap); drawPortrait(ctx, id, x, gy, size);
     charSelect.hits.push({x, y:gy, w:size, h:size, index:i});

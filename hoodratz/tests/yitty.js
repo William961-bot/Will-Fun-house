@@ -83,7 +83,7 @@ check('football parry knocks it away without staggering the thrower; block costs
   assert(!g.projectiles.length && p2.hp === MAX_HP && p1.state === 'idle' && p2.ultimate === METER_GAIN.perfectParry, 'parry');
   yittyVs(); p2.enter('block'); ballAtVictim(); updateProjectiles(g);
   assert(p2.hp === MAX_HP && p2.guard === GUARD.max - YITTY.ballGuard && p2.state === 'blockstun', 'block');
-  yittyVs(); p2.startParry('low'); ballAtVictim(); updateProjectiles(g); assert(p2.hp < MAX_HP, 'wrong parry loses');
+  yittyVs(); p2.startParry('low'); ballAtVictim(); updateProjectiles(g); assert(p2.hp === MAX_HP && !g.projectiles.length, 'any parry knocks it away');
 });
 check('football respects Mirror Step, Bullet Time, untouchable, cinematic throws, hit-stop and pause', () => {
   yittyVs('haze'); p2.enter('mirrorStep'); p2.stateFrame = HAZE.invincibleFrom; ballAtVictim(); updateProjectiles(g);
@@ -127,16 +127,31 @@ check('Spear cooldown lasts six seconds, blocks reuse and freezes on pause', () 
   step(remaining - 1); assert(p1.cooldowns.downSpecial === 1, 'not ready early');
   press('KeyS'); tap('KeyT'); release('KeyS'); assert(p1.state === 'spear' && p1.cooldowns.downSpecial === 360, 'ready at expiration');
 });
-check('Audible grants four suplexes and six-frame windows; getting hit cancels the call', () => {
-  yittyVs('rip', 400); press('KeyW'); tap('KeyT'); release('KeyW');
-  assert(p1.state === 'audibleCall' && !p1.audible, 'calling'); stepUntil(() => p1.audible > 0, YITTY.audibleCall);
-  assert(p1.audible === YITTY.audibleFrames, 'buff length');
-  p2.x = p1.x + 60; beginYittyThrow(); assert(p1.suplex.max === 4 && p1.suplex.window === 6, 'audible chain');
-  for (let n = 1; n <= 4; n++) { slamYitty(); if (n < 4) { step(5); chainYitty(); assert(p1.suplex.count === n + 1, 'wide timing'); } }
-  assert(p2.hp === 635, 'four exact slams');
-  yittyVs(); YITTY_ABILITIES.upSpecial(p1, p2, g); p2.startAttack('light'); p2.stateFrame = p2.move.startup;
-  applyHit(p2, p1, { x: p1.x, y: FLOOR - 110 }, g); step(YITTY.audibleCall); assert(p1.audible === 0, 'interrupted call');
-  yittyVs(); p1.audible = YITTY.audibleFrames; step(YITTY.audibleFrames); assert(p1.audible === 0, 'buff expires');
+check('RKO replaces Interception, catches grounded or airborne opponents and releases one ninety-damage cutter',()=>{
+  for(const index of [0,1])for(const facing of [-1,1])for(const air of [false,true]) {
+    setup();const f=fighters[index],opp=fighters[1-index];f.setCharacter('yitty');f.reset(600,facing);opp.reset(600+80*facing,-facing);
+    if(air){opp.y=FLOOR-120;opp.vy=-3;opp.enter('air');}
+    const up=index?'ArrowUp':'KeyW',special=index?'Semicolon':'KeyT';
+    press(up);tap(special);release(up);assert(f.moveName==='rko'&&f.cooldowns.upSpecial===360,'input and cooldown');
+    stepUntil(()=>f.state==='throw',20);assert(f.throwKind==='yittyRko'&&!f.suplex&&f.throwEscape.left===10,'air catch and escape window');
+    assert(opp.hp===MAX_HP&&!f.grounded,'no catch damage');
+    stepUntil(()=>f.state==='throwRecover',THROWS.yittyRko.frames+5);
+    assert(opp.hp===MAX_HP-90&&opp.combo===1,'one normal damage slam');
+    assert(g.popups.some(p=>p.text==='OUTTA NOWHERE!')||g.floorCracks.length>0,'slam effects');
+  }
+});
+check('RKO misses distant enemies, has landing recovery and can be escaped with a fresh Grab',()=>{
+  yittyVs('rip',400);press('KeyW');tap('KeyT');release('KeyW');step(12);
+  assert(p1.state==='attack'&&p2.hp===MAX_HP&&!p1.moveHit,'distant opponent is safe');
+  stepUntil(()=>p1.state==='land',60);assert(p1.landTime===YITTY.rkoRecovery,'punishable landing');
+  tap('KeyF');assert(p1.state==='land','no landing cancel');
+  yittyVs('rip',80);p2.y=FLOOR-120;p2.vy=-3;p2.enter('air');press('KeyW');tap('KeyT');release('KeyW');
+  stepUntil(()=>p1.state==='throw',20);tap('KeyL');assert(p1.state==='deflect'&&p2.state==='deflect'&&p2.hp===MAX_HP,'throw escape');
+});
+check('RKO preserves hard three-suplex timing and ordinary grabs still cannot grab airborne enemies',()=>{
+  yittyVs();beginYittyThrow();assert(p1.suplex.max===3&&p1.suplex.window===4,'hard chain unchanged');
+  yittyVs();p2.y=FLOOR-100;p2.enter('air');p1.startAttack('grab');p1.stateFrame=p1.move.startup;
+  assert(!hitPoint(p1,p2),'normal grab still grounded only');
 });
 function startMontageTest() { p1.ultimate = 100; assert(activateDomain(p1, g), 'montage start'); step(YITTY.openerFrames); }
 check('Hate Montage spends meter, freezes its opener and cycles deterministic chants to five morale', () => {
@@ -180,7 +195,7 @@ check('Montage coexists with an arena domain, ends untouchable and rewards each 
 });
 check('YittyMack animations, chain arcs and mirror palette are finite; pins and roster portraits fit', () => {
   yittyVs('yitty'); assert(p2.stats.color === CHARACTERS.yitty.altColor && p1.stats.weight === 1.25 && knockbackScale(p1) < CHARACTERS.rip.weight, 'palette and mass');
-  for (const state of ['idle', 'walk', 'run', 'deepBall', 'spear', 'spearRecover', 'audibleCall']) {
+  for (const state of ['idle', 'walk', 'run', 'deepBall', 'spear', 'spearRecover']) {
     p1.enter(state);
     for (let sf = 0; sf < 180; sf += .5) { p1.stateFrame = Math.floor(sf); assert(poseIsFinite(animatedPose(p1, sf, sf)), `${state} ${sf}`); }
   }

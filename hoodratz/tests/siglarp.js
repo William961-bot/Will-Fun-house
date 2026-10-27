@@ -35,6 +35,7 @@ check('Copycat performs all eligible roster specials with their own requirements
     if(!CHARACTER_ABILITIES[id][key])continue;
     const pair=siglarpVs(id,0,1,350),{f,opp}=pair;siglarpObserve(opp,key);siglarpPrepare(f,id);
     f.mask=70;f.bottles=2;f.tipsy=70;f.history=[{x:500,y:FLOOR,hp:f.hp}];
+    if(id==='halfslip'&&key==='downSpecial')spawnHalfslipClone(f,f.x-80,opponentOf(f));
     tap(pair.special);assert(f.stats.id==='siglarp'&&f.lastSpecial?.id===id,`${id}/${key} begins`);
     for(let i=0;i<200&&!NEUTRAL.has(f.state)&&!['hitstun','ko'].includes(f.state);i++)step();
     assert(NEUTRAL.has(f.state)||['hitstun','stagger'].includes(f.state),`${id}/${key} finishes: ${f.state}`);
@@ -98,6 +99,7 @@ check('Complete Larp routes all three real special inputs to the copied kit for 
     if(!CHARACTER_ABILITIES[id][key])continue;
     const pair=siglarpVs(id,index,1,450),{f}=pair;siglarpLarp(pair);
     f.mask=70;f.bottles=2;f.tipsy=70;f.history=[{x:500,y:FLOOR,hp:f.hp}];
+    if(id==='halfslip'&&key==='downSpecial')spawnHalfslipClone(f,f.x-80,opponentOf(f));
     if(key==='upSpecial')press(pair.up);if(key==='downSpecial')press(pair.down);
     tap(pair.special);release(pair.up);release(pair.down);step(DOMAIN.chordFrames+1);
     assert(f.lastSpecial?.id===id&&f.lastSpecial.key===key,id+' '+key+' input');step(90);

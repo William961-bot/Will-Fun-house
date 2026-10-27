@@ -1,9 +1,11 @@
 // Practice uses the normal CPU tiers. Level five also attempts a legal corner juggle through inputs.
 const PRACTICE_COMBO_ROUTE=['light','low','medium','overhead','jump','air','airMedium','airHeavy','chase','light','medium','low'];
+// Tonka's bounce pins them at the wall, where Light → Medium is a frame short; Light → Low → Medium still links.
+const TONKA_PRACTICE_ROUTE=[...PRACTICE_COMBO_ROUTE.slice(0,-2),'low','medium'];
 class PracticeCpuInput extends CpuInput {
   reset(round=1) {super.reset(round);this.comboRoute=null;this.nextCombo=0;}
   choose(frame) {
-    if(this.level===5) {
+    if(this.level===5&&!halfslipWatching(fighters[this.index])) {
       const command=this.comboChoice(frame);
       if(command!==null)return command;
     }
@@ -11,7 +13,7 @@ class PracticeCpuInput extends CpuInput {
   }
   comboChoice(frame) {
     const f=fighters[this.index],opp=opponentOf(f);
-    const moves=f.stats.id==='sombra'?PRACTICE_COMBO_ROUTE.slice(0,-2):PRACTICE_COMBO_ROUTE;
+    const moves=f.stats.id==='sombra'?PRACTICE_COMBO_ROUTE.slice(0,-2):f.stats.id==='tonka'?TONKA_PRACTICE_ROUTE:PRACTICE_COMBO_ROUTE;
     const free=['idle','walk','run','skid'].includes(f.state)||f.state==='taunt'&&f.animHint==='wallTaunt';
     const distance=Math.abs(opp.x-f.x),facing=Math.sign(opp.x-f.x)||f.facing;
     if(!this.comboRoute) {
@@ -35,7 +37,8 @@ class PracticeCpuInput extends CpuInput {
       if(free&&f.grounded&&opp.wallBounced&&distance<=115) {
         route.stage++;route.started=false;route.sentAt=frame;return {attack:true};
       }
-      return {[route.facing>0?'right':'left']:true};
+      // Tonka's bounces drop the victim at the wall, so walk toward them rather than back out.
+      return {[(tonkaCombo(opp)?opp.x>f.x:route.facing>0)?'right':'left']:true};
     }
     if(f.state==='attack'&&f.moveName===name)route.started=true;
     if(!route.started){if(frame-route.sentAt>BUFFER+12)return abort();return {};}
@@ -52,7 +55,7 @@ class PracticeCpuInput extends CpuInput {
     route.stage++;route.started=false;route.sentAt=frame;
     const next=moves[route.stage];
     if(next==='jump')return {up:true};
-    if(next==='chase')return {[route.facing>0?'right':'left']:true};
+    if(next==='chase')return {[(tonkaCombo(opp)?opp.x>f.x:route.facing>0)?'right':'left']:true};
     if(next==='medium'||next==='airMedium')return {medium:true};
     if(next==='airHeavy')return {heavy:true};
     return {attack:true,down:next==='low',up:next==='overhead'};

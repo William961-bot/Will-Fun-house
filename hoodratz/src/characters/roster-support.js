@@ -10,6 +10,7 @@ function observedEnemyX(f, enemy) {
 }
 // Keep cinematic partners and combo targets stable; otherwise face the nearest surviving enemy.
 function opponentOf(f) {
+  if(f.state==='blockstun'&&f.pressureClone)return f.pressureClone;
   if (fighters.length === 2) return fighters[1 - f.index] || fighters[0];
   if (f.state === 'thrown' && fighters[f.thrownBy]) return fighters[f.thrownBy];
   if (['throw', 'goonHold'].includes(f.state) && fighters[f.throwTarget]) return fighters[f.throwTarget];
@@ -34,13 +35,14 @@ function clampArena(x) { return Math.max(WALL_L + HALF_W, Math.min(WALL_R - HALF
 function openAbility(f, state, frames) { f.vx = 0; f.abilityFrames = frames; f.enter(state); return true; }
 function kitAttack(f, name, move) {
   f.startAttack('light'); f.move = move; f.moveName = name; f.moveMomentum = 0; f.normalWaveSent = true; f.fake = false;
+  const late = offBeatDelay(f); if (late) f.move = { ...move, startup: move.startup + late };
   f.vx = (move.step || 0) * f.facing;
   return true;
 }
-function damageScale(f, victim, move = f.move) { return f.kit?.damageScale?.(realAttacker(f), victim, move) ?? 1; }
+function damageScale(f, victim, move = f.move) { return (f.kit?.damageScale?.(realAttacker(f), victim, move) ?? 1) * marketCrash(realAttacker(f)); }
 function takenDamageScale(f) {return f.kit?.takenDamageScale?.(f)??1;}
 function rosterSpeed(f) {
-  let scale = f.kit?.speedScale?.(f) ?? 1;
+  let scale = (f.kit?.speedScale?.(f) ?? 1) * marketCrash(f);
   if (f.dread >= 33) scale *= CHEESE.fearSlow;
   if (enemyDomain(f, 'cheese')) scale *= CHEESE.chaseSlow;
   if (fighters.some(owner => owner.index !== f.index && owner.puddles?.some(p => Math.abs(f.x - p.x) <= 70 && f.grounded))) scale *= TEO.puddleSlow;
@@ -65,6 +67,8 @@ function opponentWhiff(f) {
 function updateRosterWorld(g) {
   updateNullMarks(g);
   updateBrainlagWorld(g);
+  updateTonkaWorld(g);
+  updateSirnivasWorld(g);
   if (g.scareLeft > 0) g.scareLeft--;
   for (const owner of fighters) {
     if (owner.puddles) owner.puddles = owner.puddles.filter(p => --p.life > 0);

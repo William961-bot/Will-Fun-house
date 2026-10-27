@@ -1,8 +1,8 @@
 # Hoodratz
 
-Real-time 2D stickman fighter inspired by YOMI Hustle: directional parries, grabs, unblockable heavies with strict parry timing, momentum movement. Local 1v1 and three-player free-for-all.
+Real-time 2D stickman fighter inspired by YOMI Hustle: timing-based parries, grabs, unblockable heavies with strict parry timing, momentum movement. Local 1v1 and three-player free-for-all.
 
-The roster is **Haze, Rip, GoonerPrime, YittyMack, Lancer, Blue Cheese, Teo1910, Null, Somhack, Curtis, Siglarp, Kinkade and Brainlag**. Albino Rino is left out.
+The roster is **Haze, Rip, GoonerPrime, YittyMack, Lancer, Blue Cheese, Teo1910, Null, Somhack, Curtis, Siglarp, Kinkade, Brainlag, Duttpack, Tonka, Sirnivas and Halfslip**. Albino Rino is left out.
 
 Rounds have unlimited time (∞ on the HUD) and end by knockout.
 
@@ -38,6 +38,8 @@ On player select, click **LOCAL 2P** or **CPU 1–5**. Keys **0–5** choose the
 
 In a CPU match, **1P chooses both fighters**: lock your own, then choose the **2P · CPU** opponent. In local mode WASD chooses 1P and arrows choose 2P. Enter or **START MATCH** immediately starts with the current picks. Practice also offers CPU levels 1–5 alongside its original dummy modes.
 
+All five CPU levels can use their character's domain at full ultimate meter, in matches, practice and three-player free-for-all. Higher levels attempt it more often. They obey the same meter, hack, broken-guard and state restrictions as humans, and mash during their own domain clash at their tier's rate. Practice level 5 finishes its combo attempt before choosing a domain; infinite resources do not repeatedly restart an active domain. Siglarp can spend his free borrowed ultimate during Complete Larp, and Halfslip keeps watching while his clones fight. Kinkade still has no ultimate assigned.
+
 The device side-picking screen has been removed. Connected controllers automatically take 1P and then 2P, using their stable browser slots. Without a controller, 1P uses WASD and 2P uses arrows. CPU mode replaces 2P's input. Press a controller button before starting so the browser detects it. The input labels remain visible during play; unplugging an assigned controller holds the match until it reconnects. F2 returns to the title. Devices detected later are assigned when you start a new match from player select.
 
 | | P1 layout | P2 layout | Gamepad |
@@ -54,7 +56,7 @@ The device side-picking screen has been removed. Connected controllers automatic
 | More abilities | Down / Up + T | Down / Up + Numpad 5 or `;` | Down / Up + RB |
 | Ultimate (full meter) | F + T | Attack + Special | X + RB |
 
-Tab shows controls and a live key test. Esc pauses. **F2** returns to the title. **M** mutes; **[ / ]** changes master volume. Audio starts after the first key press and is synthesized with Web Audio; there are no downloaded sound files.
+Tab shows controls and a live key test. Esc (controller **Start**) pauses and opens a menu: **Resume**, **Restart match**, **Change characters** or **Main menu**. When a match ends, the win screen offers **Rematch** (same fighters and CPU level), **Change characters** or **Main menu**; Enter rematches straight away. Choose with up/down and select with Attack, Enter, controller A, or a click (B also resumes from pause). **F2** returns to the title. **M** mutes; **[ / ]** changes master volume. Audio starts after the first key press and is synthesized with Web Audio; there are no downloaded sound files. Landed hits layer a short noise **crack** over the thump, and heavy hits (unblockable or 7+ freeze frames) add a deep boom. **Hit feel:** on every landed hit the attacker bounces back a few pixels (7, or 14 on heavies) and eases back over 8 frames, and the victim shakes in place while the hit-stop freezes the game. Both are drawn offsets only: positions, hitboxes and timing don't change (`HIT_FEEL` in `src/config.js`).
 
 Directional Specials preserve the direction held when Special is pressed, even if released during the six-frame action buffer. Up + Special can replace a just-started jump within six frames of Up, including its first airborne frames, without changing ordinary jump timing. At full ultimate, directional Specials start immediately instead of waiting for the neutral Attack + Special chord. Abilities retain their normal startup, cooldowns and recovery restrictions. Null also accepts Special then Up within six frames, switching his early spear windup into Zoom before a projectile launches; this spends only Zoom's cooldown.
 
@@ -67,7 +69,8 @@ See [BUILD_PROMPTS.md](BUILD_PROMPTS.md) for the original specifications. Gamepl
 ## Defense
 
 - **Block (hold):** works on the ground and in the air for every fighter. Hold the same button after jumping; gravity continues, landing keeps your guard up, and releasing it returns you to normal air movement. Air blocking preserves used air attacks and disables ground rolls. It stops any light, low, overhead or air attack from any direction. A blocked hit does no health damage but drains 10 guard (14 when cornered) and puts you in short blockstun (60% of the move's hitstun). Grabs and heavies go straight through, and a grab whiffs during blockstun. You can attack, grab or parry straight out of block. Blocking is disabled during a guard break.
-- **Heavy parry:** ground Heavy requires neutral Parry; Air Heavy requires Up + Parry. The hit must arrive during the first **2 parry frames** (0–1, about 33 ms at 60 Hz). Success gives the normal perfect-parry reward and a **HEAVY PARRY** flash; the attacker staggers for a counterattack. There is no safe early deflect: frame 2 or later takes the heavy normally, and the wrong direction fails. Debug Mode reads the direction but cannot widen this window. Guard break disables parry; grabs still beat it. Controls: 1P G / W + G, 2P . / Up + ., controller RT / Up + RT.
+- **Parry (no direction):** one Parry button beats any attack: high, low or overhead, on the ground or in the air. **Only the timing matters.** If the hit lands in the first 4 parry frames, it's a **PERFECT** parry: the attacker staggers, with slow motion and a free punish. A little earlier is an **early PARRY**: both fighters are pushed apart. If nothing comes, the parry whiffs and you're open. The parry pose turns to meet the attack's height. Grabs beat parry, and guard break disables it.
+- **Heavy parry:** the same button for ground and Air Heavies. The hit must arrive during the first **2 parry frames** (0–1, about 33 ms at 60 Hz). Success gives the normal perfect-parry reward and a **HEAVY PARRY** flash; the attacker staggers for a counterattack. There is no safe early deflect: frame 2 or later takes the heavy normally. Debug Mode cannot widen this window. Controls: 1P G, 2P ., controller RT.
 - **Pushblock:** press Parry during blockstun to shove the attacker away (they're stunned for 18 frames, you for 12). It is **free**: no guard, ultimate or Burst cost, and no minimum guard requirement. Guard break still disables it.
 - **Roll:** while blocking on the ground, tap left or right to roll that way for 22 frames. It's low-profile (ducks highs) and passes through the opponent, but has no invincibility and 10 frames of recovery.
 - **Burst:** while being hit, press Block + Parry together (controller **LB/LT + RT**, 1P **R + G**, 2P **' + .**). It spends a separate small **Burst meter**, with **no ultimate cost**, and works with zero ultimate. Each player starts a match with one full charge. Using it empties the charge; it refills over **30 seconds of active fight time**, carries between rounds, and freezes during pause, hit-stop, intros, KO and ultimate openers. A small blue bar beside ultimate shows **BURST READY** or recharge percentage. You become invincible for 16 frames, the combo ends, and the attacker is launched away (about 350 px, no damage; a far wall can bounce them). Practice infinite resources also refill Burst. Suplex holds still use mash escape.
@@ -80,7 +83,7 @@ Grab, Medium and Heavy have their own buttons. **Press Heavy once** for the orig
 
 **Medium** has 9-frame startup, 65 base damage and longer reach than Light. Haze uses a smoke elbow, Rip a belly shove, GoonerPrime a laptop backhand and Yitty a shoulder check. It can be blocked or high-parried; a blocked or missed Medium leaves you in full recovery.
 
-**Low Medium — Down + Medium** adds a separate grounded attack for every fighter: 11-frame startup, 4 active frames, 16 recovery, 65 base damage and 28 hitstun. Somhack divides its damage between two bullets over seven active frames. It reaches farther than Low Light and strikes the legs. Block stops it and Down + Parry counters it. Each fighter has a matching low sweep, body strike or weapon slash. It has its own once-per-chain slot, so **Light → Medium → Low Medium → Overhead** is a true four-hit launcher route at close range (six hits for Somhack). Release Down before the overhead; use fresh presses during the hit-cancel window. Airborne Down + Medium still uses Air Medium. Combo limits, damage scaling and Burst apply normally.
+**Low Medium — Down + Medium** adds a separate grounded attack for every fighter: 11-frame startup, 4 active frames, 16 recovery, 65 base damage and 28 hitstun. Somhack divides its damage between two bullets over seven active frames. It reaches farther than Low Light and strikes the legs. Block stops it and a well-timed Parry counters it. Each fighter has a matching low sweep, body strike or weapon slash. It has its own once-per-chain slot, so **Light → Medium → Low Medium → Overhead** is a true four-hit launcher route at close range (six hits for Somhack). Release Down before the overhead; use fresh presses during the hit-cancel window. Airborne Down + Medium still uses Air Medium. Combo limits, damage scaling and Burst apply normally.
 
 A grab that connects starts a character-specific throw. **Ordinary throw escape:** press Grab freshly within the first **10 active logic frames after contact** (J for 1P, L / Numpad 6 for 2P, B / Circle on controller). A brief prompt and shrinking bar show the window. Holding Grab or pressing it before contact does not escape; other buttons and Burst do not escape ordinary throws. Success announces **THROW ESCAPE**, shoves both fighters apart into 12-frame recovery, and grants six frames of separation invincibility. It causes no damage, guard drain, ultimate cost or throw rewards/effects. Lancer's barrage mask cost, a grabbed Lancer's mask shatter and Gooner's untouchable removal wait until the window closes. Pause, hit-stop and cinematic freezes preserve the window; domain slowdowns do not extend its ten active ticks. CPUs attempt escapes more often and sooner at higher levels.
 
@@ -119,7 +122,7 @@ Anime presentation (`src/render.js`, `src/render-fx.js`, render-only): fighters 
 
 - Run, dash or slide into a wall with at least 50 momentum to rebound at 80% speed, facing away. For the next 6 frames, attack, parry, grab, jump or double-tap to dash while retaining momentum.
 - Knockback of at least 8 pixels/frame wall-bounces a defender once per combo: 70% rebound speed, a small pop-up and 12 extra hitstun frames.
-- Combos allow up to **10 hits before a bounce + 5 afterward**, with a hard **15-hit total**. Only one wall bounce is allowed. Later normal and special hits scale to 90%, 75%, 60%, 50%, 45%, 40%, 35%, 30%, 25%, 22%, 19%, 16%, 13% and 10%; post-bounce hits receive another 50% multiplier. At the cap, further hits cannot connect until the defender recovers. Yitty's individual slams and Goon Su's explosion count toward the same budget and retain the earlier combo and wall-bounce history. Late suplex damage also scales down.
+- Combos allow up to **10 hits before a bounce + 5 afterward**, with a hard **15-hit total**. Only one wall bounce is allowed. Later normal and special hits scale to 90%, 75%, 60%, 50%, 45%, 40%, 35%, 30%, 25%, 22%, 19%, 16%, 13% and 10%; post-bounce hits receive another 50% multiplier. At the cap, further hits cannot connect until the defender recovers. Yitty's individual slams and Goon Su's explosion count toward the same budget and retain the earlier combo and wall-bounce history. Late suplex damage also scales down. Tonka is the exception: see his 50-hit loops. With a full ultimate meter, Light presses during your own combo come out immediately instead of waiting for the Attack + Special chord, and Special can still complete the chord from that attack.
 - **Up + Light** launches on a clean hit, once per combo. Blocking and armor prevent the launch. Release Up after the overhead, then tap Up again during the hit-cancel window to jump after the opponent. Air Light, Air Medium and Air Heavy each work once per jump; successful hits can cancel between them. Air Heavy is a downward finisher: one press gives 100 base damage and wall-bounce knockback, with no holding requirement. Missed follow-ups let the victim recover in midair when hitstun expires. Burst remains available through its own charge; suplex mash escapes are unchanged.
 - **Timed air extension:** after a connecting Air Medium, tap Up freshly in the first **4 recovery frames** (about 67 ms at 60 Hz). A **TAP UP · AIR EXTEND** cue below your meters marks the window. This gives one second jump and restores Air Light and Air Medium **once per combo**. Holding Up, tapping early or late, missing, blocking or armor does not grant it. Landing does not replenish the extension during that combo. It does not reset Heavy's cooldown. Controls: **W** for 1P, **ArrowUp** for 2P, controller **D-pad/stick Up**; Air Medium stays **V / K / A**. Burst or natural recovery resets the combo's extension budget.
 - Verified **15-hit route for the ten single-hit fighters**, near either wall: **Light → Low → Medium → Low Medium → Overhead → jump cancel → Air Light → Air Medium → timed Up → Air Light → Air Medium → Air Heavy → wall bounce → Light → Low → Medium → Low Medium → Overhead**. Somhack reaches fifteen with a shorter opening and finish because her Medium bursts hit twice; see her abilities below. Start about 200 pixels from the wall with the opponent 60 pixels ahead. Use fresh presses during recovery. Let the bounce bring the opponent back toward you while landing, then chase into range for the grounded finish. GoonerPrime can cancel his wall-bounce taunt with a direction before the follow-up. Jumps and the bounce do not count as hits. Practice CPU 5 uses ten-hit routes.
@@ -134,7 +137,7 @@ Running has a different posture, stride, rhythm and arm motion for each fighter:
 - Guard measures blocking pressure, starts at 100 each round, and appears under health. **Only successfully blocked hits drain guard:** normal blocks cost 10, or 14 within 80 pixels of a wall; projectiles and certain moves have their listed block costs. Clean hits, combos, grabs, suplexes, unblockable heavies and passive domain effects do not drain it. Guard below 25 flashes.
 - After **one quiet second**, guard recovers at **10 per second nearby**, or **20 per second** when more than 40% of the arena width away from the opponent. Holding Block, blockstun, hitstun, throw holds, knockdown and guard break stop recharge and reset that delay. You no longer have to retreat across the arena to recover guard. Malevolent Stench still prevents recovery; Yitty's morale still reduces the rate.
 - At zero guard, a glass burst and **BREAK** announce a 90-frame guard break. Block, parry, dash, backdash and slide are disabled; walk, attack and jump remain available. **Guard break does not increase incoming damage.** Further drains do not restart the break. Guard resets to 50 when the status ends.
-- Ultimate gains: perfect parry +15, early parry +5, guard break inflicted +10, combo wall-bounce +5, hit landed +3, hit taken +2. It caps at 100%, carries between rounds and resets for a new match. Movement rebounds award no meter.
+- Ultimate gains: perfect parry +15, early parry +5, guard break inflicted +10, combo wall-bounce +5, hit landed +3, hit taken +2. It caps at 100%, carries between rounds and resets for a new match. Movement rebounds award no meter. While your own domain is starting, clashing or running you build **no ultimate** at all; meter gain comes back the moment it ends. The opponent still gains normally.
 - Full ultimate glows and shows **DOMAIN READY**, or **MONTAGE READY** for YittyMack. Press Attack + Special within 3 logic frames to activate.
 - `guardDrain(fighter, amount)` resolves blocked-hit costs and guard breaks; it also accepts an optional attacking fighter and game object.
 
@@ -144,7 +147,7 @@ The shared animation pass uses curved hand/foot paths and staggered hips, should
 
 Kinkade's Bench Press now has ready, knee-load, leg-drive, shove, follow-through, reload and settling poses, with a rigid two-hand bar grip. Its hit frames, cooldown, damage and combo routes are unchanged. `Smooth Bench poses` in `tests/all.html` shows both facings; `tests/all.html#smooth` opens the live cycle. The complete suite passes 323 checks in Node and the browser, including exact active poses, planted feet, refresh-rate consistency, freeze behavior and unchanged combat state.
 
-Run `node tests/run.cjs` for all **352 regression checks**. Open `tests/all.html` for the same suite in a browser and visual preview buttons. Tests cover combat, abilities, meters, domain timing and freeze, slow simulation, clashes, all dummy modes, audio, hitbox geometry and complete matches. The expanded roster has ability, meter, throw, domain, mirror and finite-animation checks. CPU checks cover levels 1–5 for all twelve fighters and repeatable new-kit matches at levels 1, 3 and 5. Every fighter also completes real fifteen-hit routes in both player slots and toward either wall. Null, Lancer and Yitty also complete fifteen-hit ability routes. Checks cover the four-frame air-extension window, held/early/late inputs, controller Up, freeze timing, Burst, special hit links, late damage scaling and cinematic combo counters. Practice CPU 5 completes ten actual hits for every fighter toward either wall, including with infinite resources; block, parry and Burst interrupt its route. Practice checks also cover tiers 1–4, opponent switching and frozen decisions. Device checks use simulated controllers; physical controller pairing is browser/device dependent. Logic timers freeze during pause and hit-stop; cooldowns and guard timers also freeze during round intros.
+Run `node tests/run.cjs` for all **428 regression checks**. Open `tests/all.html` for the same suite in a browser and visual preview buttons. Tests cover combat, abilities, meters, domain timing and freeze, slow simulation, clashes, all dummy modes, audio, hitbox geometry and complete matches. The expanded roster has ability, meter, throw, domain, mirror and finite-animation checks. CPU checks cover levels 1–5 for all fourteen fighters and repeatable new-kit matches at levels 1, 3 and 5. Every fighter also completes real fifteen-hit routes in both player slots and toward either wall. Null, Lancer and Yitty also complete fifteen-hit ability routes. Checks cover the four-frame air-extension window, held/early/late inputs, controller Up, freeze timing, Burst, special hit links, late damage scaling and cinematic combo counters. Practice CPU 5 completes ten actual hits for every fighter toward either wall, including with infinite resources; block, parry and Burst interrupt its route. Practice checks also cover tiers 1–4, opponent switching and frozen decisions. Device checks use simulated controllers; physical controller pairing is browser/device dependent. Logic timers freeze during pause and hit-stop; cooldowns and guard timers also freeze during round intros.
 
 Somhack checks cover two real SMG contacts, split damage and guard costs, combo caps, Hack refunds and counterplay across all twelve kits, Virus bonuses/links, air specials, beacon ownership/recast/persistence, stealth speed/reveal, domain pulse defenses, HUD corruption/expiry/freezes, 900-health resets, throws and controller inputs. Visual previews: [selection](tests/somhack-roster.png), [stealth](tests/somhack-stealth.png), [domain opener](tests/somhack-domain-opener.png) and [corrupted HUD](tests/somhack-domain.png).
 
@@ -170,6 +173,181 @@ YittyMack screenshots: [roster](tests/yitty-roster.png), [three suplexes](tests/
 
 New fighter screenshots: [seven-fighter roster](tests/new-roster.png), [masked wave](tests/lancer-masked-wave.png), [Soul Sky](tests/lancer-soul-sky.png), [Final Girl Chase](tests/cheese-chase.png), [Teo's bottle](tests/teo-bottle.png), [Last Call](tests/teo-last-call.png). All abilities and CPU levels 1, 3 and 5 have fixture buttons in `tests/all.html`.
 
+## Halfslip's abilities
+
+Halfslip is the sixteenth fighter, available to all human and CPU slots, practice, mirror matches and three-player free-for-all. His blue hoodie, sleepy grin and translucent doubles distinguish the original from his clones. [Domain preview](tests/halfslip-domain.png) · [Animation helpers](tests/halfslip-animations.png).
+
+- **Plus One — Special (T / ; / = / controller RB):** a vulnerable 16-frame summon followed by 14 recovery frames. Creates one independent CPU clone for six active seconds, with an eight-second cooldown. A second normal clone cannot be summoned while the first is alive. The clone approaches its target, jumps to meet airborne opponents, and uses Light/Medium attacks and short chains. It never uses grabs, specials, heavies or ultimates. Starting an attack directs the squad toward that opponent for two seconds.
+- **Slip Switch — Down + Special:** requires an owned clone. After ten vulnerable startup frames, swaps positions with the first active clone and recovers for 16 frames. Five-second cooldown. No invincibility; the clone can be destroyed during startup to deny the swap.
+- **Clone Catapult — Up + Special:** two clones crouch, then throw Halfslip into a rising kick that launches both fighters. Ten-frame startup, 55 base damage and a four-second cooldown; also works in midair. On contact, press Light or Medium during the first eight recovery frames to continue with air attacks. Uses ordinary overhead block/parry rules; a miss leaves recovery. The separate second jump is still available.
+- **Passive — Helping Hands:** a clone boosts his first jump and a fresh second Jump gives one midair toss per landing. Clones drag his backdash, push his walk/run/dash, perform normal punches/kicks/sweeps, vault for overheads, help swing heavies, shield blocks, catch parries, lift him on get-up and celebrate his wins. These helpers are strictly animation: no extra damage, health, protection or collision bodies.
+- **Clone Volley — Grab:** clones toss the victim upward, punch them back and forth, then a third clone dives in for a ground slam while the original watches. An 84-frame cinematic with one normal 90-damage release, the ordinary ten-frame fresh-Grab escape and normal missed-grab recovery. [Grab and catapult preview](tests/halfslip-upgrade.png).
+- **Domain Expansion: Handle My Light Work — Attack + Special at full meter:** the standard frozen opener, then four independent clones fight for eight active seconds. The original watches with folded arms. Movement, blocking, parrying and Slip Switch remain available; starting any attack dismisses the squad and ends the domain. Halfslip remains vulnerable. In free-for-all, two clones initially target each enemy and retarget surviving opponents after an elimination. It uses ordinary domain clashes; losing a clash removes the clones.
+
+Fighting clones deal 25% normal damage, have ten-frame base hitstun and reduced block guard cost, and share the original's combo credit, scaling and caps. They cannot earn ultimate meter or body-block movement. One damaging melee contact or projectile destroys a clone; grabs pass through it. Enemy clones can destroy each other. Blocks, parries, armor, decoys and Burst retain their normal counterplay; Pushblock/Burst against a clone do not stagger its distant owner. Pause, hit-stop, intros and domain openers freeze clone AI and lifetime. Expiry, owner KO, rounds, rematches and character changes clear clones. Siglarp can summon his own copied clone, swap with it, transform into Halfslip and borrow the four-clone domain without sharing clone objects.
+
+## Sirnivas's abilities
+
+Sirnivas is a goofy, overconfident meme trader who never stops checking his phone. Everything is cartoon play money: his stock is the made-up **$SIRN**, and there are no real apps, tickers, companies or casinos on screen. [Move preview](tests/sirnivas-moves.png).
+- **Look:** a neon green stickman (white-gold in a mirror match) with a crooked headset and mic, a thick gold chain, and his phone always in his back hand. The phone shows a tiny live chart of his stock, green when it's rising and red when it's falling.
+- **Idle:** looking down and tapping his phone. When his stock ticks up he fist-pumps; when it ticks down he facepalms. He walks staring at the phone, runs with it held out like he's chasing a price, and blocks hugging it to his chest.
+- **Normals:** a phone-tap jab, a low sweep while swiping right, a phone-gavel overhead, a haymaker with a gold chain flare, a flying kick with a fan of cash, a spinning backhand (Medium), a low shin kick (Down + Medium) and a two-hand collar grab.
+
+**The $SIRN stock price (0–100, starts at 50 every round):**
+- **+6** for each hit he lands and **−8** for each hit he takes; blocked hits move it by half (+3 / −4).
+- After 2 seconds with no hits either way, it drifts back toward 50 at 1 point a second.
+- **Bull (70 or more):** damage ×1.15 and speed ×1.1, with a "📈 BULL" tag on the HUD.
+- **Bear (30 or less):** damage ×0.9 and speed ×0.95, with a "📉 BEAR" tag.
+- The HUD shows a mini chart of the last ~3 seconds and `$SIRN 74.0 ▲`.
+
+**Specials:**
+| Move | What it does |
+| --- | --- |
+| **Slot Machine** (Special, 6 s cooldown) | He pulls a lever and three reels spin over his head, stopping one at a time; the result fires on frame 30, with 16 frames of recovery, and he's open the whole time. The roll is decided on the press, so you can read the reels. One of his coins on screen at a time. |
+| **Invest** (Down + Special, 8 s cooldown) | He pays **50 HP** up front ("INVESTED 50"; refused at 60 HP or less, with no cost or cooldown). If he lands a hit within **4 seconds** before being hit, that hit does **+50** and he heals the 50 back ("CASHED OUT +100", stock +15). If he's hit first or time runs out: "LIQUIDATED", stock −15, the 50 stays gone. Blocked hits don't settle it. The +50 is a flat bonus, not combo-scaled. |
+| **Buy the Dip** (Up + Special, 6 s cooldown) | A counter stance on frames 3–20. Any strike or projectile in the window misses ("BOUGHT THE DIP!") and he answers with a launching uppercut for **40 + (100 − stock) × 0.6**: 40 at stock 100, 70 at 50, 100 at 0. Stock +20 afterwards. Grabs beat it; a whiff leaves him open for 20 frames, sadly refreshing his phone. |
+
+**Slot odds:**
+| Result | Reels | Neutral | Bull | Bear | Effect |
+| --- | --- | --- | --- | --- | --- |
+| **JACKPOT** | coin coin coin | 10% | 20% | 5% | A giant slow gold coin for **90** that launches |
+| **WIN** | two matching + one other | 75% | 70% | 70% | A gold coin for **45**, high and straight |
+| **BUST** | skull skull skull | 15% | 10% | 25% | The machine blows up on him: **30** to himself (it can't KO him), a 20-frame stagger, stock −10 |
+
+**Slot Machine Slam (grab):**
+- A big red slot machine pops up on the side with room, and he stuffs you inside; your legs stick out of the coin tray.
+- He pulls the lever and your head spins round in the reel windows ("KA-CHUNK").
+- It always lands on JACKPOT and ejects you in a shower of coins: one **90**-damage hit, plus the usual stock +6.
+- The normal ten-frame grab escape applies before you go in.
+
+**Domain — ALL IN (Market Crash):**
+- The cutscene: he slams his phone on a table, shoves a pile of chips forward, then points at you while a red chart crashes behind you.
+- When the domain begins he pays **40% of his current HP** ("ALL IN −400"); it never drops him below 1. Losing a domain clash costs nothing.
+- For its 8 seconds his stock is pinned at **100** (Bull, best slot odds, minimum Buy the Dip damage).
+- The opponent's damage and speed fall steadily from ×1.0 to **×0.7**, with a red "−%" ticker over their head.
+- When it ends: if he dealt at least as much damage as he paid, he gets the whole bet back ("CASHED OUT!"); otherwise "LIQUIDATED". A KO during it wins outright ("ALL IN · WON IT ALL!"); if he's KO'd, nothing comes back.
+- The arena: a dark trading floor, a scrolling ticker tape (his $SIRN ▲ in green, everything else red), a giant red candlestick chart crashing across the background, falling chips and coins, and the opponent's penalty huge behind them.
+- He has no domain song yet. Add one to `DOMAIN_MUSIC` in `src/config.js` the same way as Haze's.
+
+**Seeded gambling:** every slot roll comes from his own seeded `luckSeed` (set from the fighter slot and the round), never `Math.random`, so matches, replays and tests are repeatable. Siglarp's copies roll with their own seed.
+
+The CPU uses Slot Machine at range (sooner in Bull at levels 4–5), Invest up close when above 300 HP, and Buy the Dip against committed strikes (more often in Bear at levels 3–5). Levels 4–5 won't go ALL IN below 200 HP. Siglarp can copy all three specials, grab with the slam and larp ALL IN (he pays and cashes out the same way).
+
+## Tonka's abilities
+
+Tonka is an original masked rapper-summoner, inspired by Yeat (no names, faces, logos or songs from him are used in the game).
+- **Look:** a black stickman in a spiked beanie reading "TONKA" and a silver chain with a little truck pendant. In a mirror match he's white and wears the full outfit: an oversized puffer, shades and mask, iced watches and a wallet chain. His HUD and powers are acid green.
+- **Idle:** **hands in his pockets** with a slow nod, and every few seconds the **steepled-hands** sign. He walks and even runs with his hands in his pockets.
+
+**Bell meter (0–3):**
+- Every hit he lands rings a bell; getting hit loses one.
+- At three bells, his next special is **EMPOWERED**.
+- Practice infinite resources keep it full.
+
+**Unbothered:**
+- While standing or walking, he shrugs off **one light hit** (65 base damage or less, not a launcher, Heavy or grab) without flinching. He still takes the damage.
+- It recharges after **3 seconds** without being hit. A dot by his bells shows when it's ready.
+
+**Specials:**
+| Move | What it does | Empowered |
+| --- | --- | --- |
+| **Bell Drop** (Special, 5 s cooldown) | A shadow marks where the opponent stood, and a giant bronze bell lands there about 24 frames later: an overhead for **70**. It then rings a low **20**-damage shockwave along the floor. One bell at a time. | Three bells, 120 px apart |
+| **Truck Ram** (Down + Special, 8 s cooldown) | His monster truck drives in from behind him across the whole screen: a low, long hit for **80** that can wall-bounce. Jump it, block it or parry it; it never hits him. | Faster, 100 damage, and it drives back once |
+| **Green Swarm** (Up + Special, 5 s cooldown) | A slow flock of acid-green shards that hits **3 times for 20**. It clashes with enemy projectiles and both burst. | Twice the size, 5 hits |
+
+**50-hit loop combos (Tonka only):**
+- Every other fighter is capped at 15 hits with one wall bounce. Tonka's combos go to **50 hits**: five **10-hit loops**, with up to **4 resets**.
+- A reset gives back the launcher, the air extension and his ground attacks ("LOOP 2", "LOOP 3"…), and starts a fresh 10-hit count. There are two ways to get one:
+  - **Wall bounce:** his bounces drop the opponent right at the wall instead of throwing them back across the screen.
+  - **Bell Reset (anywhere on the stage):** with **3 bells**, press **Down + Special** while the opponent is still in your combo. It spends the 3 bells ("BELL RESET"), yanks them to just in front of him, pops them up for a moment and reopens everything. Press it in the chain window after a hit, or once you've landed. At a loop's 10-hit cap the opponent stays pinned for about 1.2 s after landing so you can land and use it; if you miss that window they recover. It needs three bells again, which a loop of hits refills.
+- One loop: **Light → Low → Medium → Low Medium → Overhead → jump → Air Light → Air Medium → timed Up → Air Light → Air Medium → Air Heavy**, then a wall bounce or a Bell Reset (land first after the Air Heavy). Start about 200 px from a wall for bounces; Bell Resets work from anywhere. The combo travels about 120 px per loop, so five loops fit from the left or right third of the stage. Use Low between Light and Medium after a bounce, because the wall shortens hit-stun.
+- It gets harder: the timed-Up air-extension window drops from 4 frames to 3 in loops 3–4, then to 2 in loop 5.
+- Damage keeps scaling down (to 5% per hit after the first reset), so 50 hits don't take a full health bar. Burst still breaks it, and recovering ends the loop count. The Bell Reset press never counts toward the Attack + Special ultimate chord. Numbers are in `TONKA_COMBO` in `src/config.js`.
+
+**Car Toss (grab):**
+- His black SUV pulls up, and he shoves you in ("GET IN.").
+- It tears off the edge of the screen and crashes ("CRASH!"), and you fly back in to land near him.
+- One **90**-damage hit, plus a bell ring. The normal ten-frame grab escape applies.
+
+**Domain — three arenas, picked at random each time (seeded), each with its own song:**
+The cutscene for all three: steepled hands, smoke, and he flickers into an **X-ray skeleton**.
+
+| Domain | Subtitle | What happens |
+| --- | --- | --- |
+| **WASTELAND** | *No brakes · no mercy* | A desert. His SUV tears across the screen every 2 seconds for 40, with a headlight flash first. Jump it or block it. |
+| **BELL CITY** | *The bells never stop* | The rainy green night city. A bell drops on the opponent every 1.5 seconds (50, overhead), and his Unbothered armor never runs out. |
+| **BURNING FARMHOUSE** | *See right through you* | The burning farmhouse. The white horse gallops through high and the black horse low (35 each). He's the glowing X-ray skeleton the whole time, and his cooldowns recharge twice as fast. |
+
+**His stages:**
+- Any match with Tonka in it is fought on one of his two backgrounds, picked at random every match: the **burning farmhouse** or the **foggy night city**.
+- Moving effects are drawn over each image:
+  - farmhouse: flickering fire, rising embers, drifting smoke;
+  - city: drifting fog, rain, pulsing floodlights, twinkling windows, blinking tower lights, a shimmering road.
+- The images live in `assets/stages/`, his songs in `assets/music/`, and his Bell Drop sound in `assets/sfx/tonka-bell.mp3` (played once each time he casts Bell Drop; without the file, the game's own synth bell plays). All three folders hold personal files and are git-ignored. If an image is missing, the normal arena is used.
+
+The CPU keeps him at range: Bell Drop on still or far targets, Truck Ram against grounded opponents who aren't blocking, the swarm at mid range, and grabs or jabs up close. Levels 4–5 save an empowered special for a good moment. Siglarp can copy all three summons and larp his random domain.
+
+## Duttpack's abilities
+
+Duttpack is a goofy red-and-gold hype man: backwards gold cap, jersey #00, gold wristbands and a big grin (gold body with red accents for 2P). He's a 49ers, basketball and soccer fan who always has a beat in his head, and **every move he makes is a basketball or soccer move**. Frame data and hitboxes are the shared ones; only the look changes. Ball props are drawn only, never hitboxes.
+
+- **Idle:** the "hype hands" bounce, with both arms up in a wide V, hands flopping on every beat, knees dipping and hips swaying. Every six seconds he juggles a soccer ball off his knee.
+- **Normals:**
+  - Light: a chest pass. **Running Light** (from a run) is a full **bicycle kick**.
+  - Down + Light: a slide tackle.
+  - Up + Light: a one-hand slam dunk (the launcher).
+  - Medium: a spin move.
+  - Down + Medium: a nutmeg toe-poke.
+  - Heavy: a penalty-kick power shot.
+  - Air Light, Medium and Heavy: a scissor volley, an alley-oop slam and a diving header.
+- **Movement:**
+  - Walk: dribbling a basketball.
+  - Run: dribbling a soccer ball.
+  - Dash: a crossover.
+  - Backdash: a step-back fadeaway.
+  - Jumps: rebounds, or a leaping header off a run.
+  - Slide: a knee-slide celebration.
+  - Roll: a euro-step.
+- **Defense and getting hit:**
+  - Block: a goalkeeper stance.
+  - Parries: a keeper catch (high), a diving save (low) and tipping it over the bar (overhead).
+  - Pushblock: a chest bump.
+  - Getting hit: a dramatic flop.
+  - KO: clutching his shin, with a "REF?!" popup.
+  - Burst: an "And-one!" flex.
+- **Free Kick — Special (4 s cooldown):** he plants the ball and curls a 50-damage shot. Aim **during the 14-frame wind-up**, since Up/Down + Special are his other moves:
+  - nothing held: straight at chest height (high);
+  - **Up**: rises, then dips onto their head (overhead), reaching about 300–530 px;
+  - **Down**: skims along the floor (low).
+
+  One ball at a time. Blocking works on all three, and any well-timed parry deflects it.
+- **Hype Shuffle — Down + Special (6 s cooldown):** a dance counter: arms out like a scarecrow, hopping knee to knee.
+  - Strikes on frames 4–36 (Heavies included) miss with a "NOPE!".
+  - He counters with a 60-damage launching volley ("OUT OF POCKET!").
+  - Grabs and projectiles still hit him.
+  - A whiff leaves him open for 20 frames.
+  - **This animation was recorded from the user's reference video** with pose tracking (see "Motion capture" below).
+- **Pigeon Strut — Up + Special (7 s cooldown):** a smug pigeon-walk goal celebration turned into a rush.
+  - Four head-bob pecks travel about 220 px: 15/15/15, then a 35-damage launching headbutt ("COO COO!"). Normal combo scaling applies to the later pecks.
+  - Each peck is blockable and parryable. A perfect parry stops it, and grabs beat the start-up.
+- **Slam Dunk — Grab:** he lifts you overhead and dribbles twice. A hoop appears on the side with room, he leaps and dunks you upside down through the net ("SLAM DUNK!"), hangs on the rim and drops.
+  - The normal ten-frame grab escape applies.
+  - One 90-damage hit lands on release.
+- **Domain: COOKIEEEEEEE** (subtitle *STAY ON BEAT · OFF BEAT, OFF FEET*), 8 seconds.
+  - **Cutscene:** he cups his ear, then the beat drops at frame 15. His song starts, confetti bursts, the camera punches in and he goes into the hype-hands bounce.
+  - **The arena:** a red-and-gold night arena with sweeping stadium lights, a floor equalizer and confetti.
+  - **On the Beat:** beat rings pulse under both fighters. His hits **on the beat** do **1.5×** damage with an "ON BEAT!" flash. The opponent's attacks **started off the beat** come out **4 frames late**; on the beat they're normal speed, so they can learn the rhythm.
+  - CPU levels 4–5 time their attacks to the pulse.
+  - The beat runs on the game's own frame clock (`DUTTPACK.bpm`, default 140, plus `beatOffset`), never the audio, so it stays fair and repeatable. Tune both by ear to his song.
+
+Siglarp can copy Free Kick, Hype Shuffle and Pigeon Strut, and larping COOKIEEEEEEE plays the song and the beat for him. Duttpack's flavour nods to the 49ers, basketball, soccer, Pierre Bourne and crime-drama brawler games, but no team, player, song, logo or game names appear in the game.
+
+### Motion capture
+
+`tools/mocap-convert.cjs` turns pose-tracking data from a video into stickman poses (`src/mocap/*.js`), played back by `src/mocap.js`. It keeps the video's joint **angles** but the stickman's own limb **lengths**, and keeps the planted foot on the floor. Duttpack's Hype Shuffle comes from the user's shuffle clip. Open `tools/mocap-preview.html` to compare his hand-made idle with the recorded dance side by side.
+- Reference clips live in `assets/reference/`, which is git-ignored.
+- Full-body, side-on video gives the best results.
+
 ## Brainlag's abilities
 
 Brainlag is a purple glitchy hypnotist with teal spiral eyes (a teal mirror palette for 2P). His head is drawn a few frames behind his body and snaps back into place with an RGB flicker, and a mirage shimmer slices across his body every so often. Real and fake moves look identical: the shimmer is never a tell.
@@ -186,7 +364,6 @@ Brainlag is a purple glitchy hypnotist with teal spiral eyes (a teal mirror pale
 | Left / right | Their walk, run, dash, backdash and air control directions swap. |
 | Up / down | Jump and crouch swap; Up + attack and Down + attack swap (Overhead and Low trade places); Up/Down + Special swap. |
 | Buttons | Light and Heavy swap; Medium stays. The Heavy cooldown follows whichever input throws a Heavy. |
-| Parries | Inputs flip first, then high and low swap: **neutral Parry = low, Up + Parry = high, Down + Parry = overhead**. |
 | Facing | They still face him normally, but their hitboxes, grabs and projectiles come out of their **back**. To hit what's in front of them they must aim the other way: **hold the key pointing away from him** as the attack starts (or as a projectile leaves). |
 | Attack heights | Their high attacks hit low and their low attacks hit high for parries. |
 | Front / back | Block only stops his strikes while they also hold the key pointing **toward** him on screen; otherwise it's a clean **WRONG WAY** hit. Hold the direction first, then Block (a direction tapped during Block is still a roll). |
@@ -294,7 +471,7 @@ An original cheese-colored cartoon stalker with fixed mold speckles, a crooked m
 - **Stab / walk-away — Grab:** five cartoon stabs add 2 DREAD each, with comic words and white impact stars. Release deals exactly 90 damage and adds 20 DREAD without draining guard. He walks away humming, ends roughly 140 pixels away (walls can shorten this) and recovers for 26 frames.
 - **Final Girl Chase — Ultimate:** a foggy teal forest for 8 seconds after the standard opener. Ordinary hits cannot flinch him, but Heavy and Grab still work; he is limited to walking speed. The opponent is slowed 20% and gains 12 DREAD per second in addition to normal fear rules. Reaching the marked far wall ends the chase early.
 
-DREAD also gains 3 per second beyond 250 pixels, 5 per landed ordinary hit and 6 for a whiff or wrong/missed parry. It drains 6 per second when he is visible nearby and the victim is free. Burst preserves DREAD. CPU Blue Cheese vanishes at medium range, traps at long range and calls against a neutral opponent.
+DREAD also gains 3 per second beyond 250 pixels, 5 per landed ordinary hit and 6 for a whiff or missed parry. It drains 6 per second when he is visible nearby and the victim is free. Burst preserves DREAD. CPU Blue Cheese vanishes at medium range, traps at long range and calls against a neutral opponent.
 
 ## Teo1910's abilities
 
@@ -333,8 +510,8 @@ GoonerPrime is the hacker: balanced stats (1000 health, average speed and damage
 
 - **Bullet Time — Special:** a 30-frame **glitch dodge**. On frames 3–20 his body breaks into a green wireframe (split colour ghosts, falling code, scan bars, dropped frames) and **every strike passes straight through him**: lights, mediums, lows, overheads, heavies, air attacks and projectiles. **Only grabs** catch him. While it runs, the opponent moves at 30% speed. **Just dodge:** pressed while a strike (anything but a grab, lows included) is active or within 6 frames, it skips straight into the glitch and **freezes the whole screen** for 24 frames on a green tint with a "⚠ DODGED" error window over the attacker, then slow motion, and gives XP. **Free hit:** the attacker is left **staggered for 30 frames** (like a perfect parry), and GoonerPrime can **cancel the glitch into any attack or grab** (press during or right after the freeze) to punish. A plain Bullet Time can't be cancelled. It can't be used once he's already been hit. Cooldown: 4 seconds.
 - **Ctrl+Z — Down + Special:** snaps him back to where he stood one second ago and restores the health he lost in that second. Also works while he's being hit. Cooldown: 20 seconds.
-- **Debug Mode — Up + Special:** for 2 seconds his parry **auto-corrects** to the right direction and the perfect window doubles (8 frames), and a green readout above the opponent shows what they're holding and what they just committed to. Grabs and heavies still beat parry. Cooldown: 12 seconds.
-- **XP bar (under his icons):** hits +10, perfect parries +15, just dodges +15; a whiffed or wrong-direction parry costs 10. When it fills he's **untouchable** for 3 seconds: strikes pass straight through him (glowing outline, drifting code). It ends early if he's grabbed or either fighter pops a domain. Resets each round.
+- **Debug Mode — Up + Special:** for 2 seconds his perfect-parry window doubles (8 frames), and a green readout above the opponent shows what they're holding and what they just committed to. Grabs and heavies still beat parry. Cooldown: 12 seconds.
+- **XP bar (under his icons):** hits +10, perfect parries +15, just dodges +15; a whiffed parry costs 10. When it fills he's **untouchable** for 3 seconds: strikes pass straight through him (glowing outline, drifting code). It ends early if he's grabbed or either fighter pops a domain. Resets each round.
 - **Aura idle:** after 2 seconds of standing still he stops coding and drops into a power stance with a green aura rising off him. While he holds the aura it fills XP at +5 per second (about 20 seconds from empty); moving or getting hit stops it.
 - **Goon Su — Attack + Special (full meter):** his domain is a grab super, not an arena domain, so it never clashes. A 40-frame frozen wind-up on the hand sign (one arm pointing straight up, the other hand signing at his face), then a real-time grab dash. On a grab, the world freezes for 7 seconds in green code rain while an original incantation appears line by line, then an explosion deals **400 damage (40%)** and launches the victim; it can end the round. It beats block and parry; jumps and invincible moves (Mirror Step, burst) avoid it. On a miss the meter is gone and he's open for 30 frames.
 - **Heart-eyes taunt (automatic):** after he KOs someone or sends them into a wall bounce, he stares at his laptop screen with hearts floating up, as soon as his own recovery ends. After a wall bounce any button or direction cancels it, so he can still follow up; the KO taunt plays out in full.
@@ -347,13 +524,13 @@ YittyMack is a slow, heavy grappler in a blue number-10 jersey, eye black and wr
 - **Mash escape:** the victim makes new button or direction presses while held. Holding a button earns only one press. At **8 presses during the first suplex**, or **6 during later suplexes**, the next re-grip fails: **ESCAPED!**, both fighters are pushed apart and the victim recovers 6 frames sooner. A meter above the victim shows progress. The practice dummy never mashes.
 - **Deep Ball — Special (T / RB):** 14-frame wind-up, then a spinning football travels across the arena at speed 14. It hits high for **50 damage / 18 hitstun**, loses to high parry, and block costs **6 guard**. Mirror Step, Bullet Time's glitch and untouchable avoid it; a smoke decoy absorbs it. Only one ball per owner can be out. Cooldown: **3.5 seconds**.
 - **Spear Tackle — Down + Special:** drives forward at speed 13, dropping to hurt height 70 on frames 4–20. It ducks highs and hits low for **60 damage / 24 hitstun**. Press Grab within **10 frames of a hit** to start a suplex. A low parry stops it. A whiff leaves **22 recovery frames**. Cooldown: **6 seconds**.
-- **Audible — Up + Special:** an open, 24-frame **HUT! HUT!** call. If completed, it gives **4 seconds** of wider **6-frame** chain windows and permits a fourth suplex for **110 damage** (365 total). Getting hit during the call cancels the reward. Cooldown: **10 seconds**.
+- **RKO — Up + Special:** after eight vulnerable startup frames, Yitty takes a short forward leap, catches a nearby grounded or airborne opponent in a headlock, turns and drops into a cutter with **“OUTTA NOWHERE!”** on impact. It also works from midair and can catch a combo target. Attacks and invincibility can beat the catch. Block/parry cannot stop the grab, but a fresh Grab during the normal ten-frame escape window breaks free without damage. A successful catch deals one **90-base-damage** slam, with ordinary combo/morale scaling, and no suplex re-grips. Six-second cooldown; a miss has 28 landing recovery frames. Siglarp can copy it, and CPUs can use it. [RKO preview](tests/yitty-rko.png).
 - **Hate Montage — Attack + Special (full meter):** a **40-frame frozen opener** announces **DOMAIN EXPANSION: HATE** and turns the arena into a packed night stadium, followed by **8 seconds** of heckling. It can coexist with a domain and never clashes. It ends GoonerPrime's untouchable. Every suplex during it gets a crowd pop and **+5 extra ultimate meter**.
 - **Morale:** every **1.5 seconds**, a chant adds one notch to the opponent's five-pip meter. Each notch reduces their damage by **6%** and guard recovery by **15%**. Their perfect-parry window falls from **4 frames** to **3 at two notches**, then **2 at four**; Debug Mode doubles that adjusted window. A perfect parry **SILENCES THE CROWD** and removes one notch. Once the montage ends, one notch recovers every **4 seconds**. Morale resets each round. Chants cycle in a fixed order.
 
 The generic projectile system in `src/projectiles.js` stores active shots in `g.projectiles`, moves them in logic ticks, checks hitboxes against hurtboxes and uses the shared combat rules for hits, parries, blocking and invincibility. Projectiles freeze during pauses, hit-stop and frozen ultimate sequences, draw after fighters and clear at round start.
 
-Balance updates: each slam still lands on frame 32, but its chain window is now 4 frames (6 with Audible), and Spear cooldown is 6 seconds. An early Grab press, including during the slam freeze, misses that re-grip even if more presses follow. Holding Grab and late presses also fail. CHAIN! appears only when the real window opens. Damage and mash thresholds remain unchanged. Boston's map pin was moved from `v: 0.25` to `v: 0.17` so its label fits beside New York. The legacy engine multiplied knockback by weight, so YittyMack has an explicit knockback scale of `1 / 1.25` to make his higher weight reduce knockback while preserving the existing fighters.
+Balance updates: each slam still lands on frame 32, but its chain window is now 4 frames, and Spear cooldown is 6 seconds. An early Grab press, including during the slam freeze, misses that re-grip even if more presses follow. Holding Grab and late presses also fail. CHAIN! appears only when the real window opens. Damage and mash thresholds remain unchanged. Boston's map pin was moved from `v: 0.25` to `v: 0.17` so its label fits beside New York. The legacy engine multiplied knockback by weight, so YittyMack has an explicit knockback scale of `1 / 1.25` to make his higher weight reduce knockback while preserving the existing fighters.
 
 ## Domains
 
@@ -362,6 +539,15 @@ With full meter, press **Attack + Special within 3 frames** while free of hitstu
 - **Infinite Haze:** Rip's movement, frame data and animation advance at 60% speed, with momentum capped at 30. Haze becomes a blurry silhouette with afterimages; attack arrows and parry shields are hidden.
 - **Malevolent Stench:** stops the opponent's guard recovery without draining guard. Existing clouds disappear, Smoke Screen is locked, and Mirror Step produces no trail.
 - Activating against an opponent's active domain starts a **3-second clash**. Each Attack press moves the boundary 8 pixels toward the opponent. The winner gets a fresh 8-second domain; both participants' meters are consumed. Ties favor the existing domain's owner. Domain effects fade when they end and clear between rounds.
+
+### Domain songs
+
+A domain can play a song from its cutscene until it ends. It fades out over half a second when the domain ends, on KO or on a new round, and pauses with the game. The mute (**M**) and volume (**[ ]**) keys control it.
+
+- Songs are listed in `DOMAIN_MUSIC` in `src/config.js`. Haze plays `assets/music/haze.mp3`; Duttpack plays `assets/music/duttpack.mp3`, starting on his cutscene's beat drop (`delay: 15` frames). Tonka has one song per random domain: `tonka_wasteland`, `tonka_bellCity` and `tonka_farmhouse` (`assets/music/tonka-*.mp3`). A domain with a `variant` plays the `type_variant` entry when one exists.
+- Each domain starts its song at a **random spot**, leaving enough song for the whole domain before it would loop. A song with a `bpm` (Duttpack's) starts on a whole beat, so COOKIEEEEEEE's beat clock stays in time. The songs of both fighters load when the fight starts so their length is known; `start` (seconds) is only used if it isn't yet, or the song is shorter than a domain. `volume` scales it.
+- `assets/music/` is git-ignored. Songs there are personal files: never commit or share them. If a file is missing, that domain is simply silent.
+- The player is `src/music.js`. It's presentation only; game logic never reads it.
 
 ## Practice
 
@@ -376,9 +562,9 @@ Click **CPU 1–5** in the practice panel, or press **C** to cycle Dummy → CPU
 | Key | Dummy behavior |
 | --- | --- |
 | 1 | Stand |
-| 2 | Always parry high |
-| 3 | Always parry low |
-| 4 | Cycle high → low → overhead parry |
+| 2 | Always parry |
+| 3 | Perfect parry: parries your attack right as it lands |
+| 4 | Parry or block, alternating on each of your attacks |
 | 5 | Repeat light attack |
 | 6 | Grab when in range |
 | 7 | Repeat heavy |

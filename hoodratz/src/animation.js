@@ -213,6 +213,10 @@ function genericAttackTrack(f) {
 }
 
 function attackAnim(f, frame) {
+  if(f.stats.id==='halfslip') {
+    const view=Object.create(f);view.stats={...f.stats,id:'haze'};const p=attackAnim(view,frame);
+    return f.moveName==='grab'?pose(p,{hF:[p.hF[0]+5,p.hF[1]-4],ox:2}):p;
+  }
   if (f.stats.id === 'sombra' && f.moveName !== 'grab') return sombraPose(f, frame, frame);
   if (['airMedium', 'airHeavy'].includes(f.moveName)) {
     const strike = f.moveName !== 'airMedium'
@@ -238,6 +242,9 @@ function attackAnim(f, frame) {
       siglarp: pose(STAND,{neck:[23,-126],head:[33,-146],eF:[43,-128],hF:[70,-142],eB:[18,-95],hB:[28,-77]}),
       kinkade: pose(STAND,{neck:[18,-128],head:[26,-145],eF:[43,-105],hF:[78,-119],eB:[31,-110],hB:[63,-143]}),
       brainlag: pose(STAND,{neck:[16,-130],head:[22,-148],eF:[44,-128],hF:[76,-146],eB:[34,-118],hB:[70,-134]}),
+      tonka: pose(STAND,{neck:[12,-130],head:[18,-148],eF:[40,-118],hF:[72,-126],eB:[-14,-100],hB:[-8,-76]}),
+      duttpack: pose(STAND,{hip:[-6,-70],neck:[4,-126],head:[10,-144],eF:[42,-118],hF:[70,-136],eB:[-30,-118],hB:[-52,-134],kF:[24,-36],fF:[36,0],kB:[-20,-36],fB:[-32,0]}),
+      sirnivas: pose(STAND,{neck:[18,-128],head:[24,-146],eF:[44,-124],hF:[74,-138],eB:[38,-116],hB:[70,-128]}),   // two-hand collar grab
     };
     const m=f.move, rest=f.stats.id==='lancer'?NR.swordRest:f.stats.id==='cheese'?NR.knifeRest:STAND;
     const wind=pose(rest,{neck:[-8,-128],head:[-9,-147]});
@@ -259,6 +266,9 @@ function attackAnim(f, frame) {
       siglarp: pose(CROUCH,{neck:[29,-99],head:[38,-118],eF:[58,-52],hF:[101,-37],hB:[-10,-94]}),
       kinkade: pose(CROUCH,{neck:[24,-94],head:[32,-112],eF:[61,-49],hF:[105,-36],hB:[-21,-87]}),
       brainlag: pose(CROUCH,{neck:[22,-98],head:[30,-116],eF:[58,-58],hF:[104,-52],eB:[2,-84],hB:[-18,-100]}),
+      tonka: pose(CROUCH,{neck:[14,-100],head:[20,-118],eF:[44,-70],hF:[70,-40],eB:[-10,-84],hB:[-4,-62],kF:[50,-24],fF:[96,-8]}),
+      duttpack: pose(CROUCH,{neck:[-6,-104],head:[-10,-122],hip:[-10,-54],eF:[20,-90],hF:[38,-78],eB:[-28,-86],hB:[-46,-74],kF:[48,-26],fF:[96,-6]}),
+      sirnivas: pose(CROUCH,{neck:[-4,-102],head:[-8,-120],hip:[-6,-52],eF:[18,-88],hF:[30,-108],eB:[-22,-84],hB:[-30,-66],kF:[46,-24],fF:[100,-10]}),   // low shin kick, phone still up
     };
     const m = f.move, strike = variants[f.stats.id];
     return sampleTrack([[0,STAND],[m.startup-2,wind,'out'],[m.startup,strike,'snap'],
@@ -279,6 +289,9 @@ function attackAnim(f, frame) {
       siglarp: pose(STAND,{neck:[25,-130],head:[35,-149],eF:[57,-119],hF:[100,-132],hB:[-19,-93]}),
       kinkade: pose(STAND,{neck:[30,-125],head:[39,-143],eF:[62,-105],hF:[97,-116],hB:[-13,-125]}),
       brainlag: pose(STAND,{neck:[24,-128],head:[33,-147],eF:[60,-118],hF:[104,-124],eB:[-6,-112],hB:[-24,-130]}),
+      tonka: pose(STAND,{neck:[22,-126],head:[30,-144],hip:[6,-72],eF:[46,-112],hF:[40,-90],eB:[-10,-100],hB:[-4,-76]}),
+      duttpack: pose(STAND,{neck:[-10,-128],head:[-16,-146],hip:[0,-72],eF:[-36,-118],hF:[-62,-112],eB:[28,-120],hB:[58,-128],rot:-.12}),
+      sirnivas: pose(STAND,{neck:[-6,-128],head:[-12,-146],hip:[0,-72],eF:[48,-124],hF:[96,-118],eB:[-28,-110],hB:[-40,-90],rot:-.16}),   // spinning backhand
     };
     return sampleTrack([[0, STAND], [f.move.startup - 2, wind, 'out'], [f.move.startup, variants[f.stats.id], 'snap'],
       [f.move.startup + f.move.active, variants[f.stats.id]], [f.move.startup + f.move.active + f.move.recovery, STAND, 'inOut']], frame);
@@ -360,10 +373,15 @@ const THROW_TIMELINES = {
 
 // `thrower` owns the timeline; `who` is 'att' or 'def'. Adds the coughing, farting, flailing and trembling jitter.
 function throwPose(thrower, who, frame) {
+  if(thrower.throwKind==='yittyRko')return rkoThrowPose(thrower,who,frame);
+  if(thrower.throwKind==='halfslip')return halfslipThrowPose(thrower,who,frame);
   if(thrower.throwKind==='kinkade')return kinkadeThrowPose(thrower,who,frame);
   if(thrower.throwKind==='siglarp')return who==='att'?pose(POSES.grab_s,{hF:[70,-142]}):TH.held;
   if(thrower.throwKind==='curtis')return curtisThrowPose(thrower,who,frame);
   if(thrower.throwKind==='brainlag')return brainlagThrowPose(thrower,who,frame);
+  if(thrower.throwKind==='duttpack')return duttpackThrowPose(thrower,who,frame);
+  if(thrower.throwKind==='tonka')return tonkaThrowPose(thrower,who,frame);
+  if(thrower.throwKind==='sirnivas')return sirnivasThrowPose(thrower,who,frame);
   if(thrower.throwKind==='sombra')return sombraThrowPose(thrower,who,frame);
   if(thrower.throwKind==='null')return nullThrowPose(thrower,who,frame);
   if (['lancer', 'cheese', 'teo'].includes(thrower.throwKind)) return rosterThrowPose(thrower, who, frame);
@@ -441,6 +459,9 @@ function airAnim(f) {
 
 function hitAnim(f) {
   if (f.koed && f.grounded) return POSES.ko;
+  if(f.animHint==='rkoSlam'&&f.stateFrame<13)return sampleTrack([
+    [0,YITTY_RKO_VICTIM_LAND],[3,YITTY_RKO_VICTIM_LAND],[9,A.hitSnap,'out'],[13,POSES.hit]
+  ],f.stateFrame);
   const airborne = clamp01((FLOOR - f.y) / 120);
   const base = sampleTrack([[0, A.hitSnap], [5, POSES.hit, 'out']], f.stateFrame);
   return airborne ? { ...base, rot: -airborne * (f.koed ? 1.5 : 0.9) } : base;

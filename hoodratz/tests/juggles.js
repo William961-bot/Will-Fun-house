@@ -54,13 +54,13 @@ check('Low Medium has its own chain slot, cannot repeat, and whiffs cannot cance
   tap('KeyV');assert(p1.moveName==='medium','low medium into standing medium');
 });
 
-check('Low Medium is blockable, low-parryable, punishable by wrong parries, and Burst can escape', () => {
+check('Low Medium is blockable, parryable from any stance, and Burst can escape', () => {
   setup();p2.enter('block');strike('lowMedium');
   assert(p2.hp===MAX_HP && p2.state==='blockstun' && p2.guard===100-BLOCK.guardDrain,'normal low block');
   setup();p2.startParry('low');strike('lowMedium');
   assert(p2.hp===MAX_HP && p1.state==='stagger','low perfect parry');
   for(const dir of ['high','overhead']) {
-    setup();p2.startParry(dir);strike('lowMedium');assert(p2.hp<MAX_HP && p2.state==='hitstun','wrong direction '+dir);
+    setup();p2.startParry(dir);strike('lowMedium');assert(p2.hp===MAX_HP && p1.state==='stagger','no direction needed '+dir);
   }
   setup();strike('lowMedium');const hp=p2.hp;press('Quote');tap('Period');release('Quote');
   assert(p2.state==='burst' && p2.hp===hp && p2.combo===0,'own-meter burst');
@@ -158,7 +158,8 @@ function juggleRoute(facing = 1, stopAtAir = false, id = 'haze') {
   tap('KeyH'); stepUntil(() => p1.moveHit, 25); assert(p2.combo === (burst?9:7), 'air finisher'); stepUntil(() => p2.wallBounced, 60);
   let held=null;
   for(let n=0;n<100;n++) {
-    if(['idle','walk','run','skid','taunt'].includes(p1.state)&&p1.grounded&&Math.abs(p1.x-p2.x)<=100&&p2.y>=p1.y-115)break;
+    // Tonka's bounce drops them at the wall instead of sending them back, so walk in closer.
+    if(['idle','walk','run','skid','taunt'].includes(p1.state)&&p1.grounded&&Math.abs(p1.x-p2.x)<=(id==='tonka'?70:100)&&p2.y>=p1.y-115)break;
     if(!p1.grounded||p2.y<p1.y-115){step();continue;}
     const dir=p2.x>p1.x?'KeyD':'KeyA';
     if(held!==dir){if(held)release(held);held=dir;press(held);}step();
@@ -166,6 +167,8 @@ function juggleRoute(facing = 1, stopAtAir = false, id = 'haze') {
   if(held)release(held);
   if(p1.state==='taunt'){tap(p2.x>p1.x?'KeyD':'KeyA');step();}
   tap('KeyF'); ready(); assert(p2.combo === (burst?10:8), 'bounce light');
+  // Tonka's bounce pins them at the wall; corner hitstun needs Low between Light and Medium.
+  if(id==='tonka'){press('KeyS');tap('KeyF');release('KeyS');ready();tap('KeyV');ready();assert(p2.combo===10,'tonka bounce low, medium');return;}
   tap('KeyV'); ready(); assert(p2.combo === (burst?12:9), 'bounce medium');
   press('KeyS'); tap('KeyF'); release('KeyS'); stepUntil(() => p1.moveHit, 30);
   assert(p2.combo === (burst?13:10) && !p2.comboCapped, `route has room to extend ${p2.combo}`);

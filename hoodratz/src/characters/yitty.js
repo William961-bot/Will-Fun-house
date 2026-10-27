@@ -1,7 +1,9 @@
 // The grappler: football gets him in, timed re-grips keep the opponent in Suplex City.
 const YITTY_ABILITIES = CHARACTER_ABILITIES.yitty = {
-  cooldowns: { special: YITTY.ballCooldown, downSpecial: YITTY.spearCooldown, upSpecial: YITTY.audibleCooldown },
-  labels: { special: 'BALL', downSpecial: 'SPEAR', upSpecial: 'HUT' },
+  cooldowns: { special: YITTY.ballCooldown, downSpecial: YITTY.spearCooldown, upSpecial: YITTY.rkoCooldown },
+  labels: { special: 'BALL', downSpecial: 'SPEAR', upSpecial: 'RKO' },
+  airSpecials:['upSpecial'],
+  reset(f) { f.yittyRkoLaunched=false; },
   ultimate: 'hateMontage',
   special(f, opp, g) {
     if (g.projectiles.some(p => p.owner === f.index && p.kind === 'football')) return false;
@@ -13,11 +15,21 @@ const YITTY_ABILITIES = CHARACTER_ABILITIES.yitty = {
     g.sound('whistle'); return true;
   },
   upSpecial(f, opp, g) {
-    f.vx = 0; f.enter('audibleCall'); g.popup('HUT! HUT!', f.x, f.y - 230, f.stats.color, 34); g.sound('whistle'); return true;
+    f.yittyRkoLaunched=false;
+    return kitAttack(f,'rko',{startup:YITTY.rkoStartup,active:YITTY.rkoActive,
+      recovery:YITTY.rkoRecovery,landingRecovery:YITTY.rkoRecovery,
+      dmg:90,height:'grab',grab:true,commandGrab:true,throwKind:'yittyRko',air:true,
+      hitstun:36,kb:14,launch:-8,hitstop:7,shake:4,box:{x:8,y:-190,w:88,h:150}});
   },
   update(f, opp, g) {
     if (g.phase !== 'fight') return;
-    if (f.audible > 0) f.audible--;
+    if(f.state==='attack'&&f.moveName==='rko') {
+      if(f.stateFrame<YITTY.rkoStartup)f.vx=0;
+      else if(!f.yittyRkoLaunched) {
+        f.yittyRkoLaunched=true;f.y-=1;f.vy=-YITTY.rkoLift;
+        f.vx=YITTY.rkoSpeed*f.facing;g.sound('whistle');g.dust(f.x,FLOOR,f.facing,6);
+      } else if(f.stateFrame>=YITTY.rkoStartup+YITTY.rkoActive)f.vx*=.85;
+    }
     if (f.spearHitUntil >= g.frame && ['spear', 'spearRecover'].includes(f.state) && f.input.pressed('grab')) {
       f.input.consume('grab');
       if (!opp.koed && !opp.invincible && opp.state !== 'throw' && opp.grounded) {
@@ -39,12 +51,13 @@ const YITTY_ABILITIES = CHARACTER_ABILITIES.yitty = {
     } else if (f.state === 'spearRecover') {
       f.vx = 0;
       if (f.stateFrame >= YITTY.spearRecovery) f.enter('idle');
-    } else if (f.state === 'audibleCall') {
-      f.vx = 0;
-      if (f.stateFrame >= YITTY.audibleCall) {
-        f.audible = YITTY.audibleFrames; f.enter('idle'); g.popup('PLAY CALLED!', f.x, f.y - 230, f.stats.color, 30);
-      }
     }
+  },
+  cpuChoice(f,opp,distance) {
+    if(distance<125&&!f.cooldowns.upSpecial)return 'upSpecial';
+    if(distance>160&&!f.cooldowns.special)return 'special';
+    if(opp.grounded&&distance<230&&!f.cooldowns.downSpecial)return 'downSpecial';
+    return null;
   },
 };
 const YITTY_BALL = { dmg: YITTY.ballDamage, fixedDamage: YITTY.ballDamage, height: 'high', hitstun: YITTY.ballStun, kb: YITTY.ballKnockback,
@@ -75,8 +88,8 @@ function resolveSpear(f, victim, g) {
 
 // Throws use exact slam damage, without ordinary combo or momentum scaling.
 function startSuplex(f, victim) {
-  f.suplex = { count: 1, max: f.audible > 0 ? YITTY.audibleSuplexes : YITTY.maxSuplexes,
-    window: f.audible > 0 ? YITTY.audibleWindow : YITTY.chainWindow, mashed: 0, slammed: false,
+  f.suplex = { count: 1, max: YITTY.maxSuplexes,
+    window: YITTY.chainWindow, mashed: 0, slammed: false,
     serials: { ...victim.input.pressSerial }, grabSerial: f.input.pressSerial.grab, chainMissed: false };
 }
 function placeSuplexVictim(f, victim) {

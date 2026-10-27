@@ -1,7 +1,7 @@
-function fifteenRoute(id='haze',facing=1,index=0,stop=15,pad=null,openingSpecial=null) {
+function fifteenRoute(id='haze',facing=1,index=0,stop=15,pad=null,openingSpecial=null,loops=0,noWall=false,startX=null) {
   setup();const att=fighters[index],def=fighters[1-index];att.setCharacter(id);def.setCharacter('rip');
   const crosses=openingSpecial&&['null','lancer'].includes(id);
-  att.reset((facing>0)!==!!crosses?1000:280,facing);def.reset(att.x+60*facing,-facing);
+  att.reset(startX??((facing>0)!==!!crosses?1000:280),facing);def.reset(att.x+60*facing,-facing);
   const k=index?{a:'Comma',m:'KeyK',h:'Slash',up:'ArrowUp',down:'ArrowDown',fwd:facing>0?'ArrowRight':'ArrowLeft'}:
     {a:'KeyF',m:'KeyV',h:'KeyH',up:'KeyW',down:'KeyS',fwd:facing>0?'KeyD':'KeyA'};
   if(pad)att.input=new PlayerInput(index,{type:'pad',slot:pad.index,id:pad.id});
@@ -12,7 +12,9 @@ function fifteenRoute(id='haze',facing=1,index=0,stop=15,pad=null,openingSpecial
   const routeRelease=code=>pad?pad.buttons[padKeys[code]].pressed=false:release(code);
   const opening=id==='sombra'?['medium','overhead']:openingSpecial?['light',openingSpecial,'light','medium','overhead']:['light','low','medium','lowMedium','overhead'];
   const finish=id==='sombra'?['light','low','medium','overhead']:['light','low','medium','lowMedium','overhead'];
-  const route=[...opening,'jump','air','airMedium','extend','air','airMedium','airHeavy','chase',...finish];
+  const air=['jump','air','airMedium','extend','air','airMedium','airHeavy'];
+  // Tonka's loop combos repeat the whole ground + air chain after each bounce.
+  const route=loops?[...opening,...air,...Array.from({length:loops-1},()=>[noWall?'bellReset':'chase',...(noWall?['chase']:[]),...finish,...air]).flat()]:[...opening,...air,'chase',...finish];
   let hits=0,current='';
   const advance=()=>tick();
   const until=(test,limit=90)=>{for(let n=0;n<limit&&!test();n++)advance();assert(test(),`${id}/${index}/${facing}/${current}/${hits}: ${att.state}/${att.moveName}/${att.stateFrame}, victim ${def.state}/${def.combo}, gap ${Math.round(def.x-att.x)}, height ${Math.round(att.y-def.y)}`);};
@@ -20,12 +22,19 @@ function fifteenRoute(id='haze',facing=1,index=0,stop=15,pad=null,openingSpecial
   for(const name of route) {
     current=name;
     while(g.hitstopLeft)advance();
+    if(name==='bellReset') {
+      const b=def.bellResets||0;
+      until(()=>att.grounded&&['idle','walk'].includes(att.state),70);   // land, with the victim pinned at the cap
+      assert((att.bells||0)>=TONKA.bellsMax,'three bells for the reset, has '+att.bells);
+      routePress(k.down);tapReal(specialKey);routeRelease(k.down);
+      assert(def.bellResets===b+1&&att.bells===0,'bell reset fired');continue;
+    }
     if(name==='chase') {
       let held=null;
       for(let n=0;n<120;n++) {
         if(['idle','walk','run','skid','taunt'].includes(att.state)&&att.grounded&&Math.abs(att.x-def.x)<=100&&def.y>=att.y-115)break;
         // Let the rebound travel back to us before pursuing; running into the wall overshoots it.
-        if(!att.grounded||def.y<att.y-115){advance();continue;}
+        if(!att.grounded||def.y<att.y-115){if(held){routeRelease(held);held=null;}advance();continue;}
         const dir=def.x>att.x?(index?'ArrowRight':'KeyD'):(index?'ArrowLeft':'KeyA');
         if(held!==dir){if(held)routeRelease(held);held=dir;routePress(held);}
         advance();
@@ -44,14 +53,19 @@ function fifteenRoute(id='haze',facing=1,index=0,stop=15,pad=null,openingSpecial
       continue;
     }
     const dir=['low','lowMedium'].includes(name)?k.down:name==='overhead'?k.up:null;
-    if(dir)routePress(dir);tapReal(['medium','lowMedium','airMedium'].includes(name)?k.m:name==='airHeavy'?k.h:k.a);if(dir)routeRelease(dir);
+    if(dir)routePress(dir);tapReal(['medium','lowMedium','airMedium'].includes(name)?k.m:name==='airHeavy'?k.h:k.a);
+    // Fifty hits fill the ultimate meter; a full meter holds Light for the Attack + Special chord window,
+    // so keep the direction held until the move comes out.
+    if(loops)for(let n=0;n<=DOMAIN.chordFrames+1&&att.moveName!==name;n++)advance();
+    if(dir)routeRelease(dir);
     assert(att.moveName===name,'starts '+name);
     until(()=>att.moveHit&&(!att.move.burst||att.smgSecond),65);hits+=att.move.burst?2:1;
     assert(def.combo===hits,`${id}/${index}/${facing}: true combo ${name}: ${def.combo}/${hits}`);
-    if(hits===stop)return {att,def,k};
-    if(name==='airHeavy')until(()=>def.wallBounced);
+    if(hits===stop)return {att,def,k,hits};
+    if(name==='airHeavy'){if(noWall)until(()=>att.stateFrame>=att.move.startup+att.move.active-1);else{const b=def.wallBounces;until(()=>def.wallBounces>b);}}
     else until(()=>att.stateFrame>=att.move.startup+att.move.active-1);
   }
+  if(loops)return {att,def,k,hits};
   assert(def.combo===15&&def.comboCapped&&def.bounceHits===5&&def.comboAirExtended,'fifteen-hit limit');
   return {att,def,k};
 }
@@ -210,4 +224,33 @@ check('Goon Su preserves combo and bounce history throughout its hold and counts
   goonExplosion(p1,p2,g);g.domainSequence=null;
   assert(!p2.comboHeld&&p2.combo===15&&p2.comboCapped&&p2.bounceHits===5&&p2.wallBounced&&p2.comboAirExtended,'explosion obeys cap');
   near(p2.hp,980);assert(!goonGrabConnects(p1,p2),'cannot grab beyond cap');
+});
+
+check('Tonka loops five ten-hit chains into a real 50-hit combo on either player and side; others stay at 15',()=>{
+  for(const facing of [-1,1])for(const index of [0,1]) {
+    const {def,hits}=fifteenRoute('tonka',facing,index,50,null,null,5);
+    assert(hits===50&&def.combo===50&&def.comboCapped&&def.wallBounces===4,`tonka ${index}/${facing}: ${def.combo} hits, ${def.wallBounces} bounces`);
+    assert(def.hp>0,'fifty scaled hits do not take a full bar: '+def.hp);
+  }
+  const {def}=fifteenRoute('haze',1,0);assert(def.combo===15&&def.wallBounces===1,'haze still capped at 15 with one bounce');
+});
+check('Tonka loop rules: each bounce drops them at the wall, reopens launcher and air extension and shrinks its window',()=>{
+  rosterVs('tonka','rip');p1.reset(500,1);p2.reset(560,-1);incoming('light',p1,p2);
+  assert(airExtensionWindow(p2)===AIR_EXTENSION.window,'loop 1 has the normal window');
+  p2.overheadLaunched=true;p2.comboAirExtended=true;p2.vx=-20;p2.x=WALL_L+HALF_W;p2.hitWall(1,g);
+  assert(p2.wallBounces===1&&!p2.overheadLaunched&&!p2.comboAirExtended,'bounce reopens the loop');
+  assert(Math.abs(p2.vx)<=20*TONKA_COMBO.reboundSpeed+1e-9,'drops at the wall: '+p2.vx);
+  p2.wallBounces=4;assert(airExtensionWindow(p2)===Math.max(TONKA_COMBO.minWindow,AIR_EXTENSION.window-2),'window shrinks');
+  p2.vx=-20;p2.hitWall(1,g);assert(p2.wallBounces===4&&p2.vx===0,'no fifth bounce');
+  p2.enter('idle');assert(p2.wallBounces===0&&p2.combo===0,'recovering resets the loop count');
+  rosterVs('haze','rip');p1.reset(500,1);p2.reset(560,-1);incoming('light',p1,p2);
+  p2.vx=-20;p2.x=WALL_L+HALF_W;p2.hitWall(1,g);p2.vx=-20;p2.hitWall(1,g);assert(p2.wallBounces===1,'others bounce once');
+});
+
+check('Tonka reaches 50 hits mid-stage with Bell Resets and no wall bounce, on either player and side',()=>{
+  for(const [facing,x] of [[1,150],[-1,1130]])for(const index of [0,1]) {
+    const {def,hits}=fifteenRoute('tonka',facing,index,50,null,null,5,true,x);
+    assert(hits===50&&def.combo===50&&def.comboCapped&&def.bellResets===4&&def.wallBounces===4,`tonka ${index}/${facing}: ${def.combo} hits, ${def.bellResets} resets, ${def.wallBounces} loops`);
+    assert(def.x>WALL_L+HALF_W+40&&def.x<WALL_R-HALF_W-40,'finished away from the walls: '+Math.round(def.x));
+  }
 });

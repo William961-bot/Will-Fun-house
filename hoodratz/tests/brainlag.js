@@ -8,7 +8,7 @@ function hypnosis(owner = 0) {
   step();   // the next tick turns the opponent around
 }
 check('Brainlag joins the roster with his own guard, run, medium, low medium and grab reach poses',()=>{
-  assert(ROSTER.length===13&&ROSTER.at(-1)==='brainlag'&&CHARACTERS.brainlag.home.label,'roster');
+  assert(ROSTER.length===17&&ROSTER.includes('brainlag')&&CHARACTERS.brainlag.home.label,'roster');
   pickCharacters(['brainlag','brainlag']);assert(p1.kit===BRAINLAG_ABILITIES&&p2.stats.color===CHARACTERS.brainlag.altColor,'mirror colours');
   assert(CHARACTER_GUARDS.brainlag&&GUARD_RECOIL.brainlag&&CHARACTER_RUNS.brainlag,'per-character tables');
   for(const name of ['light','low','overhead','medium','lowMedium','heavy','grab','air','airMedium','airHeavy']) {
@@ -101,7 +101,7 @@ check('Possession: he pours into their head, they slap and uppercut themself, he
   near(p2.hp,MAX_HP-90);assert(start<p2.x,'victim stayed put');
   brainlagVs();tap('KeyJ');stepUntil(()=>p1.state==='throw',12);tap('KeyL');step();assert(p1.state!=='throw'&&p2.hp===MAX_HP,'escapable');
 });
-check('Complete Hypnosis: left/right, up/down and Light/Heavy swap, parries flip, and they turn their back on him',()=>{
+check('Complete Hypnosis: left/right, up/down and Light/Heavy swap, and parry still works from any direction',()=>{
   brainlagVs('rip',250);hypnosis();
   near(g.domain.framesLeft,BRAINLAG.hypnosisFrames-1);assert(p2.facing===-1,'still faces him');
   let x=p2.x;press('ArrowLeft');step(5);release('ArrowLeft');assert(p2.x>x&&p2.facing===-1,'left walks right, still facing him');
@@ -109,9 +109,9 @@ check('Complete Hypnosis: left/right, up/down and Light/Heavy swap, parries flip
   step(10);press('ArrowDown');step();release('ArrowDown');assert(p2.state==='jumpsquat','down jumps');
   brainlagVs('rip',250);hypnosis();press('Comma');step();release('Comma');assert(p2.moveName==='heavy','light is heavy');
   brainlagVs('rip',250);hypnosis();press('Slash');step();release('Slash');assert(p2.moveName==='light','heavy is light');
-  for(const [dir,want] of [[null,'low'],['ArrowUp','high'],['ArrowDown','overhead']]) {
+  for(const dir of [null,'ArrowUp','ArrowDown']) {
     brainlagVs('rip',250);hypnosis();if(dir)press(dir);press('Period');step();release('Period');if(dir)release(dir);
-    assert(p2.state==='parry'&&p2.parryDir===want,`parry ${dir} ${p2.parryDir}`);
+    assert(p2.state==='parry',`parry ${dir}`);
   }
   brainlagVs('rip',250);hypnosis();x=p2.x;p2.input=new CpuInput(1,1);p2.input.choose=()=>({left:true});step(4);assert(p2.x>x,'CPU inputs reverse too');
 });
