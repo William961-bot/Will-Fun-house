@@ -9,8 +9,8 @@ function curtisHeavyWall(index=0,away=-1,attacker='rip') {
   opp.startAttack('heavy');opp.stateFrame=opp.move.startup;const pt=hitPoint(opp,f);
   assert(pt,'heavy contact');applyHit(opp,f,pt,g);return pair;
 }
-check('Curtis selection, mirror palette, athletic normals, CPU tiers and fifteen-hit/practice routes join the seventeen-fighter roster',()=>{
-  pickCharacters(['curtis','curtis']);assert(ROSTER.length===17&&p1.kit===CURTIS_ABILITIES,'new fighter');
+check('Curtis selection, mirror palette, athletic normals, CPU tiers and fifteen-hit/practice routes join the eighteen-fighter roster',()=>{
+  pickCharacters(['curtis','curtis']);assert(ROSTER.length===19&&p1.kit===CURTIS_ABILITIES,'new fighter');
   assert(p2.stats.color===CHARACTERS.curtis.altColor&&p1.hp===MAX_HP,'mirror/health');
   openCharacterSelect();assert(charSelect.cursor.every(i=>ROSTER[i]==='curtis'),'both selection slots');
   for(const name of Object.keys(MOVES)) {
@@ -119,4 +119,5 @@ check('Curtis Grand Line lasts eight active seconds, boosts only its owner, gran
   f.enter('idle');g.domain.framesLeft=1;step();step();assert(!g.domain&&f.curtisSwings===1&&rosterSpeed(f)===1,'expires cleanly');
   g.domain={owner:0,type:'curtis',framesLeft:120};opp.ultimate=100;assert(activateDomain(opp,g)&&g.domainSequence.kind==='clash','ordinary clash');
 });
+
 

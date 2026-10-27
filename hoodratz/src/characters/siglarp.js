@@ -91,6 +91,8 @@ function siglarpUltimateAlive(f,g) {
   return g.domain?.owner===f.index&&g.domain.type===f.siglarpUltimateId||
     g.domainSequence?.owner===f.index||
     f.siglarpUltimateId==='gooner'&&f.state==='goonDash'||
+    f.siglarpUltimateId==='juri'&&f.state==='attack'&&f.moveName==='fuhazan'||
+    f.siglarpUltimateId==='wolf'&&f.state==='attack'&&f.moveName==='deathblow'||
     f.siglarpUltimateId==='yitty'&&g.montage?.owner===f.index||
     f.siglarpUltimateId==='sombra'&&g.hackDomains.some(d=>d.owner===f.index);
 }

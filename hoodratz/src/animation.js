@@ -213,6 +213,7 @@ function genericAttackTrack(f) {
 }
 
 function attackAnim(f, frame) {
+  if(f.kit?.attackPose)return f.kit.attackPose(f,frame);
   if(f.stats.id==='halfslip') {
     const view=Object.create(f);view.stats={...f.stats,id:'haze'};const p=attackAnim(view,frame);
     return f.moveName==='grab'?pose(p,{hF:[p.hF[0]+5,p.hF[1]-4],ox:2}):p;
@@ -373,6 +374,7 @@ const THROW_TIMELINES = {
 
 // `thrower` owns the timeline; `who` is 'att' or 'def'. Adds the coughing, farting, flailing and trembling jitter.
 function throwPose(thrower, who, frame) {
+  if(thrower.throwKind==='juri')return who==='att'?POSES.grab_s:TH.held;
   if(thrower.throwKind==='yittyRko')return rkoThrowPose(thrower,who,frame);
   if(thrower.throwKind==='halfslip')return halfslipThrowPose(thrower,who,frame);
   if(thrower.throwKind==='kinkade')return kinkadeThrowPose(thrower,who,frame);

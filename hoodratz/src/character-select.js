@@ -178,6 +178,8 @@ function drawWorldMap(ctx) {
 
 // Bust portrait for the grid: head and shoulders in the character's colours.
 function drawPortrait(ctx, id, x, y, size) {
+  if(id==='juri')return drawJuriPortrait(ctx,x,y,size);
+  if(id==='wolf')return drawWolfPortrait(ctx,x,y,size);
   const ch = CHARACTERS[id];
   ctx.save();
   const bg = ctx.createLinearGradient(x, y, x, y + size);

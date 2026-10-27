@@ -35,7 +35,7 @@ function tonkaResetPending(def) {
 function wallBouncesLeft(def) { return tonkaCombo(def) ? def.wallBounces < TONKA_COMBO.bounces : !def.wallBounced; }
 const ABILITY_LINK_STATES = {
   nullSpearWindup: NULL.spearStartup, crescentWindup: LANCER.waveWindup,
-  deepBall: YITTY.ballWindup, bottleWindup: TEO.throwWindup, spear: 0, virusWindup: SOMBRA.virusStartup,
+  deepBall: YITTY.ballWindup, bottleWindup: TEO.throwWindup, spear: 0, virusWindup: SOMBRA.virusStartup,juriRelease:JURI.releaseAt,
 };
 function armAbilityNormalLink(att, def, name, dmg) {
   const f = realAttacker(att);

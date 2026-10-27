@@ -8,7 +8,7 @@ function hypnosis(owner = 0) {
   step();   // the next tick turns the opponent around
 }
 check('Brainlag joins the roster with his own guard, run, medium, low medium and grab reach poses',()=>{
-  assert(ROSTER.length===17&&ROSTER.includes('brainlag')&&CHARACTERS.brainlag.home.label,'roster');
+  assert(ROSTER.length===19&&ROSTER.includes('brainlag')&&CHARACTERS.brainlag.home.label,'roster');
   pickCharacters(['brainlag','brainlag']);assert(p1.kit===BRAINLAG_ABILITIES&&p2.stats.color===CHARACTERS.brainlag.altColor,'mirror colours');
   assert(CHARACTER_GUARDS.brainlag&&GUARD_RECOIL.brainlag&&CHARACTER_RUNS.brainlag,'per-character tables');
   for(const name of ['light','low','overhead','medium','lowMedium','heavy','grab','air','airMedium','airHeavy']) {
@@ -179,3 +179,4 @@ check('Complete Hypnosis fades out after it ends without crashing the renderer',
   for(let i=0;i<DOMAIN.fadeFrames;i++){drawDomainAtmosphere(any,g);drawBrainlagFx(any,g);step();}
   assert(!g.domainFade,'fade finished');
 });
+

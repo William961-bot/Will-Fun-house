@@ -3,6 +3,7 @@ check('Every CPU tier activates every supported ultimate through real inputs in 
     for(const practice of [false,true])for(const id of ROSTER)for(let level=1;level<=5;level++) {
       if(practice){practiceCpuMatch(level,id);p2.x=400;p1.x=950;}
       else cpuMatch(level,id);
+      if(id==='wolf'){p2.x=p1.x-90;p2.facing=1;}
       p2.ultimate=ULTIMATE_MAX;p2.input.random=()=>0;tick();
       if(p2.kit.ultimate==='none')assert(!g.domainSequence&&p2.ultimate===ULTIMATE_MAX,'unsupported ultimate stays absent');
       else assert(g.domainSequence&&p2.input.rawPressedAt.attack===0&&p2.input.rawPressedAt.special===0,`${id}/${level}/${practice}: actual domain chord`);

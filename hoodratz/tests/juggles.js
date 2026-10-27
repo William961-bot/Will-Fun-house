@@ -30,7 +30,7 @@ function lowMediumRoute(id, facing, index=0) {
     const [name,button,direction]=route[i];
     if(direction)press(direction);tap(button);if(direction)release(direction);
     assert(att.moveName===name,`${id}/${index}/${facing} starts ${name}`);
-    stepUntil(()=>att.moveHit && att.stateFrame>=att.move.startup+att.move.active-1,40);
+    stepUntil(()=>att.moveHit && att.stateFrame>=att.move.startup+att.move.active-1,Math.max(40,att.move.startup+att.move.active+10));
     const expected=id==='sombra'?[1,3,5,6][i]:i+1;
     assert(def.combo===expected,`${id}/${index}/${facing} true combo ${name}: ${def.combo}`);
   }
@@ -97,7 +97,7 @@ check('Heavy presses always start the original wall launcher; holding or releasi
   for (const id of ROSTER) for (const facing of [-1, 1]) for (const held of [false, true]) {
     setup(); p1.setCharacter(id); p1.reset(640, facing); p2.reset(640 + facing * 60, -facing);
     press('KeyH'); step(); if (!held) release('KeyH');
-    assert(p1.moveName === 'heavy' && p1.stateFrame === 0 && p1.move.startup === 28, 'full heavy starts on press');
+    assert(p1.moveName === 'heavy' && p1.stateFrame === 0 && p1.move.startup === (id==='wolf'?26:28), 'full heavy starts on press');
     stepUntil(() => p1.moveHit, 50); release('KeyH');
     assert(p1.moveName === 'heavy', 'same heavy after release or hold');
     assert(p2.hp < MAX_HP && p1.cooldowns.heavy > 0, 'damage and cooldown');

@@ -91,6 +91,10 @@ function resolveCombat(a, b, g) {
     if (a.moveName === 'heavy' && b.moveName === 'heavy') return clash(a, b, pa, g);
     if (a.move.grab) return applyHit(b, a, pb, g);   // attack beats grab
     if (b.move.grab) return applyHit(a, b, pa, g);
+    // A simultaneous strike interrupts the cinematic opener in either player slot.
+    if(a.move.cinematic&&b.move.cinematic)return tech(a,b,pa,g,'SUPER CLASH');
+    if(a.move.cinematic)return applyHit(b,a,pb,g);
+    if(b.move.cinematic)return applyHit(a,b,pa,g);
     applyHit(a, b, pa, g);                           // trade
     applyHit(b, a, pb, g);
     return;
@@ -128,6 +132,8 @@ function applyHit(att, def, pt, g) {
     if (hypnoWrongWay(att, def)) return landHit(att, def, pt, g, 0, 'WRONG WAY');
     return blockHit(att, def, pt, g);
   }
+  if(m.cinematic==='juri'&&!def.isMinion)return startJuriFinisherHold(realAttacker(att),def,g);
+  if(m.cinematic==='wolf'&&!def.isMinion)return startWolfFinisherHold(realAttacker(att),def,g);
   landHit(att, def, pt, g, 0, '');
 }
 

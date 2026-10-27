@@ -59,6 +59,8 @@ function drawFootball(ctx, x, y, angle = 0, scale = 1) {
   for (let x = -4; x <= 4; x += 4) { ctx.moveTo(x, -3); ctx.lineTo(x, 3); } ctx.stroke(); ctx.restore();
 }
 function drawProjectiles(ctx, g) {
+  drawWolfProjectiles(ctx,g);
+  drawJuriProjectiles(ctx,g);
   drawNullProjectiles(ctx,g);
   drawRosterProjectiles(ctx, g);
   drawSoccerBalls(ctx, g);

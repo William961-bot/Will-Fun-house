@@ -17,6 +17,8 @@ function activateDomain(f, g, borrowed=false) {
   for (const player of fighters) if (player.untouchable > 0) endUntouchable(player, g, 'DOMAIN');
   if (f.kit?.ultimate === 'hateMontage') return startHateMontage(f, g);
   if (f.kit?.ultimate === 'hudHack') return startSomhackDomain(f, g);
+  if (f.kit?.ultimate === 'juriFinisher') return startJuriFinisher(f,g);
+  if (f.kit?.ultimate === 'wolfFinisher') return startWolfFinisher(f,g);
   if (f.kit?.grabDomain) return startGoonSu(f, g);
   if (g.domain) {
     g.domainSequence = { kind: 'clash', defender: g.domain.owner, challenger: f.index,
@@ -83,6 +85,8 @@ function beginDomain(owner, g, type=fighters[owner].stats.id) {
 
 function updateDomainSequence(g) {
   const seq = g.domainSequence;
+  if(seq.kind==='juriWindup'||seq.kind==='juriFinisher'){updateJuriFinisher(g);return;}
+  if(seq.kind==='wolfWindup'||seq.kind==='wolfFinisher'){updateWolfFinisher(g);return;}
   if (seq.kind === 'montageOpener') { updateMontageOpener(g); return; }
   if (seq.kind === 'hackDomainWindup') { updateSomhackDomain(g); return; }
   if (seq.kind === 'goonWindup' || seq.kind === 'goonHold') { updateGoonSu(g); return; }

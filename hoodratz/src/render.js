@@ -222,6 +222,12 @@ function drawFighterAt(ctx, f, t, dt, g) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
+  if(f.kit?.drawSprite){
+    f.kit.drawSprite(ctx,f,p,t);ctx.restore();ctx.restore();
+    if(!f.isAfterimage)drawIndicators(ctx,f,t,domainHidden,true);
+    return;
+  }
+
   const heavyWindup = f.state === 'attack' && f.move.unblockable && f.stateFrame < f.move.startup;
   // Hit flash lasts 3 frames; the frozen Goon Su hold would otherwise keep the victim white.
   const flashWhite = f.state === 'hitstun' && f.stateFrame < 3 && g.domainSequence?.kind !== 'goonHold';
@@ -519,7 +525,7 @@ function drawHud(ctx, g, fighters) {
     if (full) { ctx.shadowColor = f.stats.color; ctx.shadowBlur = 12 + 6 * Math.sin(g.frame * 0.12); }
     drawBar(ctx, ux, 654, 300, 12, borrowed?1:noUltimate?0:f.ultimate / ULTIMATE_MAX, 0, f.stats.color, right);
     ctx.fillStyle = full ? f.stats.color : '#bcbcd2'; ctx.font = full ? 'bold 18px sans-serif' : '14px sans-serif';
-    ctx.fillText(borrowed?'COPIED ULTIMATE READY':noUltimate?'NO ULTIMATE YET':full ? (f.kit?.ultimate === 'hateMontage' ? 'MONTAGE READY' : 'DOMAIN READY') : `ULTIMATE  ${Math.floor(f.ultimate)}%`, right ? W - 40 : 40, 646);
+    ctx.fillText(borrowed?'COPIED ULTIMATE READY':noUltimate?'NO ULTIMATE YET':full ? (f.kit?.ultimate === 'hateMontage' ? 'MONTAGE READY' : f.kit?.ultimate==='juriFinisher'?'FINISHER READY':'DOMAIN READY') : `ULTIMATE  ${Math.floor(f.ultimate)}%`, right ? W - 40 : 40, 646);
     ctx.restore();
     const bx = right ? W - 460 : 360, ready = f.burstMeter >= BURST.rechargeFrames;
     drawBar(ctx, bx, 654, 100, 6, f.burstMeter / BURST.rechargeFrames, 0, '#a8dcff', right);
@@ -817,6 +823,8 @@ function renderFight(ctx, g, fighters, dt) {
   if (g.practice) drawPractice(ctx, g);
   drawYittyHud(ctx, g);
   if (g.scareLeft > 0) drawJumpScare(ctx, g);   // the scare covers the HUD too
+  drawJuriFinisherOverlay(ctx,g);
+  drawWolfFinisherOverlay(ctx,g);
   drawOverlay(ctx, g, fighters);
-  drawInputOwnership(ctx, g);
+  if(!['juriWindup','juriFinisher','wolfWindup','wolfFinisher'].includes(g.domainSequence?.kind))drawInputOwnership(ctx, g);
 }

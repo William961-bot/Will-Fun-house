@@ -13,7 +13,7 @@ THROW_RELEASE.curtis=(f,v,g)=>{
 };
 function startRosterThrow(f, victim, g) {
   f.throwFrames = THROWS[f.throwKind].frames; f.throwRecovery = 0;
-  if (!['lancer', 'cheese', 'teo', 'sombra','curtis','kinkade','brainlag','halfslip','yittyRko','duttpack','tonka','sirnivas'].includes(f.throwKind)) return;
+  if (!['lancer', 'cheese', 'teo', 'sombra','curtis','kinkade','brainlag','halfslip','juri','wolf','yittyRko','duttpack','tonka','sirnivas'].includes(f.throwKind)) return;
   f.move = { ...MOVES.grab, fixedDamage: 90, exactThrow: true };
   f.moveMomentum = 0;
   f.throwOrigin = f.x; f.throwFacing = f.facing; f.throwVictimX = clampArena(f.x + 54 * f.facing);

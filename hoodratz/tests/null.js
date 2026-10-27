@@ -9,7 +9,7 @@ function readyNullZoom(att) {stepUntil(()=>att.moveName==='nullZoom'&&att.moveHi
 check('Null is selectable on either player, supports mirrors and all normals in the expanded roster',()=>{
   const chars=g.characters.slice();
   try {
-    assert(ROSTER.includes('null')&&ROSTER.length===17,'roster');pickCharacters(['null','null']);
+    assert(ROSTER.includes('null')&&ROSTER.length===19,'roster');pickCharacters(['null','null']);
     assert(p1.kit===NULL_ABILITIES&&p2.stats.color===CHARACTERS.null.altColor,'mirror palette');
     openCharacterSelect();assert(charSelect.cursor.every(n=>ROSTER[n]==='null'),'selection');
     assert(CHARACTERS.null.home.u>0&&CHARACTERS.null.home.u<1&&CHARACTERS.null.home.v>0&&CHARACTERS.null.home.v<1,'map');
@@ -175,4 +175,5 @@ check('Null custom states, domain opener, normals and mirror visuals have finite
   }
   setup();
 });
+
 

@@ -19,3 +19,16 @@ hoodratz/assets/music/
 hoodratz/assets/reference/
 hoodratz/assets/stages/
 hoodratz/assets/sfx/
+
+# Textures, models and animations recovered from commercial games (Juri, Wolf): local play only, never publish
+hoodratz/assets/juri/
+hoodratz/assets/wolf/
+hoodratz/.hosting/
+# How Wolf and Juri's art was extracted from commercial games, and screenshots of it: local only
+hoodratz/WOLF.md
+hoodratz/MODLOG-extraction-notes.md
+hoodratz/tests/wolf-*.png
+hoodratz/tests/juri-*.png
+hoodratz/tools/*[Ww]olf*
+hoodratz/tools/*[Jj]uri*
+hoodratz/tools/__pycache__/

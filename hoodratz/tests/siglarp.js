@@ -116,6 +116,8 @@ check('Using the copied ultimate ends Complete Larp immediately, restores Siglar
     if(id==='sombra')assert(g.hackDomains.some(d=>d.owner===f.index),'HUD Hack');
     else if(id==='yitty')assert(g.montage?.owner===f.index,'Montage');
     else if(id==='gooner'){assert(f.state==='goonDash','Goon Su dash');activeUntil(()=>opp.hp<opp.maxHp,550);assert(opp.hp<opp.maxHp,'Goon Su explosion');}
+    else if(id==='wolf'){assert(f.moveName==='deathblow','Deathblow opener');activeUntil(()=>opp.hp<opp.maxHp,300);assert(opp.hp<opp.maxHp&&!g.domain,'copied deathblow');}
+    else if(id==='juri'){assert(f.moveName==='fuhazan','Sakkai Fuhazan opener');activeUntil(()=>opp.hp<opp.maxHp,400);assert(opp.hp<opp.maxHp&&!g.domain,'copied cinematic impact');}
     else assert(g.domain?.type===id&&g.domain.owner===f.index,id+' domain');
     if(id==='null'){assert(nullHidden(f,g),'copied darkness hides Siglarp');f.kit.onTakenHit(f,MOVES.light,10,g);assert(!nullHidden(f,g),'damage reveals');}
     assert(!activateDomain(f,g)||f.ultimate>=100,'no second free copied ultimate');
@@ -188,3 +190,4 @@ check('Siglarp preserves saved moves across Larp, finishes an expiring copied ac
   const pair=siglarpVs('curtis'),{f}=pair;siglarpLarp(pair);f.y=FLOOR-120;f.enter('air');tap(pair.up);
   assert(f.curtisSwingLeft>0,'copied swing');g.domain.framesLeft=1;step();assert(f.curtisSwingLeft===0&&!f.curtisAnchor,'expiry ends swing');
 });
+

@@ -2,15 +2,17 @@
 
 Real-time 2D stickman fighter inspired by YOMI Hustle: timing-based parries, grabs, unblockable heavies with strict parry timing, momentum movement. Local 1v1 and three-player free-for-all.
 
-The roster is **Haze, Rip, GoonerPrime, YittyMack, Lancer, Blue Cheese, Teo1910, Null, Somhack, Curtis, Siglarp, Kinkade, Brainlag, Duttpack, Tonka, Sirnivas and Halfslip**. Albino Rino is left out.
+The roster is **Haze, Rip, GoonerPrime, YittyMack, Lancer, Blue Cheese, Teo1910, Null, Somhack, Curtis, Siglarp, Kinkade, Brainlag, Duttpack, Tonka, Sirnivas, Halfslip, Juri and Wolf**. Albino Rino is left out.
 
 Rounds have unlimited time (∞ on the HUD) and end by knockout.
+
+**Wolf:** original Sekiro model and recovered motions, with Shuriken (**T**), Mikiri Counter (**Down + T**), firecrackers (**Up + T**) and Deathblow (**F + T**, full meter). Controller: **RB**, **Down + RB**, **Up + RB**, **X + RB**.
 
 **Play:** open `index.html` in a browser (no install or build step). Home menu → **Play** → player select → fight. The home menu has only **Play**, **Practice** and **Quit**. Click a button, use W/S or Up/Down then Enter, or use the controller stick/D-pad then A/Start. **P** still opens practice directly. Quit stops the game and shows an exit screen with a return button; a window opened by script can close itself, while ordinary browser tabs can be closed manually. [Home menu preview](tests/home-menu.png).
 
 **Play online:** [Hoodratz](https://hoodratz.gunnaprime.chatgpt.site). The hosted game is private: sign in with the owner's ChatGPT account on any computer. It stays available when the development computer is off. Use a keyboard or connect controllers to the computer you are playing on. Battles are local two-player, three-player free-for-all, or versus CPU; this does not add multiplayer between different computers.
 
-**Play offline elsewhere:** extract `.hosting/Hoodratz-offline.zip`, then open its `index.html`. Keep the extracted `src` folder beside that file.
+**Play offline elsewhere:** extract `.hosting/Hoodratz-offline.zip`, then open its `index.html`. Keep the extracted `src` and `assets` folders beside that file.
 
 Hosting identity is stored in `.openai/hosting.json`. After gameplay changes, run `node tools/prepare-hosting.cjs` to refresh the static output in `out/` and the separate hosting checkout in `.hosting/site/`, then publish that same Site using the Sites hosting workflow. The live version changes only after publication. On Windows, set `TAR_OPTIONS=--force-local` for the packaging workflow. Generated output and the hosting checkout are ignored by Git.
 
@@ -98,7 +100,7 @@ Once that window closes, both fighters are locked into the existing throw animat
 
 ## Animation and effects
 
-Fighters are animated with keyframed timelines in `src/animation.js`, keyed on each state's own frame counter so a strike lands on screen exactly when its hitbox is active. Poses can rotate (flips, rolls) and spin (x-scale through zero). Animation is render-only and never affects gameplay.
+Juri uses rendered recovered model-animation sprites; the other fighters are animated with keyframed timelines in `src/animation.js`, keyed on each state's own frame counter so a strike lands on screen exactly when its hitbox is active. Poses can rotate (flips, rolls) and spin (x-scale through zero). Animation is render-only and never affects gameplay.
 
 Every fighter has a character-specific Block and blockstun animation: Haze's relaxed palm guard, Rip's crossed forearms, GoonerPrime's upright laptop shield, YittyMack's wide lineman brace, Lancer's two-handed sword guard, Blue Cheese's raised knife and face-covering hand, Teo's swaying forearm/bottle guard, Null's raised forearm guard and Somhack's raised forearm brace. Blocked hits produce distinct recoil and short contact effects at the hands or weapon. Teo only holds a bottle when he has one. These visuals preserve the existing blocking, hurtboxes, guard costs and controls. The `Character blocks` and `Block impacts` buttons in `tests/all.html` preview all twelve together.
 
@@ -147,7 +149,7 @@ The shared animation pass uses curved hand/foot paths and staggered hips, should
 
 Kinkade's Bench Press now has ready, knee-load, leg-drive, shove, follow-through, reload and settling poses, with a rigid two-hand bar grip. Its hit frames, cooldown, damage and combo routes are unchanged. `Smooth Bench poses` in `tests/all.html` shows both facings; `tests/all.html#smooth` opens the live cycle. The complete suite passes 323 checks in Node and the browser, including exact active poses, planted feet, refresh-rate consistency, freeze behavior and unchanged combat state.
 
-Run `node tests/run.cjs` for all **428 regression checks**. Open `tests/all.html` for the same suite in a browser and visual preview buttons. Tests cover combat, abilities, meters, domain timing and freeze, slow simulation, clashes, all dummy modes, audio, hitbox geometry and complete matches. The expanded roster has ability, meter, throw, domain, mirror and finite-animation checks. CPU checks cover levels 1–5 for all fourteen fighters and repeatable new-kit matches at levels 1, 3 and 5. Every fighter also completes real fifteen-hit routes in both player slots and toward either wall. Null, Lancer and Yitty also complete fifteen-hit ability routes. Checks cover the four-frame air-extension window, held/early/late inputs, controller Up, freeze timing, Burst, special hit links, late damage scaling and cinematic combo counters. Practice CPU 5 completes ten actual hits for every fighter toward either wall, including with infinite resources; block, parry and Burst interrupt its route. Practice checks also cover tiers 1–4, opponent switching and frozen decisions. Device checks use simulated controllers; physical controller pairing is browser/device dependent. Logic timers freeze during pause and hit-stop; cooldowns and guard timers also freeze during round intros.
+Run `node tests/run.cjs` for all **440 regression checks**. Open `tests/all.html` for the same suite in a browser and visual preview buttons. Tests cover combat, abilities, meters, domain timing and freeze, slow simulation, clashes, all dummy modes, audio, hitbox geometry and complete matches. The expanded roster has ability, meter, throw, domain, mirror and finite-animation checks. CPU checks cover levels 1–5 for all fourteen fighters and repeatable new-kit matches at levels 1, 3 and 5. Every fighter also completes real fifteen-hit routes in both player slots and toward either wall. Null, Lancer and Yitty also complete fifteen-hit ability routes. Checks cover the four-frame air-extension window, held/early/late inputs, controller Up, freeze timing, Burst, special hit links, late damage scaling and cinematic combo counters. Practice CPU 5 completes ten actual hits for every fighter toward either wall, including with infinite resources; block, parry and Burst interrupt its route. Practice checks also cover tiers 1–4, opponent switching and frozen decisions. Device checks use simulated controllers; physical controller pairing is browser/device dependent. Logic timers freeze during pause and hit-stop; cooldowns and guard timers also freeze during round intros.
 
 Somhack checks cover two real SMG contacts, split damage and guard costs, combo caps, Hack refunds and counterplay across all twelve kits, Virus bonuses/links, air specials, beacon ownership/recast/persistence, stealth speed/reveal, domain pulse defenses, HUD corruption/expiry/freezes, 900-health resets, throws and controller inputs. Visual previews: [selection](tests/somhack-roster.png), [stealth](tests/somhack-stealth.png), [domain opener](tests/somhack-domain-opener.png) and [corrupted HUD](tests/somhack-domain.png).
 
@@ -172,6 +174,20 @@ Before the Heavy control update, browser verification on localhost passed all 17
 YittyMack screenshots: [roster](tests/yitty-roster.png), [three suplexes](tests/yitty-suplex.png), [mash escape](tests/yitty-escape.png), [Deep Ball](tests/yitty-ball.png), [tackle into suplex](tests/yitty-tackle.png), [Hate Montage](tests/yitty-montage.png).
 
 New fighter screenshots: [seven-fighter roster](tests/new-roster.png), [masked wave](tests/lancer-masked-wave.png), [Soul Sky](tests/lancer-soul-sky.png), [Final Girl Chase](tests/cheese-chase.png), [Teo's bottle](tests/teo-bottle.png), [Last Call](tests/teo-last-call.png). All abilities and CPU levels 1, 3 and 5 have fixture buttons in `tests/all.html`.
+
+## Juri's abilities
+
+Juri uses the user's **Nostalgia model**, rendered into a transparent atlas from the supplied rig and recovered SFV animations. Her body, portrait, normals, movement, guard, hit reactions, grab and specials use that model instead of stick art. There are 316 sampled frames across 29 recovered clips. The 319-channel clips map by bone name to the 347-bone outfit rig. Extra clothing bones retain bind transforms; native cloth and shader behavior are not reproduced.
+
+- **Special — Fuha:** with no stock, perform a 35-damage storing kick. One Fuha stock commits on frame 23; interruption before then prevents storage. With stock, Special spends it and releases one 50-damage low wave after 12 frames. A miss still spends the stock. Block, parry, jumps and invincibility provide counterplay. Store cooldown: 0.75 seconds; release: 2.5 seconds.
+- **Down + Special — Ryodansatsu:** a leaping overhead flip kick, 65 base damage, four-second cooldown, vulnerable startup and landing.
+- **Up + Special — Tensenrin:** a rising spinning kick, 70 base damage, five-second cooldown. It launches the opponent and leaves recovery on a miss; it has no invincibility.
+- **Grab — Spider Flip:** recovered forward-throw animation, the standard fresh ten-frame Grab escape, and one normal 90-damage release. Victim alignment uses Hoodratz's shared throw system, not a recovered SFV partner solver.
+- **Ultimate — Sakkai Fuhazan:** replaces Feng Shui Engine. At full meter, Attack + Special (controller X + RB) spends the meter on a brief purple flash and a vulnerable opening kick. A clean hit starts Juri's recovered 4.3-second finisher motion, with reconstructed camera framing, energy and opponent reactions. Block, parry, invincibility, range and interrupting attacks can stop the opener; missing loses the meter and leaves recovery. The cinematic deals one **350-base-damage** final hit with shared combo/morale scaling. It can KO; practice refills the defeated dummy. The other fighters and existing arena-domain clock freeze during the cinematic. It does not create an arena or clash with domains. Fuha stock and normal movement/recovery remain ordinary.
+
+Controls stay the same: 1P T / S+T / W+T, 2P ; / Down+; / Up+;, controller RB / Down+RB / Up+RB. Juri supports both player slots, three-player mode, mirrors, CPU tiers and practice. Siglarp can copy her abilities and appearance.
+
+Move names are grounded in [Capcom's SFV Juri move list](https://game.capcom.com/cfn/sfv/character/juri/movelist). Inputs, damage, timing, hitboxes and cinematic gameplay are **Hoodratz adaptations**, not a complete recreation of the original game. Original recovery files remain private in .hosting; only rendered sprites and provenance ship. See MODLOG.md and tools/render-juri.py for conversion details.
 
 ## Halfslip's abilities
 

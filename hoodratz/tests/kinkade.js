@@ -5,8 +5,8 @@ function kinkadeVs(index=0,facing=1,gap=350) {
 }
 function kinkadeDrink(pair,frames) {press(pair.up);press(pair.special);step(frames);}
 function kinkadeRelease(pair) {release(pair.up);release(pair.special);step(KINKADE.recovery+1);}
-check('Kinkade joins both selection slots, mirror palettes, finite normals and the seventeen-fighter roster',()=>{
-  pickCharacters(['kinkade','kinkade']);assert(ROSTER.length===17&&p1.kit===KINKADE_ABILITIES,'roster');
+check('Kinkade joins both selection slots, mirror palettes, finite normals and the eighteen-fighter roster',()=>{
+  pickCharacters(['kinkade','kinkade']);assert(ROSTER.length===19&&p1.kit===KINKADE_ABILITIES,'roster');
   assert(p2.stats.color===CHARACTERS.kinkade.altColor&&p1.hp===1000,'mirror/health');
   openCharacterSelect();assert(charSelect.cursor.every(i=>ROSTER[i]==='kinkade'),'selection');
   for(const name of Object.keys(MOVES)) {
@@ -238,3 +238,4 @@ check('Bench respects combo caps, Burst escape, vulnerable recovery and frozen m
   g.paused=true;tick();near(f.stateFrame,frame);near(f.cooldowns.special,cd);g.paused=false;
   g.hitstopLeft=2;tick();near(f.stateFrame,frame);near(f.cooldowns.special,cd);
 });
+
