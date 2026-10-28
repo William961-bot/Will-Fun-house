@@ -8,6 +8,7 @@ CHARACTERS.ichigo = { id: 'ichigo', name: 'ICHIGO', color: '#ff9a3c', dark: '#5a
   title: 'The substitute Soul Reaper',
   blurb: 'A teenager with a sword bigger than he is. Fires Getsuga Tensho, flash steps behind you and rises with a Steel Uppercut.',
   moves: ['Special: Getsuga Tensho (slash wave) · Down: Flash Step (teleport behind)', 'Up: Steel Uppercut (rising slash)',
+    'Special+Forward: Full Cut · Special+Back: Black Getsuga',
     'Grab: shared throw · Ultimate: Vasto Lorde (more damage and speed)'] };
 ROSTER.push('ichigo'); THROWS.ichigo = { frames: 54, distance: 56 };
 DOMAIN_NAMES.ichigo = 'VASTO LORDE'; DOMAIN_SUBTITLES.ichigo = '+20% DAMAGE · +15% SPEED · HOLLOW MASK';
@@ -69,3 +70,13 @@ const ICHIGO_ABILITIES = CHARACTER_ABILITIES.ichigo = {
   attackPose(f, frame) { return ichigoAttackPose(f, frame); },
   drawSprite(ctx, f, p, t) { drawIchigoSprite(ctx, f, p, t); },
 };
+
+// Special + Forward: Full Cut (MUGEN 1021). Special + Back: Black Getsuga (MUGEN 3101), a slower, bigger wave.
+addMugenVariants(ICHIGO_ABILITIES, {
+  forward: { name: 'fullcut', label: 'FULL CUT', cooldown: 210, kind: 'attack', move: { startup: 9, active: 8, recovery: 26, dmg: 80, height: 'high',
+      hitstun: 32, kb: 5, hitstop: 6, shake: 3, step: 10, box: { x: 10, y: -150, w: 170, h: 90 } } },
+  back: { name: 'blackGetsuga', label: 'BLACK GETSUGA', cooldown: 360, kind: 'shot', clip: 'blackGetsuga', frames: 46, at: 22, sound: 'slash',
+    projectile: f => ({ kind: 'ichigoGetsuga', dark: true, owner: f.index, x: f.x + 70 * f.facing, y: f.y - 95, vx: 9 * f.facing, facing: f.facing, framesLeft: 90,
+      box: { w: 72, h: 130 }, blockGuard: 10, name: 'blackGetsuga',
+      move: { dmg: 90, fixedDamage: 90, height: 'high', hitstun: 30, kb: 5, hitstop: 7, shake: 4, startup: 1, active: 1, recovery: 1 } }) },
+});

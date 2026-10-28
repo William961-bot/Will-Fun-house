@@ -32,6 +32,7 @@ function ichigoMotion(f) {
     const key = f.moveName === 'air' ? 'airLight' : f.moveName === 'grab' ? 'grabMiss' : A[f.moveName] ? f.moveName : 'light';
     return { key, progress: sf / (f.move.startup + f.move.active + f.move.recovery) };
   }
+  if (f.state === 'mxShot') return { key: f.mxClip, progress: Math.min(1, f.stateFrame / f.abilityFrames) };
   if (f.state === 'ichigoGetsuga') return { key: 'getsuga', progress: Math.min(1, sf / f.abilityFrames) };
   if (f.state === 'ichigoFlash') return { key: 'flash', progress: Math.min(1, sf / f.abilityFrames) };
   if (f.state === 'throw') return { key: 'grab', progress: Math.min(1, sf / (f.throwFrames || 54)) };
@@ -77,8 +78,8 @@ function drawIchigoPortrait(ctx, x, y, size) {
 function drawIchigoProjectiles(ctx, g) {
   for (const p of g.projectiles) if (p.kind === 'ichigoGetsuga') {
     ctx.save(); ctx.translate(p.x, p.y); ctx.scale(p.facing, 1);
-    ctx.fillStyle = 'rgba(80,200,255,.3)'; ctx.beginPath(); ctx.arc(-6, 0, 58, -1.35, 1.35); ctx.lineTo(-6, 0); ctx.fill();
-    ctx.strokeStyle = '#bff3ff'; ctx.lineWidth = 8; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(-14, 0, 50, -1.3, 1.3); ctx.stroke();
-    ctx.strokeStyle = '#0d1a2e'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(-18, 0, 44, -1.2, 1.2); ctx.stroke(); ctx.restore();
+    ctx.fillStyle = p.dark ? 'rgba(20,20,40,.55)' : 'rgba(80,200,255,.3)'; ctx.beginPath(); ctx.arc(-6, 0, 58, -1.35, 1.35); ctx.lineTo(-6, 0); ctx.fill();
+    ctx.strokeStyle = p.dark ? '#d03a3a' : '#bff3ff'; ctx.lineWidth = 8; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(-14, 0, 50, -1.3, 1.3); ctx.stroke();
+    ctx.strokeStyle = p.dark ? '#050508' : '#0d1a2e'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(-18, 0, 44, -1.2, 1.2); ctx.stroke(); ctx.restore();
   }
 }

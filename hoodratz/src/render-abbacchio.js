@@ -32,6 +32,7 @@ function abbacchioMotion(f) {
     const key = f.moveName === 'air' ? 'airLight' : f.moveName === 'grab' ? 'grabMiss' : A[f.moveName] ? f.moveName : 'light';
     return { key, progress: sf / (f.move.startup + f.move.active + f.move.recovery) };
   }
+  if (f.state === 'mxShot') return { key: f.mxClip, progress: Math.min(1, f.stateFrame / f.abilityFrames) };
   if (f.state === 'abbacchioPalm') return { key: 'palm', progress: Math.min(1, sf / f.abilityFrames) };
   if (f.state === 'abbacchioReplay') return { key: 'replay', progress: Math.min(1, sf / f.abilityFrames) };
   if (f.state === 'abbacchioReplayHit') return { key: 'replayHit', progress: Math.min(1, sf / f.abilityFrames) };

@@ -23,6 +23,7 @@ CLIPS = dict(
     airMedium=(610, 7, 7, 21), airHeavy=(620, 10, 12, 31), grab=(1040, 6, None, None), grabMiss=(1040, 6, None, None),
     hit=(5000, 4, None, None), ko=(5120, 3, None, None), escape=(5200, 8, None, None),
     palm=(1800, 10, None, None), stand=(3010, 10, None, None), replay=(1200, 8, None, None), replayHit=(1202, 12, None, None), rise=(1000, 6, 7, 41),
+    barrage=(3001, 7, 8, 38), groundPunch=(3003, 8, 9, 41),
 )
 
 def frame_at(frames, tick):

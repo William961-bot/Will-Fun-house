@@ -225,6 +225,10 @@ Beerus is the MUGEN character Beerus 2.0 by K6666orochi, drawn from his original
 - **Special: Z-Buster.** A ki blast on frame 14 of a 34-frame cast: 45 damage, fast, blockable, 120-frame cooldown.
 - **Down + Special: Sphere of Destruction.** A large, slow sphere (80 damage, launches, 360-frame cooldown) that is easy to jump but hard to block through.
 - **Up + Special: Hienkiaku.** A forward-moving flying kick: 65 damage, launches, 300-frame cooldown.
+- **Special + Forward: Slap Happy.** A flurry of slaps: 70 damage, steps forward, 180-frame cooldown.
+- **Special + Back: Pretendo in Vanati.** A lunging reach: 55 damage, steps forward, 150-frame cooldown.
+- **Special + Forward: Z-Sabre Attack.** A stepping arm strike: 60 damage, 150-frame cooldown.
+- **Special + Back: Super Charged ki blast.** A big fast blast: 70 damage, 300-frame cooldown.
 - **Grab:** the shared 90-damage grab.
 - **Ultimate: Hakai.** A domain: +25% damage and every Special costs half the cooldown for the usual 8 seconds.
 - Mirror matches use his red-trousers palette.
@@ -237,6 +241,8 @@ Ichigo is the MUGEN character Ichigo Vasto Lorde by StormEX, drawn from his orig
 - **Special: Getsuga Tensho.** A slash wave on frame 16 of a 36-frame cast: 60 damage, blockable, 150-frame cooldown.
 - **Down + Special: Flash Step.** He vanishes and reappears behind the opponent on frame 10 (in front if they are against a wall). No damage, 300-frame cooldown.
 - **Up + Special: Steel Uppercut.** A leaping rising slash that launches: 75 damage, 300-frame cooldown, punishable if it whiffs.
+- **Special + Forward: Full Cut.** A wide stepping slash: 80 damage, 210-frame cooldown.
+- **Special + Back: Black Getsuga.** A slower, bigger dark wave: 90 damage, 360-frame cooldown.
 - **Grab:** the shared 90-damage grab.
 - **Ultimate: Vasto Lorde.** A domain: +20% damage and +15% speed for the usual 8 seconds.
 - Mirror matches use his red palette.
@@ -249,6 +255,8 @@ Art is the MUGEN character Art The Clown by lou42083/MugenLD (a Sareena base), d
 - **Special: Cleaver Throw.** A spinning cleaver on frame 14 of a 34-frame throw: 50 damage, blockable, 120-frame cooldown.
 - **Down + Special: Spin Slash.** A spinning cleaver slash that hits on both sides: 70 damage, 270-frame cooldown.
 - **Up + Special: Flash Kick.** A leaping rising kick that launches: 65 damage, 300-frame cooldown, punishable if it whiffs.
+- **Special + Forward: Cleaver chop.** A stepping chop: 70 damage, 180-frame cooldown.
+- **Special + Back: Cleaver stab.** A low thrust (block low): 65 damage, 150-frame cooldown.
 - **Grab:** the shared 90-damage grab.
 - **Ultimate: Terrifier.** A domain: +20% damage and Cleaver Throw costs half the cooldown for the usual 8 seconds.
 - Mirror matches use his bloodied palette.
@@ -261,6 +269,8 @@ Ghostface is the MUGEN character Ghostface MKP by Lumppowraca, ricktendo & elgra
 - **Special: Knife Throw.** A knife on frame 14 of a 34-frame throw: 45 damage, fast, blockable, 120-frame cooldown.
 - **Down + Special: Lunge Stab.** A forward-moving knife stab: 65 damage, 240-frame cooldown.
 - **Up + Special: Leaping Slash.** A leap into a rising slash that launches: 70 damage, 300-frame cooldown, punishable if it whiffs.
+- **Special + Forward: Slash.** A stepping slash: 60 damage, 150-frame cooldown.
+- **Special + Back: Low slide.** A low sliding stab (block low): 55 damage, 180-frame cooldown.
 - **Grab:** the shared 90-damage grab.
 - **Ultimate: Favorite Scary Movie.** A domain: +20% damage and +10% speed for the usual 8 seconds.
 - Mirror matches use a gold robe (red and blue swapped).
@@ -273,6 +283,8 @@ Harley is the MUGEN character MvC Harley Quinn by chuchoryu (SFF v2 sprites), dr
 - **Special: Pistol Shot.** A bullet on frame 12 of a 30-frame shot: 35 damage, fast, blockable, 90-frame cooldown.
 - **Down + Special: Hyena Call.** A hyena runs along the floor on frame 18: 55 damage, a low hit (block low, or jump it), 300-frame cooldown.
 - **Up + Special: Flip Kick.** A leaping kick that launches: 65 damage, 270-frame cooldown, punishable if it whiffs.
+- **Special + Forward: Mallet Slam.** A slow, heavy overhead: 90 damage, launches, 300-frame cooldown.
+- **Special + Back: Mallet Sweep.** A low sweep (block low): 65 damage, 210-frame cooldown.
 - **Grab:** the shared 90-damage grab.
 - **Ultimate: Mad Love.** A domain: +20% damage and +15% speed for the usual 8 seconds.
 - Mirror matches use her purple-and-yellow palette.
@@ -285,6 +297,8 @@ Abbacchio is the MUGEN Leone Abbacchio (JoJo's Bizarre Adventure, SFF v1), drawn
 - **Special: Moody Blues strike.** His Stand throws a punch forward on frame 16 of a 36-frame cast: 45 damage, blockable, 120-frame cooldown.
 - **Down + Special: Replay.** A counter stance (frames 3 to 16 of 34). A grounded frontal melee hit is caught without damage and answered with a 75-damage strike; 240-frame cooldown. Aerial attacks, grabs and projectiles are not caught, and a whiff leaves him committed.
 - **Up + Special: Rising Kick.** A leaping kick that launches: 65 damage, 300-frame cooldown, punishable if it whiffs.
+- **Special + Forward: Stand barrage.** A stepping punch flurry: 65 damage, 150-frame cooldown.
+- **Special + Back: Ground punch.** A low punch (block low): 55 damage, 150-frame cooldown.
 - **Grab:** the shared 90-damage grab.
 - **Ultimate: Moody Blues.** A domain: +20% damage and +10% speed for the usual 8 seconds.
 - Mirror matches use his red palette.

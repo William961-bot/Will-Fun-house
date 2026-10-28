@@ -20,12 +20,17 @@ const JURI_ABILITIES=CHARACTER_ABILITIES.juri={
     f.juriCd={counter:0,senpusha:0};f.juriCounterTarget=null;f.juriCounterContact=false;},
   // Special + Forward is Senpusha, Special + Back is the Kasatsushi counter; each keeps its own cooldown.
   cooldownLeft(f,key){return key==='special'?(juriSpecialVariant(f)==='fuha'?f.cooldowns.special:f.juriCd?.[juriSpecialVariant(f)]||0):undefined;},
+  // cooldownFor is also called by the HUD every frame, so it must not change state: the variant cooldowns are set in onSpecialUsed.
   cooldownFor(f,key){
     if(key!=='special')return this.cooldowns[key];
-    const variant=f.juriVariant||'fuha';
-    if(variant==='counter'){f.juriCd.counter=JURI.counterCooldown;return 0;}
-    if(variant==='senpusha'){f.juriCd.senpusha=JURI.senpushaCooldown;return 0;}
+    if(f.juriUsing==='counter'||f.juriUsing==='senpusha')return 0;
     return f.state==='juriRelease'?JURI.releaseCooldown:JURI.storeCooldown;
+  },
+  onSpecialUsed(f,key){
+    if(key!=='special')return;
+    if(f.juriUsing==='counter')f.juriCd.counter=JURI.counterCooldown;
+    else if(f.juriUsing==='senpusha')f.juriCd.senpusha=JURI.senpushaCooldown;
+    f.juriUsing=null;
   },
   moveFor(f,name,move){
     if(name!=='medium'||!juriHeld(f,'forward')||!f.grounded)return move;
@@ -35,7 +40,7 @@ const JURI_ABILITIES=CHARACTER_ABILITIES.juri={
       box:{x:25,y:-135,w:115,h:55}};
   },
   special(f,opp,g){
-    f.juriVariant=juriSpecialVariant(f);
+    f.juriVariant=juriSpecialVariant(f);f.juriUsing=f.juriVariant;
     if(f.juriVariant==='counter'){f.juriCounterContact=false;return openAbility(f,'juriCounter',JURI.counterFrames);}
     if(f.juriVariant==='senpusha')return kitAttack(f,'senpusha',{startup:8,active:10,recovery:22,dmg:70,height:'high',
       hitstun:30,kb:5,launch:-8,hitstop:6,shake:3,step:7,box:{x:10,y:-150,w:120,h:120}});

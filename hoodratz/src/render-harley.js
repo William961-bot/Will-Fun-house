@@ -32,6 +32,7 @@ function harleyMotion(f) {
     const key = f.moveName === 'air' ? 'airLight' : f.moveName === 'grab' ? 'grabMiss' : A[f.moveName] ? f.moveName : 'light';
     return { key, progress: sf / (f.move.startup + f.move.active + f.move.recovery) };
   }
+  if (f.state === 'mxShot') return { key: f.mxClip, progress: Math.min(1, f.stateFrame / f.abilityFrames) };
   if (f.state === 'harleyShoot') return { key: 'shoot', progress: Math.min(1, sf / f.abilityFrames) };
   if (f.state === 'harleyHyena') return { key: 'hyena', progress: Math.min(1, sf / f.abilityFrames) };
   if (f.state === 'throw') return { key: 'grab', progress: Math.min(1, sf / (f.throwFrames || 54)) };

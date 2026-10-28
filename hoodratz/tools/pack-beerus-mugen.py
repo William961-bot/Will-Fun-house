@@ -23,6 +23,7 @@ CLIPS = dict(
     airMedium=(620, 8, 7, 21), airHeavy=(650, 10, 12, 31), grab=(810, 10, None, None), grabMiss=(800, 2, None, None),
     hit=(5000, 2, None, None), ko=(5120, 4, None, None), escape=(5200, 4, None, None),
     buster=(1000, 8, None, None), sphere=(3000, 10, None, None), hienkiaku=(1300, 12, 9, 51),
+    sabre=(1500, 8, 8, 40), megaShot=(2500, 12, None, None),
 )
 
 def frame_at(frames, tick):

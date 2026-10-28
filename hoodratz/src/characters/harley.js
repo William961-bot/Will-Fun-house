@@ -9,6 +9,7 @@ CHARACTERS.harley = { id: 'harley', name: 'HARLEY QUINN', color: '#e8283c', dark
   title: 'The Clown Princess of Crime',
   blurb: 'Puddin loves a good time. Fires her pistol, sends a hyena along the floor and flips in with a kick.',
   moves: ['Special: Pistol Shot · Down: Hyena Call (low runner)', 'Up: Flip Kick (rising launcher)',
+    'Special+Forward: Mallet Slam · Special+Back: Mallet Sweep (low)',
     'Grab: shared throw · Ultimate: Mad Love (more damage and speed)'] };
 ROSTER.push('harley'); THROWS.harley = { frames: 54, distance: 56 };
 DOMAIN_NAMES.harley = 'MAD LOVE'; DOMAIN_SUBTITLES.harley = '+20% DAMAGE · +15% SPEED · HA HA HA';
@@ -70,3 +71,11 @@ const HARLEY_ABILITIES = CHARACTER_ABILITIES.harley = {
   attackPose(f, frame) { return harleyAttackPose(f, frame); },
   drawSprite(ctx, f, p, t) { drawHarleySprite(ctx, f, p, t); },
 };
+
+// Special + Forward: Mallet Slam (MUGEN 3000), slow and heavy. Special + Back: low Mallet Sweep (MUGEN 3031).
+addMugenVariants(HARLEY_ABILITIES, {
+  forward: { name: 'mallet', label: 'MALLET', cooldown: 300, kind: 'attack', move: { startup: 20, active: 8, recovery: 34, dmg: 90, height: 'high',
+      hitstun: 38, kb: 6, launch: -6, hitstop: 6, shake: 3, step: 4, box: { x: 20, y: -170, w: 130, h: 150 } } },
+  back: { name: 'malletLow', label: 'SWEEP', cooldown: 210, kind: 'attack', move: { startup: 14, active: 8, recovery: 28, dmg: 65, height: 'low',
+      hitstun: 28, kb: 4, hitstop: 6, shake: 3, step: 8, box: { x: 20, y: -52, w: 150, h: 50 } } },
+});

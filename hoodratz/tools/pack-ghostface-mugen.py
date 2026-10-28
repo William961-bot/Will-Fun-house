@@ -23,6 +23,7 @@ CLIPS = dict(
     airMedium=(610, 5, 7, 21), airHeavy=(620, 5, 12, 31), grab=(210, 11, None, None), grabMiss=(210, 6, None, None),
     hit=(5000, 2, None, None), ko=(5120, 6, None, None), escape=(5200, 1, None, None),
     throw=(1200, 8, None, None), lunge=(1000, 3, 8, 40), leap=(1100, 9, 7, 41),
+    slash=(2001, 7, 9, 41), slide=(771, 8, 8, 44),
 )
 
 def swap_rb(img):

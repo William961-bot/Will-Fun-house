@@ -9,6 +9,7 @@ CHARACTERS.abbacchio = { id: 'abbacchio', name: 'ABBACCHIO', color: '#8a8ad8', d
   title: 'The Stand of Moody Blues',
   blurb: 'A former policeman who never looks away. His Stand strikes from range, replays the blow that tries to hit him and sends him rising with a kick.',
   moves: ['Special: Moody Blues strike (ranged Stand punch) · Down: Replay (counter)', 'Up: Rising Kick (launcher)',
+    'Special+Forward: Stand Barrage · Special+Back: Ground Punch (low)',
     'Grab: shared throw · Ultimate: Moody Blues (more damage and speed)'] };
 ROSTER.push('abbacchio'); THROWS.abbacchio = { frames: 54, distance: 56 };
 DOMAIN_NAMES.abbacchio = 'MOODY BLUES'; DOMAIN_SUBTITLES.abbacchio = '+20% DAMAGE · +10% SPEED · REWIND, REPLAY';
@@ -93,3 +94,11 @@ const ABBACCHIO_ABILITIES = CHARACTER_ABILITIES.abbacchio = {
   attackPose(f, frame) { return abbacchioAttackPose(f, frame); },
   drawSprite(ctx, f, p, t) { drawAbbacchioSprite(ctx, f, p, t); },
 };
+
+// Special + Forward: Stand barrage (MUGEN 3001). Special + Back: low ground punch (MUGEN 3003).
+addMugenVariants(ABBACCHIO_ABILITIES, {
+  forward: { name: 'barrage', label: 'BARRAGE', cooldown: 150, kind: 'attack', move: { startup: 8, active: 8, recovery: 22, dmg: 65, height: 'high',
+      hitstun: 30, kb: 5, hitstop: 6, shake: 3, step: 8, box: { x: 20, y: -140, w: 130, h: 70 } } },
+  back: { name: 'groundPunch', label: 'GROUND', cooldown: 150, kind: 'attack', move: { startup: 9, active: 8, recovery: 24, dmg: 55, height: 'low',
+      hitstun: 26, kb: 4, hitstop: 6, shake: 3, step: 8, box: { x: 20, y: -55, w: 140, h: 50 } } },
+});

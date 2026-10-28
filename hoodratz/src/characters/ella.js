@@ -8,6 +8,7 @@ CHARACTERS.ella = { id: 'ella', name: 'ELLA', color: '#e3ebff', dark: '#3b4468',
   title: 'The giocondo striker',
   blurb: 'A dead girl who likes pigeons, flowers and chainsaws. Throws a pigeon, rolls low, rises with an uppercut.',
   moves: ['Special: Face the Piccion (pigeon shot) · Down: Nautilus (low roll)', 'Up: Oriuken (rising uppercut)',
+    'Special+Forward: Slap Happy · Special+Back: Vanati lunge',
     'Grab: Presa · Ultimate: Chain\'O\'Saw (more damage and speed)'] };
 ROSTER.push('ella'); THROWS.ella = { frames: 54, distance: 56 };
 DOMAIN_NAMES.ella = "CHAIN'O'SAW"; DOMAIN_SUBTITLES.ella = '+20% DAMAGE · +10% SPEED · SAW IT';
@@ -62,3 +63,11 @@ const ELLA_ABILITIES = CHARACTER_ABILITIES.ella = {
   attackPose(f, frame) { return ellaAttackPose(f, frame); },
   drawSprite(ctx, f, p, t) { drawEllaSprite(ctx, f, p, t); },
 };
+
+// Special + Forward: Slap Happy (MUGEN 12000). Special + Back: Pretendo in Vanati (MUGEN 1022).
+addMugenVariants(ELLA_ABILITIES, {
+  forward: { name: 'slap', label: 'SLAP', cooldown: 180, kind: 'attack', move: { startup: 10, active: 12, recovery: 26, dmg: 70, height: 'high',
+      hitstun: 30, kb: 5, hitstop: 6, shake: 3, step: 8, box: { x: 0, y: -150, w: 115, h: 110 } } },
+  back: { name: 'vanati', label: 'VANATI', cooldown: 150, kind: 'attack', move: { startup: 9, active: 8, recovery: 24, dmg: 55, height: 'high',
+      hitstun: 26, kb: 4, hitstop: 6, shake: 3, step: 14, box: { x: 10, y: -130, w: 130, h: 90 } } },
+});

@@ -23,6 +23,7 @@ CLIPS = dict(
     airMedium=(610, 8, 7, 21), airHeavy=(620, 8, 12, 31), grab=(710, 8, None, None), grabMiss=(710, 4, None, None),
     hit=(5070, 4, None, None), ko=(5120, 3, None, None), escape=(5120, 3, None, None),
     getsuga=(700, 10, None, None), flash=(500, 8, None, None), steel=(1120, 10, 7, 41),
+    fullcut=(1021, 10, 9, 43), blackGetsuga=(3101, 10, None, None),
 )
 
 def frame_at(frames, tick):

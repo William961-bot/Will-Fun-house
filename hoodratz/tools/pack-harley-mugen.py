@@ -23,6 +23,7 @@ CLIPS = dict(
     airMedium=(610, 6, 7, 21), airHeavy=(640, 4, 12, 31), grab=(810, 5, None, None), grabMiss=(800, 6, None, None),
     hit=(5000, 2, None, None), ko=(5120, 4, None, None), escape=(5200, 3, None, None),
     shoot=(1000, 6, None, None), hyena=(1800, 9, None, None), hyenaRun=(1809, 8, None, None), flip=(1400, 5, 7, 41),
+    mallet=(3000, 14, 20, 62), malletLow=(3031, 10, 14, 50),
 )
 
 def frame_at(frames, tick):

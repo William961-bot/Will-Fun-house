@@ -36,6 +36,7 @@ function artMotion(f) {
     const key = f.moveName === 'air' ? 'airLight' : f.moveName === 'grab' ? 'grabMiss' : A[f.moveName] ? f.moveName : 'light';
     return { key, progress: sf / (f.move.startup + f.move.active + f.move.recovery) };
   }
+  if (f.state === 'mxShot') return { key: f.mxClip, progress: Math.min(1, f.stateFrame / f.abilityFrames) };
   if (f.state === 'artCleaver') return { key: 'cleaver', progress: Math.min(1, sf / f.abilityFrames) };
   if (f.state === 'throw') return { key: 'grab', progress: Math.min(1, sf / (f.throwFrames || 54)) };
   if (f.state === 'thrown') return { key: 'hit', progress: .3, rot: f.pose?.rot || 0 };

@@ -8,6 +8,7 @@ CHARACTERS.ghostface = { id: 'ghostface', name: 'GHOSTFACE', color: '#9fb4c8', d
   title: 'The masked stalker',
   blurb: 'He phones first. Throws a knife, lunges with a stab and leaps in for a slash.',
   moves: ['Special: Knife Throw · Down: Lunge Stab (advancing)', 'Up: Leaping Slash (rising launcher)',
+    'Special+Forward: Slash · Special+Back: Slide (low)',
     'Grab: shared throw · Ultimate: Favorite Scary Movie (more damage and speed)'] };
 ROSTER.push('ghostface'); THROWS.ghostface = { frames: 54, distance: 56 };
 DOMAIN_NAMES.ghostface = 'FAVORITE SCARY MOVIE'; DOMAIN_SUBTITLES.ghostface = '+20% DAMAGE · +10% SPEED · WHO IS THIS?';
@@ -60,3 +61,11 @@ const GHOSTFACE_ABILITIES = CHARACTER_ABILITIES.ghostface = {
   attackPose(f, frame) { return ghostfaceAttackPose(f, frame); },
   drawSprite(ctx, f, p, t) { drawGhostfaceSprite(ctx, f, p, t); },
 };
+
+// Special + Forward: slash (MUGEN 2001). Special + Back: low slide (MUGEN 771).
+addMugenVariants(GHOSTFACE_ABILITIES, {
+  forward: { name: 'slash', label: 'SLASH', cooldown: 150, kind: 'attack', move: { startup: 9, active: 8, recovery: 24, dmg: 60, height: 'high',
+      hitstun: 30, kb: 5, hitstop: 6, shake: 3, step: 12, box: { x: 10, y: -110, w: 140, h: 80 } } },
+  back: { name: 'slide', label: 'SLIDE', cooldown: 180, kind: 'attack', move: { startup: 8, active: 10, recovery: 26, dmg: 55, height: 'low',
+      hitstun: 26, kb: 4, hitstop: 6, shake: 3, step: 16, box: { x: 20, y: -50, w: 140, h: 50 } } },
+});

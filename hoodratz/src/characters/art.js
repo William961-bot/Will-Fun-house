@@ -7,6 +7,7 @@ CHARACTERS.art = { id: 'art', name: 'ART THE CLOWN', color: '#f0f0f0', dark: '#2
   title: 'The silent clown',
   blurb: 'He never speaks and never stops smiling. Throws a cleaver, spins into a slash and kicks you skyward.',
   moves: ['Special: Cleaver Throw · Down: Spin Slash', 'Up: Flash Kick (rising kick)',
+    'Special+Forward: Chop · Special+Back: Stab (low)',
     'Grab: shared throw · Ultimate: Terrifier (more damage, cleaver cooldown halved)'] };
 ROSTER.push('art'); THROWS.art = { frames: 54, distance: 56 };
 DOMAIN_NAMES.art = 'TERRIFIER'; DOMAIN_SUBTITLES.art = '+20% DAMAGE · QUICK CLEAVERS · NOBODY SCREAMS';
@@ -59,3 +60,11 @@ const ART_ABILITIES = CHARACTER_ABILITIES.art = {
   attackPose(f, frame) { return artAttackPose(f, frame); },
   drawSprite(ctx, f, p, t) { drawArtSprite(ctx, f, p, t); },
 };
+
+// Special + Forward: cleaver chop (MUGEN 1311). Special + Back: cleaver stab (MUGEN 1300), a low thrust.
+addMugenVariants(ART_ABILITIES, {
+  forward: { name: 'chop', label: 'CHOP', cooldown: 180, kind: 'attack', move: { startup: 10, active: 8, recovery: 26, dmg: 70, height: 'high',
+      hitstun: 30, kb: 5, hitstop: 6, shake: 3, step: 10, box: { x: 20, y: -140, w: 130, h: 70 } } },
+  back: { name: 'stab', label: 'STAB', cooldown: 150, kind: 'attack', move: { startup: 8, active: 8, recovery: 24, dmg: 65, height: 'low',
+      hitstun: 28, kb: 4, hitstop: 6, shake: 3, step: 14, box: { x: 20, y: -52, w: 130, h: 50 } } },
+});

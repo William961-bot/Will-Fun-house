@@ -8,6 +8,7 @@ CHARACTERS.beerus = { id: 'beerus', name: 'BEERUS', color: '#b78be0', dark: '#3d
   title: 'The God of Destruction',
   blurb: 'A bored god with a sleepy stare. Fires ki blasts, rolls a slow Sphere of Destruction and kicks across the stage.',
   moves: ['Special: Z-Buster (ki blast) · Down: Sphere of Destruction (slow, big)', 'Up: Hienkiaku (flying kick)',
+    'Special+Forward: Z-Sabre · Special+Back: Mega Shot',
     'Grab: shared throw · Ultimate: Hakai (more damage, half cooldowns)'] };
 ROSTER.push('beerus'); THROWS.beerus = { frames: 54, distance: 56 };
 DOMAIN_NAMES.beerus = 'HAKAI'; DOMAIN_SUBTITLES.beerus = '+25% DAMAGE · HALF COOLDOWNS · GOD OF DESTRUCTION';
@@ -65,3 +66,13 @@ const BEERUS_ABILITIES = CHARACTER_ABILITIES.beerus = {
   attackPose(f, frame) { return beerusAttackPose(f, frame); },
   drawSprite(ctx, f, p, t) { drawBeerusSprite(ctx, f, p, t); },
 };
+
+// Special + Forward: Z-Sabre Attack (MUGEN 1500). Special + Back: Super Charged ki blast (MUGEN 2500), a big fast blast.
+addMugenVariants(BEERUS_ABILITIES, {
+  forward: { name: 'sabre', label: 'SABRE', cooldown: 150, kind: 'attack', move: { startup: 8, active: 8, recovery: 24, dmg: 60, height: 'high',
+      hitstun: 30, kb: 5, hitstop: 6, shake: 3, step: 12, box: { x: 15, y: -140, w: 140, h: 60 } } },
+  back: { name: 'megaShot', label: 'MEGA SHOT', cooldown: 300, kind: 'shot', clip: 'megaShot', frames: 44, at: 24, sound: 'hitHeavy',
+    projectile: f => ({ kind: 'beerusMega', owner: f.index, x: f.x + 70 * f.facing, y: f.y - 110, vx: 20 * f.facing, facing: f.facing, framesLeft: 70,
+      box: { w: 64, h: 56 }, blockGuard: 9, name: 'megaShot',
+      move: { dmg: 70, fixedDamage: 70, height: 'high', hitstun: 30, kb: 5, hitstop: 7, shake: 3, startup: 1, active: 1, recovery: 1 } }) },
+});

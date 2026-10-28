@@ -32,6 +32,7 @@ function beerusMotion(f) {
     const key = f.moveName === 'air' ? 'airLight' : f.moveName === 'grab' ? 'grabMiss' : A[f.moveName] ? f.moveName : 'light';
     return { key, progress: sf / (f.move.startup + f.move.active + f.move.recovery) };
   }
+  if (f.state === 'mxShot') return { key: f.mxClip, progress: Math.min(1, f.stateFrame / f.abilityFrames) };
   if (f.state === 'beerusBuster') return { key: 'buster', progress: Math.min(1, sf / f.abilityFrames) };
   if (f.state === 'beerusSphere') return { key: 'sphere', progress: Math.min(1, sf / f.abilityFrames) };
   if (f.state === 'throw') return { key: 'grab', progress: Math.min(1, sf / (f.throwFrames || 54)) };
@@ -75,7 +76,12 @@ function drawBeerusPortrait(ctx, x, y, size) {
 }
 function drawBeerusProjectiles(ctx, g) {
   for (const p of g.projectiles) {
-    if (p.kind === 'beerusKi') {
+    if (p.kind === 'beerusMega') {
+      ctx.save(); ctx.translate(p.x, p.y); ctx.scale(p.facing, 1);
+      ctx.fillStyle = 'rgba(190,120,255,.3)'; ctx.beginPath(); ctx.ellipse(-30, 0, 70, 26, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#c590ff'; ctx.beginPath(); ctx.arc(0, 0, 26, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(4, -2, 13, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    } else if (p.kind === 'beerusKi') {
       ctx.save(); ctx.translate(p.x, p.y); ctx.scale(p.facing, 1);
       ctx.fillStyle = 'rgba(190,120,255,.35)'; ctx.beginPath(); ctx.ellipse(-14, 0, 34, 12, 0, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#d9b3ff'; ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI * 2); ctx.fill();
