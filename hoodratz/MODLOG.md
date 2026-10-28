@@ -6,6 +6,18 @@ can go in their own section below the log.
 
 ## Handoff log
 
+### 2026-10-28 · Claude
+- Changed: wrote `psp/PLAN.md`, the step-by-step plan for a PSP homebrew port (QuickJS + a C drawing layer),
+  with which AI model to use per step and how to save tokens. No game code changed.
+- Tests: unchanged (448 pass, 4 Wolf failures as below).
+- Committed / pushed: no.
+- Unfinished: waiting for the user's PSP model and whether it has custom firmware before step 1.
+
+### 2026-10-27 · Codex
+- Changed: restored Wolf's fast Hoodratz attack timing at the user's request; aligned the recovered motions with startup, contact and recovery. Updated his locomotion and tool/counter animations. Published to the existing owner-private Site (source afaf2c6b752762949bf56aa6cdcd599e0f4541ab).
+- Tests: `node tests/run.cjs`: 452 pass, 0 fail. Browser practice loads Wolf and his motion sheets without console errors. The earlier four Wolf failures are resolved.
+- Committed / pushed: no GitHub commit or push; private Sites source synchronized by the publishing helper.
+- Unfinished: shared 2D hitboxes, effects and victim choreography remain adaptations. No physical controller test this session.
 ### 2026-10-27 · Claude
 - Changed: added `AGENTS.md` (shared rules) and `CLAUDE.md` (points to it); started this handoff log. Added
   `assets/juri/`, `assets/wolf/` and `.hosting/` to the root `.gitignore` so extracted game art can't be

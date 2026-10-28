@@ -63,6 +63,8 @@ personal or extracted media, add it to the root `.gitignore` in the same session
 
 ## Shared systems worth knowing
 
+- PSP port: follow `psp/PLAN.md` (one step per session).
+
 - Combos: `src/combo-system.js` (limits in `COMBO_LIMIT`; Tonka has his own `TONKA_COMBO` loops).
 - Domains (ultimates): `src/domains.js`. Your own domain locks your ultimate meter until it ends.
 - Hit feel (sounds, recoil, shake): `HIT_FEEL` in `src/config.js`. Presentation only.
