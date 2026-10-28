@@ -7,7 +7,7 @@ import mugen_sff as m
 from PIL import Image
 
 SCALE = 1.3
-SIZE, COLS, ANCHOR = 320, 12, (140, 260)
+SIZE, COLS, ANCHOR = 320, 12, (95, 262)
 ROOT = os.path.join(os.path.dirname(__file__), '..')
 folder = sys.argv[1]
 sp = m.read_sff(os.path.join(folder, 'Luffy.sff')); air = m.read_air(os.path.join(folder, 'Luffy.air'))
@@ -22,8 +22,8 @@ CLIPS = dict(
     lowMedium=(440, 6, 11, 31), heavy=(240, 6, 28, 57), overhead=(230, 7, 14, 32), airLight=(600, 4, 6, 17),
     airMedium=(610, 5, 7, 21), airHeavy=(640, 9, 12, 31), grab=(840, 8, None, None), grabMiss=(810, 7, None, None),
     hit=(5000, 2, None, None), ko=(5120, 5, None, None), escape=(5200, 1, None, None),
-    gatling=(840, 8, 8, 46), bazooka=(860, 6, 12, 46), axe=(890, 8, 8, 42), elephantGun=(880, 12, 16, 58), jetPistol=(211, 11, 11, 32),
-    gear4=(920, 15, None, None),
+    gatling=(840, 8, 8, 46), bazooka=(860, 6, 12, 46), axe=(230, 7, 8, 42), elephantGun=(880, 12, 16, 58), jetPistol=(211, 11, 11, 32),
+    rain=(850, 10, 8, 42), gear4=(920, 15, None, None),
 )
 
 def frame_at(frames, tick):
@@ -38,12 +38,24 @@ FIT = [1.0]   # per-clip shrink so wide poses fit the cell; render-*.js scales t
 def cell_for(f, pal):
     cell = Image.new('RGBA', (SIZE, SIZE)); s = sp[(f['grp'], f['idx'])]
     img = m.colorize(s, pal)
+    bb = img.getbbox() or (0, 0, 1, 1); img = img.crop(bb); ax = s['ax'] - bb[0]; ay = s['ay'] - bb[1]   # many sprites sit on huge empty canvases
     if SWAP[0]:
-        r, g_, b, a_ = img.split(); img = Image.merge('RGBA', (b, g_, r, a_)); img = img.resize((max(1, round(img.width * (SCALE * FIT[0]))), max(1, round(img.height * (SCALE * FIT[0])))), Image.NEAREST)
-    ax = s['ax'] * (SCALE * FIT[0])
+        r, g_, b, a_ = img.split(); img = Image.merge('RGBA', (b, g_, r, a_))
     if 'H' in f['flip']: img = img.transpose(Image.FLIP_LEFT_RIGHT); ax = img.width - ax
     if 'V' in f['flip']: img = img.transpose(Image.FLIP_TOP_BOTTOM)
-    x, y = round(ANCHOR[0] + f['x'] * (SCALE * FIT[0]) - ax), round(ANCHOR[1] + (f['y'] - s['ay']) * (SCALE * FIT[0]))
+    k = SCALE * FIT[0]
+    # Stretched rubber arms are far longer than a cell: cut a band out of the middle of the straight arm, keeping the body and the fist.
+    reach = (SIZE - (ANCHOR[0] + f['x'] * k - ax * k)) / k
+    keep_right = 190
+    if img.width > reach and img.width > 520 and reach > ax + 110 + keep_right:
+        left = int(ax + 110); right = keep_right; gap = int(reach - left - right)
+        cut = img.width - left - right - gap
+        if cut > 0:
+            parts = (img.crop((0, 0, left, img.height)), img.crop((img.width - right - gap, 0, img.width, img.height)))
+            joined = Image.new('RGBA', (left + right + gap, img.height)); joined.alpha_composite(parts[0], (0, 0)); joined.alpha_composite(parts[1], (left, 0)); img = joined
+    img = img.resize((max(1, round(img.width * k)), max(1, round(img.height * k))), Image.NEAREST)
+    ax = ax * k
+    x, y = round(ANCHOR[0] + f['x'] * k - ax), round(ANCHOR[1] + (f['y'] - ay) * k)
     box = (max(0, -x), max(0, -y), min(img.width, SIZE - x), min(img.height, SIZE - y))
     if box[2] > box[0] and box[3] > box[1]: cell.alpha_composite(img.crop(box), (max(0, x), max(0, y)))
     return cell, x < 0 or y < 0 or x + img.width > SIZE or y + img.height > SIZE
@@ -70,7 +82,7 @@ for out_name, act in PALETTES.items():
     if not fitted:
         fitted = True
         for key, c in clips.items():
-            for fit in (1.0, .92, .85, .78, .7, .62):
+            for fit in (1.0, .92, .85, .78, .7, .62, .55, .5, .45, .4):
                 FIT[0] = fit
                 if not any(cell_for(layout[i], pal)[1] for i in range(c['start'], c['start'] + c['count'])): break
             c['fit'] = fit

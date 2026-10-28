@@ -1,13 +1,13 @@
 // Luffy (MUGEN "Great Luffy" by Dr.T, sprites by Ploaj): the rubber pirate. He is picked as a SKIN of Curtis on the character
 // select screen (like Black Panther is a skin of Null), and the skin brings his own moves: Gomu Gomu no Gatling, Bazooka and Axe,
 // plus Elephant Gun and Jet Pistol on Special + Forward / Back, and Gear Fourth as the ultimate. Not in ROSTER.
-const LUFFY = { gatlingCooldown: 150, gatlingDamage: 70, bazookaCooldown: 210, bazookaDamage: 70, axeCooldown: 270, axeDamage: 65,
+const LUFFY = { gatlingCooldown: 150, gatlingDamage: 70, rainDamage: 60, bazookaCooldown: 210, bazookaDamage: 70, axeCooldown: 270, axeDamage: 65,
   gearDamage: 1.25, gearSpeed: 1.1, spriteWidth: 310 };
 CHARACTERS.luffy = { id: 'luffy', name: 'LUFFY', color: '#ff5a4a', dark: '#5a1a14', altColor: '#4aa8ff', altDark: '#143a66',
   walk: 4, walkBack: 3.4, runMax: 12.4, dmg: 1, weight: 1, home: { u: .86, v: .5, label: 'GRAND LINE · ON THE GOING MERRY' },
   title: 'The rubber pirate (Curtis skin)',
   blurb: 'Curtis with a straw hat and Luffy\'s own moves: a rubber Gatling, a Bazooka and an Axe kick, then Gear Fourth.',
-  moves: ['Special: Gomu Gomu no Gatling · Down: Bazooka · Up: Axe', 'Special+Forward: Elephant Gun · Special+Back: Jet Pistol',
+  moves: ['Special: Gatling (Rain in the air) · Down: Bazooka · Up: Axe', 'Special+Forward: Elephant Gun · Special+Back: Jet Pistol',
     'Grab: shared throw · Ultimate: Gear Fourth (more damage and speed)'] };
 THROWS.luffy = { frames: 54, distance: 56 };
 DOMAIN_NAMES.luffy = 'GEAR FOURTH'; DOMAIN_SUBTITLES.luffy = '+25% DAMAGE · +10% SPEED · BOUNCE MAN';
@@ -19,7 +19,11 @@ const LUFFY_ABILITIES = CHARACTER_ABILITIES.luffy = {
   reset(f) { f.luffyLeaped = false; },
   damageScale(f) { return luffyGear(f) ? LUFFY.gearDamage : 1; },
   speedScale(f) { return luffyGear(f) ? LUFFY.gearSpeed : 1; },
+  airSpecials: ['special'],
   special(f) {
+    // In the air the Special is Gomu Gomu no Rain (MUGEN 850): a downward flurry.
+    if (!f.grounded) return kitAttack(f, 'rain', { startup: 8, active: 14, recovery: 20, dmg: LUFFY.rainDamage, height: 'high', hitstun: 26, kb: 3,
+      hitstop: 4, shake: 2, air: true, box: { x: 10, y: -120, w: 130, h: 130 } });
     return kitAttack(f, 'gatling', { startup: 8, active: 14, recovery: 24, dmg: LUFFY.gatlingDamage, height: 'high', hitstun: 26, kb: 3,
       hitstop: 4, shake: 2, step: 6, box: { x: 15, y: -140, w: 130, h: 80 } });
   },

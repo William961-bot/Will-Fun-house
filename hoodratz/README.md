@@ -210,9 +210,9 @@ The earlier 3D-model sprites and their Blender tools are no longer used; see `pr
 
 ## Luffy (a Curtis skin)
 
-On the character select screen Curtis has a **skin button** (click it, or press Up / Down while Curtis is highlighted), like Null's Black Panther skin. Choosing **Luffy** swaps Curtis for the MUGEN Great Luffy (Dr.T, sprites by Ploaj): new look and **new abilities**, his own set from the MUGEN character. He is not a separate roster slot. The sprites are packed by `tools/pack-luffy-mugen.py` into `assets/luffy/` (git-ignored, so a fresh clone shows a "LUFFY · LOADING" placeholder). Very long stretched-arm poses end at the edge of their sprite cell.
+On the character select screen Curtis has a **skin button** (click it, or press Up / Down while Curtis is highlighted), like Null's Black Panther skin. Choosing **Luffy** swaps Curtis for the MUGEN Great Luffy (Dr.T, sprites by Ploaj): new look and **new abilities**, his own set from the MUGEN character. He is not a separate roster slot. The sprites are packed by `tools/pack-luffy-mugen.py` into `assets/luffy/` (git-ignored, so a fresh clone shows a "LUFFY · LOADING" placeholder). The overlong stretched-arm poses are shortened in the middle of the arm so the body and fist stay whole.
 
-- **Special: Gomu Gomu no Gatling.** A rapid punch flurry: 70 damage, steps forward, 150-frame cooldown.
+- **Special: Gomu Gomu no Gatling.** A rapid punch flurry: 70 damage, steps forward, 150-frame cooldown. In the air the same button is **Gomu Gomu no Rain**, a downward flurry: 60 damage.
 - **Down + Special: Bazooka.** Both palms, heavy knockback: 70 damage, 210-frame cooldown.
 - **Up + Special: Axe.** A leaping axe kick that launches: 65 damage, 270-frame cooldown, punishable if it whiffs.
 - **Special + Forward: Elephant Gun.** A very long, slow, heavy punch: 90 damage, 300-frame cooldown.

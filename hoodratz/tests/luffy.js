@@ -51,6 +51,8 @@ check('Gomu Gomu no Gatling, Bazooka and Axe replace Curtis\'s rubber moves; eac
   luffyVs('rip', 110); luffySpecial('up'); assert(p1.moveName === 'axe' && p1.cooldowns.upSpecial === LUFFY.axeCooldown, 'axe opens');
   step(p1.move.startup + 1); assert(!p1.grounded && p1.vy < 0, 'axe leaps');
   stepUntil(() => p2.hp < MAX_HP, 30); assert(p2.hp === MAX_HP - LUFFY.axeDamage && p2.vy < 0, 'axe hits and launches: ' + p2.hp);
+  luffyVs('rip', 60); p1.y = FLOOR - 120; p1.vy = -1; p1.enter('air'); luffySpecial(); assert(p1.moveName === 'rain' && p1.move.air, 'rain in the air');
+  for (let frame = 0; frame < 42; frame++) { p1.stateFrame = frame; assert(poseIsFinite(animatedPose(p1, frame, frame)) && LUFFY_ATLAS.clips[luffyMotion(p1).key], 'rain ' + frame); }
   setup(); p1.setCharacter('curtis'); p2.setCharacter('rip'); p1.reset(400, 1); p2.reset(490, -1); p1.cooldowns.special = 0; luffySpecial();
   assert(p1.moveName === 'rubberPistol', 'Curtis keeps his own moves');
 });

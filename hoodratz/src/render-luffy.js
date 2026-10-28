@@ -19,7 +19,7 @@ function luffyAttackPose(f, frame) {
     const reach = pose(STAND, { neck: [18, -124], head: [26, -141], eF: [42, -116], hF: [74, -112], eB: [30, -100], hB: [54, -96], hip: [2, -68] });
     return sampleTrack([[0, STAND], [s - 2, pose(STAND, { neck: [-6, -128], head: [-8, -147] }), 'out'], [s, reach, 'snap'], [s + m.active + 6, reach], [end, STAND, 'inOut']], frame);
   }
-  if (['gatling', 'bazooka', 'axe'].includes(f.moveName)) return mxAttackPose(f, frame);
+  if (['gatling', 'bazooka', 'axe', 'rain'].includes(f.moveName)) return mxAttackPose(f, frame);
   return attackAnim(Object.create(f, { kit: { value: { ...f.kit, attackPose: null } }, stats: { value: { ...f.stats, id: 'haze' } } }), frame);
 }
 
