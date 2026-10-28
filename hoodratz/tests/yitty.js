@@ -214,8 +214,9 @@ check('YittyMack works on either side, in practice and through a complete match 
     yittyVs(opponent);
     for (let round = 0; round < ROUND.winsNeeded; round++) {
       assert(p2.hp === p2.maxHp, opponent + ' full health round');
+      if (p2.dpHealLeft !== undefined) p2.dpHealLeft = 0;   // Deadpool's healing factor would out-heal the scripted slam budget
       for (let attempt = 0; attempt < 4 && g.phase === 'fight'; attempt++) {
-        p1.x = 600; p2.x = 660; p1.facing = 1; p2.facing = -1;
+        p1.x = 600; p2.x = 660; p1.facing = 1; p2.facing = -1; if (p2.dpHealLeft !== undefined) p2.dpHealLeft = 0;
         beginYittyThrow();
         for (let n = 1; n <= YITTY.maxSuplexes && g.phase === 'fight'; n++) {
           slamYitty(); if (n < YITTY.maxSuplexes && g.phase === 'fight') chainYitty();

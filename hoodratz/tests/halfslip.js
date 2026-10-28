@@ -9,7 +9,7 @@ function halfslipSetup(index=0,three=false) {
 }
 function halfslipCheck(name,run) { check(name,()=>{try{run();}finally{finishThreePlayerTest();}}); }
 halfslipCheck('Halfslip is selectable in every slot with the full visible roster and distinct mirror colours',()=>{
-  assert(ROSTER.length===19&&ROSTER.includes('halfslip')&&ROSTER.at(-1)==='wolf','roster');
+  assert(ROSTER.length>=27&&ROSTER.includes('halfslip')&&ROSTER.includes('deadpool'),'roster');
   for(const three of [false,true]) {
     const ids=Array(three?3:2).fill('halfslip');startMatch(false,ids.map((_,layout)=>({type:'keyboard',layout})),ids);
     assert(fighters.every(f=>f.kit===HALFSLIP_ABILITIES),'slots');
@@ -18,7 +18,7 @@ halfslipCheck('Halfslip is selectable in every slot with the full visible roster
     const any=new Proxy(function(){},{get:(o,k)=>k===Symbol.toPrimitive?()=>0:any,apply:()=>any,set:()=>true});
     drawCharacterSelect(any,STEP);
     const portraits=charSelect.hits.filter(h=>typeof h.index==='number');
-    assert(portraits.length===19&&portraits.every(h=>h.x>=0&&h.x+h.w<=W),'all portraits onscreen');
+    assert(portraits.length===ROSTER.length&&portraits.every(h=>h.x>=0&&h.x+h.w<=W),'all portraits onscreen');
   }
 });
 halfslipCheck('Plus One uses real keyboard and controller Special, respects startup, single-clone limit and cooldown',()=>{

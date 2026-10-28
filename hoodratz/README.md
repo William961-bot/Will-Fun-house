@@ -2,7 +2,7 @@
 
 Real-time 2D stickman fighter inspired by YOMI Hustle: timing-based parries, grabs, unblockable heavies with strict parry timing, momentum movement. Local 1v1 and three-player free-for-all.
 
-The roster is **Haze, Rip, GoonerPrime, YittyMack, Lancer, Blue Cheese, Teo1910, Null, Somhack, Curtis, Siglarp, Kinkade, Brainlag, Duttpack, Tonka, Sirnivas, Halfslip, Juri and Wolf**. Albino Rino is left out.
+The roster is **Haze, Rip, GoonerPrime, YittyMack, Lancer, Blue Cheese, Teo1910, Null, Somhack, Curtis, Siglarp, Kinkade, Brainlag, Duttpack, Tonka, Sirnivas, Halfslip, Juri, Wolf, Deadpool, Ella, Beerus, Ichigo, Art the Clown, Ghostface, Harley Quinn and Abbacchio**. Albino Rino is left out.
 
 Rounds have unlimited time (∞ on the HUD) and end by knockout.
 
@@ -149,7 +149,7 @@ The shared animation pass uses curved hand/foot paths and staggered hips, should
 
 Kinkade's Bench Press now has ready, knee-load, leg-drive, shove, follow-through, reload and settling poses, with a rigid two-hand bar grip. Its hit frames, cooldown, damage and combo routes are unchanged. `Smooth Bench poses` in `tests/all.html` shows both facings; `tests/all.html#smooth` opens the live cycle. The complete suite passes 323 checks in Node and the browser, including exact active poses, planted feet, refresh-rate consistency, freeze behavior and unchanged combat state.
 
-Run `node tests/run.cjs` for all **440 regression checks**. Open `tests/all.html` for the same suite in a browser and visual preview buttons. Tests cover combat, abilities, meters, domain timing and freeze, slow simulation, clashes, all dummy modes, audio, hitbox geometry and complete matches. The expanded roster has ability, meter, throw, domain, mirror and finite-animation checks. CPU checks cover levels 1–5 for all fourteen fighters and repeatable new-kit matches at levels 1, 3 and 5. Every fighter also completes real fifteen-hit routes in both player slots and toward either wall. Null, Lancer and Yitty also complete fifteen-hit ability routes. Checks cover the four-frame air-extension window, held/early/late inputs, controller Up, freeze timing, Burst, special hit links, late damage scaling and cinematic combo counters. Practice CPU 5 completes ten actual hits for every fighter toward either wall, including with infinite resources; block, parry and Burst interrupt its route. Practice checks also cover tiers 1–4, opponent switching and frozen decisions. Device checks use simulated controllers; physical controller pairing is browser/device dependent. Logic timers freeze during pause and hit-stop; cooldowns and guard timers also freeze during round intros.
+Run `node tests/run.cjs` for all **460 regression checks**. Open `tests/all.html` for the same suite in a browser and visual preview buttons. Tests cover combat, abilities, meters, domain timing and freeze, slow simulation, clashes, all dummy modes, audio, hitbox geometry and complete matches. The expanded roster has ability, meter, throw, domain, mirror and finite-animation checks. CPU checks cover levels 1–5 for all fourteen fighters and repeatable new-kit matches at levels 1, 3 and 5. Every fighter also completes real fifteen-hit routes in both player slots and toward either wall. Null, Lancer and Yitty also complete fifteen-hit ability routes. Checks cover the four-frame air-extension window, held/early/late inputs, controller Up, freeze timing, Burst, special hit links, late damage scaling and cinematic combo counters. Practice CPU 5 completes ten actual hits for every fighter toward either wall, including with infinite resources; block, parry and Burst interrupt its route. Practice checks also cover tiers 1–4, opponent switching and frozen decisions. Device checks use simulated controllers; physical controller pairing is browser/device dependent. Logic timers freeze during pause and hit-stop; cooldowns and guard timers also freeze during round intros.
 
 Somhack checks cover two real SMG contacts, split damage and guard costs, combo caps, Hack refunds and counterplay across all twelve kits, Virus bonuses/links, air specials, beacon ownership/recast/persistence, stealth speed/reveal, domain pulse defenses, HUD corruption/expiry/freezes, 900-health resets, throws and controller inputs. Visual previews: [selection](tests/somhack-roster.png), [stealth](tests/somhack-stealth.png), [domain opener](tests/somhack-domain-opener.png) and [corrupted HUD](tests/somhack-domain.png).
 
@@ -175,6 +175,120 @@ YittyMack screenshots: [roster](tests/yitty-roster.png), [three suplexes](tests/
 
 New fighter screenshots: [seven-fighter roster](tests/new-roster.png), [masked wave](tests/lancer-masked-wave.png), [Soul Sky](tests/lancer-soul-sky.png), [Final Girl Chase](tests/cheese-chase.png), [Teo's bottle](tests/teo-bottle.png), [Last Call](tests/teo-last-call.png). All abilities and CPU levels 1, 3 and 5 have fixture buttons in `tests/all.html`.
 
+## Black Panther (Null variant)
+
+Highlight **Null**, then press **up/down** on that player's keyboard or controller to switch between Null and **Black Panther**. You can also click the player's purple **SKIN** button. Each player chooses independently, including in practice and three-player matches. BP shares Null's roster slot but switches to his own kit; regular Null is unchanged.
+
+| Move | Input | Effect |
+| --- | --- | --- |
+| Spear Toss | Special | Two charges, one restored every five seconds. Applies a six-second Vibranium Mark on damage. |
+| Spirit Rend | Up + Special | Dashes through enemies; consuming that enemy's mark resets Rend and grants capped, decaying bonus health. |
+| Spinning Kick | Down + Special | A travelling kick that applies a mark. |
+| Bast's Descent | Light + Special at full ultimate | A single blast that damages and marks nearby enemies and resets Spirit Rend. |
+| Subtle Step | Hold jump beside a wall; release and press again | Climbs the wall, then leaps away. Restored on landing. |
+
+Original Marvel Rivals model and source-rig clips are rendered into side-view sprite sheets. Guarding, grabs, hit reactions, effects, 2D physics and combat timing are Hoodratz adaptations; this does not reproduce the full native engine. Extracted art stays out of the public GitHub repository. A clone without local art displays a loading label.
+
+## Deadpool's abilities
+
+Deadpool is drawn from a 3D model rendered into sprites (the art stays on the owner's computer and is not in the repo, so a fresh clone shows a "DEADPOOL · LOADING" placeholder). The sprites were rendered from Hoodratz's own stickman poses: each sprite is stored with the joint pose it came from, and at draw time the closest one is used, so every move lines up exactly with its frame data and hitboxes. He holds two katanas for normals and two pistols for Double Tap.
+
+| Move | Input | What it does |
+| --- | --- | --- |
+| **Double Tap** (2.5 s cooldown) | Special (**T** / controller **RB**) | Two pistol shots, 10 and 20 frames in. Each is a 22-damage high projectile (blockable, the second is combo-scaled). |
+| **Teleport Belt** (5 s cooldown) | Down + Special | Blinks behind the opponent (or in front if they are pinned at a wall). One time in five (seeded) the belt **glitches**: he only hops 110 px toward them, says "WRITERS ARE LAZY", and stumbles for 22 more frames. |
+| **Chimichanga Spin** (6 s cooldown) | Up + Special | A rising katana spin: 55 damage, launches, with a tall hitbox that catches jumpers. |
+| Normals, grab | shared buttons | Katana poses based on Lancer's sword timelines; the grab is a katana stab into the shared throw. |
+| **Healing factor** (passive) | | After 2 seconds without being hit he slowly regenerates health: 9 per second, up to 150 per round (three times as fast during Maximum Effort). Being hit restarts the delay. |
+| **Fourth-wall jokes** (passive) | | He greets the opponent ("HI, PLAYER 2"), jokes when hit or at low health ("THIS IS FINE"), at most once every 5 seconds. Presentation only. |
+| **Maximum Effort** (domain) | Attack + Special at full meter | Uses the shared domain rules: cutscene, clashes, and your ultimate meter locked while it runs. For 8 seconds his healing is tripled and he fires pistols on his own about every 1.5 seconds. |
+
+Rebuilding the sprites needs Blender 5.2, ffmpeg and the model files; see `prompts/DEADPOOL.md` (the tools are local only).
+
+
+## Ella's abilities
+
+Ella is the MUGEN character by Aiduzzi, drawn from her original sprites (packed by `tools/pack-ella-mugen.py` into `assets/ella/`, which stays on the owner's computer and is git-ignored, so a fresh clone shows an "ELLA · LOADING" placeholder; run the packer on the MUGEN folder to rebuild it). Her moves are adapted from the MUGEN kit onto the three Special inputs.
+
+- **Special: Face the Piccion.** She throws a pigeon on frame 18 of a 40-frame cast: 55 damage, blockable, 150-frame cooldown.
+- **Down + Special: Nautilus.** A low, forward-moving roll: 60 damage, 240-frame cooldown.
+- **Up + Special: Oriuken.** She leaps into a rising uppercut that launches: 75 damage, 300-frame cooldown, punishable if it whiffs.
+- **Grab: Presa.** The shared 90-damage grab.
+- **Ultimate: Chain'O'Saw.** A domain: +20% damage and +10% speed for the usual 8 seconds.
+- Mirror matches use her second palette (an orange dress).
+
+
+## Beerus's abilities
+
+Beerus is the MUGEN character Beerus 2.0 by K6666orochi, drawn from his original sprites (packed by `tools/pack-beerus-mugen.py` into `assets/beerus/`, which stays on the owner's computer and is git-ignored, so a fresh clone shows a "BEERUS · LOADING" placeholder; run the packer on the MUGEN folder to rebuild it). His moves are adapted from the MUGEN kit onto the three Special inputs.
+
+- **Special: Z-Buster.** A ki blast on frame 14 of a 34-frame cast: 45 damage, fast, blockable, 120-frame cooldown.
+- **Down + Special: Sphere of Destruction.** A large, slow sphere (80 damage, launches, 360-frame cooldown) that is easy to jump but hard to block through.
+- **Up + Special: Hienkiaku.** A forward-moving flying kick: 65 damage, launches, 300-frame cooldown.
+- **Grab:** the shared 90-damage grab.
+- **Ultimate: Hakai.** A domain: +25% damage and every Special costs half the cooldown for the usual 8 seconds.
+- Mirror matches use his red-trousers palette.
+
+
+## Ichigo's abilities
+
+Ichigo is the MUGEN character Ichigo Vasto Lorde by StormEX, drawn from his original sprites (packed by `tools/pack-ichigo-mugen.py` into `assets/ichigo/`, which stays on the owner's computer and is git-ignored, so a fresh clone shows an "ICHIGO · LOADING" placeholder; run the packer on the extracted MUGEN folder to rebuild it). His moves are adapted from the MUGEN kit onto the three Special inputs.
+
+- **Special: Getsuga Tensho.** A slash wave on frame 16 of a 36-frame cast: 60 damage, blockable, 150-frame cooldown.
+- **Down + Special: Flash Step.** He vanishes and reappears behind the opponent on frame 10 (in front if they are against a wall). No damage, 300-frame cooldown.
+- **Up + Special: Steel Uppercut.** A leaping rising slash that launches: 75 damage, 300-frame cooldown, punishable if it whiffs.
+- **Grab:** the shared 90-damage grab.
+- **Ultimate: Vasto Lorde.** A domain: +20% damage and +15% speed for the usual 8 seconds.
+- Mirror matches use his red palette.
+
+
+## Art the Clown's abilities
+
+Art is the MUGEN character Art The Clown by lou42083/MugenLD (a Sareena base), drawn from his original sprites (packed by `tools/pack-art-mugen.py` into `assets/art/`, which stays on the owner's computer and is git-ignored, so a fresh clone shows an "ART THE CLOWN · LOADING" placeholder; run the packer on the extracted MUGEN folder to rebuild it). His moves are adapted from the MUGEN kit onto the three Special inputs.
+
+- **Special: Cleaver Throw.** A spinning cleaver on frame 14 of a 34-frame throw: 50 damage, blockable, 120-frame cooldown.
+- **Down + Special: Spin Slash.** A spinning cleaver slash that hits on both sides: 70 damage, 270-frame cooldown.
+- **Up + Special: Flash Kick.** A leaping rising kick that launches: 65 damage, 300-frame cooldown, punishable if it whiffs.
+- **Grab:** the shared 90-damage grab.
+- **Ultimate: Terrifier.** A domain: +20% damage and Cleaver Throw costs half the cooldown for the usual 8 seconds.
+- Mirror matches use his bloodied palette.
+
+
+## Ghostface's abilities
+
+Ghostface is the MUGEN character Ghostface MKP by Lumppowraca, ricktendo & elgrandiego (MK-style sprites in the SFF v2 format, read by `tools/mugen_sff.py`), drawn from his original sprites (packed by `tools/pack-ghostface-mugen.py` into `assets/ghostface/`, which stays on the owner's computer and is git-ignored, so a fresh clone shows a "GHOSTFACE · LOADING" placeholder; run the packer on the extracted MUGEN folder to rebuild it). His moves are adapted from the MUGEN kit onto the three Special inputs.
+
+- **Special: Knife Throw.** A knife on frame 14 of a 34-frame throw: 45 damage, fast, blockable, 120-frame cooldown.
+- **Down + Special: Lunge Stab.** A forward-moving knife stab: 65 damage, 240-frame cooldown.
+- **Up + Special: Leaping Slash.** A leap into a rising slash that launches: 70 damage, 300-frame cooldown, punishable if it whiffs.
+- **Grab:** the shared 90-damage grab.
+- **Ultimate: Favorite Scary Movie.** A domain: +20% damage and +10% speed for the usual 8 seconds.
+- Mirror matches use a gold robe (red and blue swapped).
+
+
+## Harley Quinn's abilities
+
+Harley is the MUGEN character MvC Harley Quinn by chuchoryu (SFF v2 sprites), drawn from her original sprites (packed by `tools/pack-harley-mugen.py` into `assets/harley/`, which stays on the owner's computer and is git-ignored, so a fresh clone shows a "HARLEY QUINN · LOADING" placeholder; run the packer on the extracted MUGEN folder to rebuild it). Her moves are adapted from the MUGEN kit onto the three Special inputs.
+
+- **Special: Pistol Shot.** A bullet on frame 12 of a 30-frame shot: 35 damage, fast, blockable, 90-frame cooldown.
+- **Down + Special: Hyena Call.** A hyena runs along the floor on frame 18: 55 damage, a low hit (block low, or jump it), 300-frame cooldown.
+- **Up + Special: Flip Kick.** A leaping kick that launches: 65 damage, 270-frame cooldown, punishable if it whiffs.
+- **Grab:** the shared 90-damage grab.
+- **Ultimate: Mad Love.** A domain: +20% damage and +15% speed for the usual 8 seconds.
+- Mirror matches use her purple-and-yellow palette.
+
+
+## Abbacchio's abilities
+
+Abbacchio is the MUGEN Leone Abbacchio (JoJo's Bizarre Adventure, SFF v1), drawn from his original sprites (packed by `tools/pack-abbacchio-mugen.py` into `assets/abbacchio/`, which stays on the owner's computer and is git-ignored, so a fresh clone shows an "ABBACCHIO · LOADING" placeholder; run the packer on the extracted MUGEN folder to rebuild it). His moves are adapted from the MUGEN kit onto the three Special inputs.
+
+- **Special: Moody Blues strike.** His Stand throws a punch forward on frame 16 of a 36-frame cast: 45 damage, blockable, 120-frame cooldown.
+- **Down + Special: Replay.** A counter stance (frames 3 to 16 of 34). A grounded frontal melee hit is caught without damage and answered with a 75-damage strike; 240-frame cooldown. Aerial attacks, grabs and projectiles are not caught, and a whiff leaves him committed.
+- **Up + Special: Rising Kick.** A leaping kick that launches: 65 damage, 300-frame cooldown, punishable if it whiffs.
+- **Grab:** the shared 90-damage grab.
+- **Ultimate: Moody Blues.** A domain: +20% damage and +10% speed for the usual 8 seconds.
+- Mirror matches use his red palette.
+
 ## Juri's abilities
 
 Juri uses the user's **Nostalgia model**, rendered into a transparent atlas from the supplied rig and recovered SFV animations. Her body, portrait, normals, movement, guard, hit reactions, grab and specials use that model instead of stick art. There are 316 sampled frames across 29 recovered clips. The 319-channel clips map by bone name to the 347-bone outfit rig. Extra clothing bones retain bind transforms; native cloth and shader behavior are not reproduced.
@@ -184,6 +298,8 @@ Juri uses the user's **Nostalgia model**, rendered into a transparent atlas from
 - **Up + Special — Tensenrin:** a rising spinning kick, 70 base damage, five-second cooldown. It launches the opponent and leaves recovery on a miss; it has no invincibility.
 - **Grab — Spider Flip:** recovered forward-throw animation, the standard fresh ten-frame Grab escape, and one normal 90-damage release. Victim alignment uses Hoodratz's shared throw system, not a recovered SFV partner solver.
 - **Ultimate — Sakkai Fuhazan:** replaces Feng Shui Engine. At full meter, Attack + Special (controller X + RB) spends the meter on a brief purple flash and a vulnerable opening kick. A clean hit starts Juri's recovered 4.3-second finisher motion, with reconstructed camera framing, energy and opponent reactions. Block, parry, invincibility, range and interrupting attacks can stop the opener; missing loses the meter and leaves recovery. The cinematic deals one **350-base-damage** final hit with shared combo/morale scaling. It can KO; practice refills the defeated dummy. The other fighters and existing arena-domain clock freeze during the cinematic. It does not create an arena or clash with domains. Fuha stock and normal movement/recovery remain ordinary.
+
+- **Mugen sprites and moves:** Juri is drawn from the Chuchoryu & Prime SC MUGEN Juri Han (local only, `tools/pack-juri-mugen.py`). Three of her moves come from that character: **Senpusha** (Special + Forward, 70 damage advancing launcher, 150-frame cooldown), the **Kasatsushi** counter (Special + Back, catches a grounded frontal melee strike in frames 3-16 and answers with an 80-damage kick, 210-frame cooldown, punishable if it whiffs) and **Karen Geri** (Forward + Medium within 100px of a grounded opponent, 85 damage, slower than the shared medium). Special alone is still Fuha.
 
 Controls stay the same: 1P T / S+T / W+T, 2P ; / Down+; / Up+;, controller RB / Down+RB / Up+RB. Juri supports both player slots, three-player mode, mirrors, CPU tiers and practice. Siglarp can copy her abilities and appearance.
 

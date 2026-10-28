@@ -1,11 +1,13 @@
 // Recovered SFV motions, with specials adapted to Hoodratz's existing three Special inputs.
 const JURI={storeCooldown:45,releaseCooldown:150,flipCooldown:240,riseCooldown:300,
-  storeAt:23,releaseAt:12,releaseFrames:34,superWindup:24,finisherFrames:259,finisherDamage:350};
+  senpushaCooldown:150,counterCooldown:210,counterFrames:34,counterFrom:3,counterThrough:16,counterContact:8,counterHitFrames:30,
+  counterReach:155,karenReach:100,storeAt:23,releaseAt:12,releaseFrames:34,superWindup:24,finisherFrames:259,finisherDamage:350};
 CHARACTERS.juri={id:'juri',name:'JURI',color:'#cf73ff',dark:'#542466',altColor:'#77e4ff',altDark:'#215e74',
   walk:4,walkBack:3.4,runMax:12.4,dmg:1,weight:1,
   home:{u:.84,v:.37,label:'TAEKWONDO · SOUTH KOREA'},title:'The sadistic thrill seeker',
   blurb:'Recovered Nostalgia model and motions. Store Fuha, release it, then take to the air.',
-  moves:['Special: store Fuha / release low wave','Down: Ryodansatsu · Up: Tensenrin',
+  moves:['Special: store Fuha / release low wave · Special+Forward: Senpusha · Special+Back: Kasatsushi counter',
+    'Down: Ryodansatsu · Up: Tensenrin · Forward+Medium up close: Karen Geri',
     'Grab: Spider Flip · Fuha stock: 1','Ultimate: Sakkai Fuhazan (cinematic finisher)']};
 ROSTER.push('juri');
 THROWS.juri={frames:64,distance:58};
@@ -14,9 +16,29 @@ const JURI_ABILITIES=CHARACTER_ABILITIES.juri={
   cooldowns:{special:JURI.storeCooldown,downSpecial:JURI.flipCooldown,upSpecial:JURI.riseCooldown},
   labels:{special:'FUHA',downSpecial:'RYODAN',upSpecial:'TENSEN'},
   ultimate:'juriFinisher',
-  reset(f){f.juriFuha=0;f.juriStored=false;f.juriLaunched=false;},
-  cooldownFor(f,key){return key==='special'?(f.state==='juriRelease'?JURI.releaseCooldown:JURI.storeCooldown):this.cooldowns[key];},
+  reset(f){if(f.juriCounterTarget!=null)clearJuriCounter(f);f.juriFuha=0;f.juriStored=false;f.juriLaunched=false;
+    f.juriCd={counter:0,senpusha:0};f.juriCounterTarget=null;f.juriCounterContact=false;},
+  // Special + Forward is Senpusha, Special + Back is the Kasatsushi counter; each keeps its own cooldown.
+  cooldownLeft(f,key){return key==='special'?(juriSpecialVariant(f)==='fuha'?f.cooldowns.special:f.juriCd?.[juriSpecialVariant(f)]||0):undefined;},
+  cooldownFor(f,key){
+    if(key!=='special')return this.cooldowns[key];
+    const variant=f.juriVariant||'fuha';
+    if(variant==='counter'){f.juriCd.counter=JURI.counterCooldown;return 0;}
+    if(variant==='senpusha'){f.juriCd.senpusha=JURI.senpushaCooldown;return 0;}
+    return f.state==='juriRelease'?JURI.releaseCooldown:JURI.storeCooldown;
+  },
+  moveFor(f,name,move){
+    if(name!=='medium'||!juriHeld(f,'forward')||!f.grounded)return move;
+    const opp=opponentOf(f);
+    if(!opp||!opp.grounded||Math.abs(opp.x-f.x)>JURI.karenReach)return move;
+    return {...move,karen:true,startup:10,active:4,recovery:20,dmg:85,hitstun:30,kb:5,hitstop:6,shake:2,step:7,
+      box:{x:25,y:-135,w:115,h:55}};
+  },
   special(f,opp,g){
+    f.juriVariant=juriSpecialVariant(f);
+    if(f.juriVariant==='counter'){f.juriCounterContact=false;return openAbility(f,'juriCounter',JURI.counterFrames);}
+    if(f.juriVariant==='senpusha')return kitAttack(f,'senpusha',{startup:8,active:10,recovery:22,dmg:70,height:'high',
+      hitstun:30,kb:5,launch:-8,hitstop:6,shake:3,step:7,box:{x:10,y:-150,w:120,h:120}});
     if(f.juriFuha){
       if(g.projectiles.some(p=>p.owner===f.index&&p.kind==='juriFuha'))return false;
       f.juriFuha=0;
@@ -39,6 +61,24 @@ const JURI_ABILITIES=CHARACTER_ABILITIES.juri={
   update(f,opp,g){
     if(g.phase!=='fight')return;
     const sf=f.stateFrame;
+    if(f.juriCd)for(const key of ['counter','senpusha'])if(f.juriCd[key]>0)f.juriCd[key]--;
+    if(f.juriCounterTarget!=null&&f.state!=='juriCounterHit')clearJuriCounter(f);
+    if(f.state==='juriCounter'){
+      f.vx=0;if(sf>=f.abilityFrames)f.enter('idle');
+    }
+    if(f.state==='juriCounterHit'){
+      f.vx=0;
+      const victim=fighters[f.juriCounterTarget];
+      if(!victim||victim.state!=='hitstun'||victim.comboAttacker!==f.index||victim.juriCounterHeldBy!==f.index||victim.koed||victim.invincible)clearJuriCounter(f);
+      else if(sf>=JURI.counterContact&&!f.juriCounterContact){
+        f.juriCounterContact=true;
+        const reply=Object.create(f);reply.move={dmg:80,fixedDamage:80,height:'high',hitstun:36,kb:4,launch:-6,hitstop:8,shake:3};
+        reply.moveName='kasatsushi';reply.moveMomentum=0;
+        landHit(reply,victim,{x:victim.x,y:victim.y-60},g,0,'KASATSUSHI');f.ultimate=reply.ultimate;
+        victim.hitstun=Math.max(victim.hitstun,JURI.counterHitFrames-sf);g.sound('parry');g.ring(victim.x,victim.y-25,f.stats.color,110,18);
+      }
+      if(sf>=f.abilityFrames){if(f.juriCounterTarget!=null)clearJuriCounter(f);f.enter('idle');}
+    }
     if(f.state==='juriRelease'){
       f.vx=0;
       if(sf===JURI.releaseAt)spawnProjectile(g,{kind:'juriFuha',owner:f.index,x:f.x+60*f.facing,y:FLOOR-23,
@@ -54,6 +94,15 @@ const JURI_ABILITIES=CHARACTER_ABILITIES.juri={
       f.juriLaunched=true;f.y-=1;f.vy=f.moveName==='tensen'?-12:-7;f.vx=(f.moveName==='tensen'?2:6)*f.facing;
       g.sound('slash');g.ring(f.x,f.y-70,f.stats.color,90,15);
     }
+  },
+  avoid(f,m,g,att){
+    // Kasatsushi catches grounded frontal melee strikes during its window, then answers with a kick.
+    if(f.state!=='juriCounter'||!f.grounded||f.stateFrame<JURI.counterFrom||f.stateFrame>JURI.counterThrough||
+      m.grab||m.air||att.projectileOwner!==undefined||att.isMinion||!att.grounded||
+      (att.x-f.x)*f.facing<=0||Math.abs(att.x-f.x)>JURI.counterReach)return false;
+    f.juriCounterTarget=att.index;f.juriCounterContact=false;att.juriCounterHeldBy=f.index;
+    att.enter('hitstun');att.hitstun=JURI.counterHitFrames;att.comboAttacker=f.index;att.vx=att.vy=0;
+    openAbility(f,'juriCounterHit',JURI.counterHitFrames);g.sound('parry');return true;
   },
   cpuChoice(f,opp,distance){
     if(!f.cooldowns.upSpecial&&distance<115&&(!opp.grounded||opp.state==='attack'))return 'upSpecial';
@@ -72,6 +121,19 @@ const JURI_ABILITIES=CHARACTER_ABILITIES.juri={
   },
 };
 
+function juriHeld(f,side){
+  const held=f.input.held;
+  return side==='forward'?!!held[f.facing===1?'right':'left']:!!held[f.facing===1?'left':'right'];
+}
+function juriSpecialVariant(f){
+  return juriHeld(f,'back')?'counter':juriHeld(f,'forward')?'senpusha':'fuha';
+}
+function clearJuriCounter(f){
+  const victim=fighters[f.juriCounterTarget];
+  if(victim?.juriCounterHeldBy===f.index){victim.juriCounterHeldBy=null;
+    if(victim.state==='hitstun'&&victim.comboAttacker===f.index)victim.hitstun=Math.min(victim.hitstun,12);}
+  f.juriCounterTarget=null;
+}
 const JURI_SUPER_START={startup:14,active:5,recovery:36,dmg:350,fixedDamage:350,height:'high',
   hitstun:42,kb:5,hitstop:8,shake:4,step:6,blockGuard:12,cinematic:'juri',box:{x:8,y:-185,w:145,h:150}};
 function startJuriFinisher(f,g){

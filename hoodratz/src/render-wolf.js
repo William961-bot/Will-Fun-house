@@ -4,7 +4,7 @@ if(typeof Image!=='undefined')for(const [key,row] of Object.entries(WOLF_ATLAS.c
 }
 const wolfPortraitSheet=typeof Image==='undefined'?null:new Image();
 if(wolfPortraitSheet)wolfPortraitSheet.src='assets/wolf/portrait.png?v=appearance2';
-const WOLF_SPRITE_WIDTH=310;
+const WOLF_SPRITE_WIDTH=WOLF.spriteWidth;
 CHARACTER_GUARDS.wolf=Object.fromEntries(Object.entries(WOLF_ATLAS.poses[WOLF_ATLAS.clips.block.start]).map(([k,p])=>[k,p.map(v=>v*WOLF_SPRITE_WIDTH/WOLF_ATLAS.size)]));
 GUARD_RECOIL.wolf=7;
 CHARACTER_RUNS.wolf=(f,t)=>wolfJointPose(Object.assign(Object.create(f),{state:'run',animationFrame:t}));
@@ -18,13 +18,14 @@ function wolfMotion(f){
  if(seq?.owner===f.index&&seq.kind==='wolfFinisher')return {key:'finisher',progress:seq.frame/WOLF.finisherFrames};
  if(f.animHint==='wolfFinishRecover')return {key:'finisher',progress:1};
  const timed=(key,clock=f.stateFrame,loop=false)=>{const duration=WOLF_ATLAS.clips[key].duration*60;return {key,progress:loop?(clock%duration)/duration:clock/duration};};
- if(f.state==='wolfShuriken')return timed(f.wolfAirThrow?'airShuriken':'shuriken');
- if(f.state==='wolfMikiri')return timed('step');
- if(f.state==='wolfMikiriHit')return timed('mikiri');
+ if(f.state==='wolfShuriken')return wolfRetimed(f.wolfAirThrow?'airShuriken':'shuriken',f.stateFrame,f.wolfAirThrow?WOLF.airShurikenAt:WOLF.shurikenAt,f.abilityFrames,WOLF.sourceContacts[f.wolfAirThrow?'airShuriken':'shuriken'][0]);
+ if(f.state==='wolfMikiri')return {key:'step',progress:f.stateFrame/f.abilityFrames};
+ if(f.state==='wolfMikiriHit')return wolfRetimed('mikiri',f.stateFrame,WOLF.counterContact,WOLF.counterHitFrames,WOLF.sourceContacts.mikiri[0]);
  if(f.state==='attack'){
   const key=({low:'light',lowMedium:'medium',air:'airAttack',airMedium:'airAttack',airHeavy:'overhead',
    grab:'parry',deathblow:'medium'})[f.moveName]||f.moveName;
-  return timed(WOLF_ATLAS.clips[key]?key:'light');
+  const selected=WOLF_ATLAS.clips[key]?key:'light',window=WOLF.sourceContacts[selected]||WOLF.sourceContacts.fallback;
+  return wolfRetimed(selected,f.stateFrame,f.move.startup,f.move.startup+f.move.active+f.move.recovery,window[0],f.move.active,window[1]);
  }
  if(f.state==='throw')return {key:'finisher',progress:f.stateFrame/(f.throwFrames||54)};
  if(['ko','knockdown'].includes(f.state)||f.koed)return timed('ko');
@@ -40,6 +41,13 @@ function wolfMotion(f){
  if(f.state==='walk')return timed(f.vx*f.facing<0?'backward':'walk',f.animationFrame,true);
  return timed('idle',f.animationFrame,true);
 }
+// Keep the fast fighter's contact/recovery clock, while using the actual source strike poses.
+function wolfRetimed(key,frame,contact,total,sourceContact,active=0,sourceActive=0){
+ const nativeTicks=WOLF_ATLAS.clips[key].duration*60,at=Math.min(.95,sourceContact/nativeTicks),end=Math.min(1,(sourceContact+sourceActive)/nativeTicks);
+ const progress=frame<contact?at*frame/contact:active&&frame<contact+active
+  ?at+(end-at)*(frame-contact)/active:end+(1-end)*(frame-contact-active)/Math.max(1,total-contact-active);
+ return {key,progress};
+}
 function wolfFrame(m){const row=WOLF_ATLAS.clips[m.key]||WOLF_ATLAS.clips.idle;return row.start+Math.round(clamp01(m.progress)*(row.count-1));}
 function wolfJointPose(f,frame=f.stateFrame){
  const view=Object.create(f);view.stateFrame=frame;
@@ -54,8 +62,6 @@ function drawWolfFrame(ctx,key,progress,x,y,width=WOLF_SPRITE_WIDTH,facing=1){
 }
 function drawWolfSprite(ctx,f,p,t){
  const m=wolfMotion(f);ctx.save();
- if(f.stats.color===CHARACTERS.wolf.altColor)ctx.filter='hue-rotate(155deg)';
- if(f.state==='hitstun'&&f.stateFrame<3)ctx.filter='brightness(2)';
  if(m.rot){ctx.translate(f.x,f.y-40);ctx.rotate(m.rot*f.facing);ctx.translate(-f.x,-f.y+40);}
  drawWolfFrame(ctx,m.key,m.progress,f.x,f.y,WOLF_SPRITE_WIDTH,f.facing);ctx.restore();
 }

@@ -23,6 +23,13 @@ hoodratz/assets/sfx/
 # Textures, models and animations recovered from commercial games (Juri, Wolf): local play only, never publish
 hoodratz/assets/juri/
 hoodratz/assets/wolf/
+hoodratz/assets/ella/
+hoodratz/assets/beerus/
+hoodratz/assets/ichigo/
+hoodratz/assets/art/
+hoodratz/assets/ghostface/
+hoodratz/assets/harley/
+hoodratz/assets/abbacchio/
 hoodratz/.hosting/
 # How Wolf and Juri's art was extracted from commercial games, and screenshots of it: local only
 hoodratz/WOLF.md
@@ -32,3 +39,8 @@ hoodratz/tests/juri-*.png
 hoodratz/tools/*[Ww]olf*
 hoodratz/tools/*[Jj]uri*
 hoodratz/tools/__pycache__/
+# Deadpool: Marvel character, model/weapons extracted from a commercial game; local play only
+hoodratz/assets/deadpool/
+hoodratz/tools/deadpool/
+hoodratz/assets/panther/
+hoodratz/tools/panther/

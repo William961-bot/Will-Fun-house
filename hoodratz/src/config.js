@@ -166,6 +166,19 @@ const SOUND_EVENTS = {
 };
 
 // Roster. altColor/altDark are used by player 2 in a mirror match so the two fighters stay readable.
+const PANTHER = {spearCooldown:0,spearCharges:2,spearRechargeFrames:300,dashCooldown:600,kickCooldown:480,markFrames:360,
+ spearAt:25,spearFrames:36,spearDamage:50,spearSpeed:19,dashDamage:80,dashSpeed:25,
+ dashStartup:2,dashActive:18,dashRecovery:10,kickStartup:12,kickActive:12,kickRecovery:20,kickDamage:75,
+ ultimateAt:68,ultimateFrames:90,ultimateDamage:150,ultimateReach:650,bonusHealth:25,bonusCap:75,
+ bonusDelay:180,bonusDecay:25/60,passiveThreshold:1/3,passiveScale:1.2,spriteWidth:310,
+ wallDistance:24,wallClimbSpeed:4,wallJumpSpeed:10,bastWidth:700,bastAlpha:.7,
+ spearOffset:{x:58,y:-110},spearLife:90,spearBox:{w:78,h:18},spearGuard:8,
+ rendBox:{x:-18,y:-150,w:85,h:110},kickBox:{x:10,y:-175,w:145,h:140},
+ spearHit:{height:'high',hitstun:24,kb:3,hitstop:4,shake:1,startup:1,active:1,recovery:1},
+ rendHit:{height:'high',hitstun:32,kb:0,hitstop:4,shake:2},
+ kickHit:{height:'high',hitstun:32,kb:2,launch:-5,hitstop:5,shake:2},
+ bastHit:{height:'high',hitstun:45,kb:6,hitstop:8,shake:5,startup:1,active:1,recovery:1},bastHeight:300,
+ clawContact:.19,spearSourceContact:.42219844,ultimateSourceContact:1.1403518};
 const CHARACTERS = {
   yitty: { id: 'yitty', name: 'YITTYMACK', color: '#4f7dff', dark: '#24408f', altColor: '#ff6b4a', altDark: '#9c3826',
     walk: 3.4, walkBack: 3.0, runMax: 11.0, dmg: 1.1, weight: 1.25, knockbackScale: 1 / 1.25, drawScale: YITTY.drawScale,
@@ -370,4 +383,7 @@ THROWS.sirnivas={frames:80,distance:54,machineAt:10,stuffFrom:18,stuffAt:30,spin
 DOMAIN_NAMES.sirnivas='ALL IN';DOMAIN_SUBTITLES.sirnivas='BET IT ALL · WATCH YOUR STOCK CRASH';
 Object.assign(SOUND_EVENTS,{coin:[2100,2600,.12,'sine'],reel:[900,700,.04,'square'],jackpot:[520,1560,.5,'triangle'],bust:[260,40,.5,'sawtooth']});
 const ROSTER = ['haze', 'rip', 'gooner', 'yitty', 'lancer', 'cheese', 'teo', 'null', 'sombra', 'curtis', 'siglarp', 'kinkade', 'brainlag', 'duttpack', 'tonka', 'sirnivas'];
+const WOLF={shurikenAt:10,shurikenFrames:30,airShurikenAt:8,airShurikenFrames:30,counterContact:3,counterHitFrames:26,
+ firecrackerAt:14,firecrackerFrames:49,counterFrom:3,counterThrough:10,counterFrames:34,superWindup:18,finisherFrames:160,finisherDamage:350,
+ spriteWidth:310,sourceContacts:{light:[46,4],medium:[46,4],heavy:[26,8],overhead:[8,8],airAttack:[8,8],firecrackers:[66,2],parry:[6,3],shuriken:[42,0],airShuriken:[8,0],mikiri:[16,0],fallback:[12,3]}};
 Object.assign(SOUND_EVENTS, { smg: [620, 180, .055, 'noise'], hack: [900, 1500, .16, 'square'], emp: [100, 1300, .4, 'sawtooth'] });

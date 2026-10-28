@@ -1,23 +1,30 @@
-// A textured render of the actual recovered model replaces the entire stick body.
+// Juri Han sprites by Chuchoryu & Prime SC (MUGEN), packed by tools/pack-juri-mugen.py into assets/juri/mugen.png.
 const juriSheet=typeof Image==='undefined'?null:new Image();
-const JURI_SPRITE_WIDTH=282;
-if(juriSheet)juriSheet.src='assets/juri/nostalgia.png';
+const JURI_SPRITE_WIDTH=310;
+if(juriSheet)juriSheet.src='assets/juri/mugen.png?v=1';
+// Mugen-only moves: one 12-frame row each in mugen-extra.png. `pose` borrows joint data from a shared clip.
+const JURI_EXTRA={senpusha:{row:0,pose:'heavy',duration:40/60},kasatsushi:{row:1,pose:'parry',duration:34/60},
+  kasatsushiHit:{row:2,pose:'medium',duration:30/60},karenGeri:{row:3,pose:'medium',duration:34/60}};
+const juriExtraSheet=typeof Image==='undefined'?null:new Image();
+if(juriExtraSheet)juriExtraSheet.src='assets/juri/mugen-extra.png?v=1';
 function juriMotion(f){
   const seq=g.domainSequence;
   if(seq?.owner===f.index&&seq.kind==='juriWindup')return {key:'finisher',progress:.02};
   if(seq?.owner===f.index&&seq.kind==='juriFinisher')return {key:'finisher',progress:seq.frame/JURI.finisherFrames};
   if(f.animHint==='juriFinishRecover')return {key:'finisher',progress:1};
   if(f.state==='attack'){
-    const key=f.moveName==='fuhazan'?'fuhaStore':f.moveName==='air'?'airLight':f.moveName==='grab'?'grabMiss':f.moveName;
-    const row=JURI_ATLAS.clips[key]||JURI_ATLAS.clips.light;
+    const key=f.move?.karen?'karenGeri':f.moveName==='fuhazan'?'fuhaStore':f.moveName==='air'?'airLight':f.moveName==='grab'?'grabMiss':f.moveName;
+    const row=JURI_EXTRA[key]||JURI_ATLAS.clips[key]||JURI_ATLAS.clips.light;
     const contact={light:7,medium:9,low:5,lowMedium:8,heavy:13,overhead:25,airLight:6,airMedium:9,airHeavy:12,
-      fuhaStore:15,ryodan:25,tensen:8}[key];
+      fuhaStore:15,ryodan:25,tensen:8,senpusha:8,karenGeri:10}[key];
     const end=f.move.startup+f.move.active+f.move.recovery;
     let progress=f.stateFrame/end;
     if(contact){const at=Math.min(.7,contact/(row.duration*60));progress=f.stateFrame<f.move.startup
       ?at*f.stateFrame/f.move.startup:at+(1-at)*(f.stateFrame-f.move.startup)/(end-f.move.startup);}
-    return {key:JURI_ATLAS.clips[key]?key:'light',progress};
+    return {key:JURI_EXTRA[key]||JURI_ATLAS.clips[key]?key:'light',progress};
   }
+  if(f.state==='juriCounter')return {key:'kasatsushi',progress:Math.min(1,f.stateFrame/f.abilityFrames)};
+  if(f.state==='juriCounterHit')return {key:'kasatsushiHit',progress:Math.min(1,f.stateFrame/f.abilityFrames)};
   if(f.state==='juriRelease')return {key:'fuhaRelease',progress:f.stateFrame/JURI.releaseFrames};
   if(f.state==='throw')return {key:'grab',progress:f.stateFrame/(f.throwFrames||64)};
   if(f.state==='thrown')return {key:'hit',progress:.3,rot:pureThrowRotation(f)};
@@ -32,12 +39,12 @@ function juriMotion(f){
   if(f.state==='backdash')return {key:'backdash',progress:f.stateFrame/25};
   if(['dash','run','rebound','skid'].includes(f.state))return {key:'dash',progress:(f.animationFrame%20)/20};
   if(f.state==='walk')return {key:f.vx*f.facing<0?'backward':'walk',progress:(f.animationFrame%54)/54};
-  return {key:'idle',progress:(f.animationFrame%598)/598};
+  return {key:'idle',progress:(f.animationFrame%224)/224};
 }
 function pureThrowRotation(f){return f.pose?.rot||0;}
 function juriJointPose(f,frame=f.stateFrame){
   const view=Object.create(f);view.stateFrame=frame;
-  const m=juriMotion(view),row=JURI_ATLAS.clips[m.key]||JURI_ATLAS.clips.idle;
+  const m=juriMotion(view),row=JURI_ATLAS.clips[JURI_EXTRA[m.key]?.pose||m.key]||JURI_ATLAS.clips.idle;
   const source=JURI_ATLAS.poses[row.start+Math.round(Math.max(0,Math.min(1,m.progress))*(row.count-1))];
   return Object.fromEntries(Object.entries(source).map(([joint,point])=>[joint,point.map(v=>v*JURI_SPRITE_WIDTH/JURI_ATLAS.size)]));
 }
@@ -45,7 +52,14 @@ function drawJuriFrame(ctx,key,progress,x,y,width=320,facing=1){
   if(!juriSheet?.complete||!juriSheet.naturalWidth){
     ctx.save();ctx.fillStyle='#d79aff';ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.fillText('JURI · LOADING',x,y-80);ctx.restore();return;
   }
-  const a=JURI_ATLAS,row=a.clips[key]||a.clips.idle;
+  const a=JURI_ATLAS,extra=JURI_EXTRA[key];
+  if(extra){
+    if(!juriExtraSheet?.complete||!juriExtraSheet.naturalWidth)return;
+    const col=Math.round(Math.max(0,Math.min(1,progress))*11);
+    ctx.save();ctx.translate(x,y);ctx.scale(facing*width/a.size,width/a.size);
+    ctx.drawImage(juriExtraSheet,col*a.size,extra.row*a.size,a.size,a.size,-a.anchor[0],-a.anchor[1],a.size,a.size);ctx.restore();return;
+  }
+  const row=a.clips[key]||a.clips.idle;
   const frame=row.start+Math.round(Math.max(0,Math.min(1,progress))*(row.count-1));
   ctx.save();ctx.translate(x,y);ctx.scale(facing*width/a.size,width/a.size);
   ctx.drawImage(juriSheet,frame%a.columns*a.size,Math.floor(frame/a.columns)*a.size,a.size,a.size,-a.anchor[0],-a.anchor[1],a.size,a.size);ctx.restore();

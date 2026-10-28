@@ -1,12 +1,10 @@
 // Original Sekiro appearance and sampled motions; combat timing is adapted to Hoodratz.
-const WOLF={shurikenAt:42,shurikenFrames:114,airShurikenAt:8,airShurikenFrames:86,counterHitFrames:130,firecrackerAt:66,firecrackerFrames:152,counterFrom:3,counterThrough:10,counterFrames:80,
-  superWindup:18,finisherFrames:160,finisherDamage:350};
 CHARACTERS.wolf={id:'wolf',name:'WOLF',color:'#d7a377',dark:'#594332',altColor:'#9eb8c5',altDark:'#354650',
  walk:4.1,walkBack:3.6,runMax:12.6,dmg:1,weight:1,home:{u:.88,v:.36,label:'ASHINA · JAPAN'},
  title:'The one-armed shinobi',blurb:'Original Sekiro model. Katana pressure, prosthetic tools and a precise counter.',
  moves:['Special: Shuriken · Down: Mikiri Counter','Up: Firecrackers',
  'Mikiri: timed frontal counter','Ultimate: Deathblow']};
-ROSTER.push('wolf');THROWS.wolf={frames:160,distance:54};
+ROSTER.push('wolf');THROWS.wolf={frames:54,distance:54};
 DOMAIN_NAMES.wolf='DEATHBLOW';DOMAIN_SUBTITLES.wolf='THE ONE-ARMED WOLF';
 const WOLF_ABILITIES=CHARACTER_ABILITIES.wolf={
  cooldowns:{special:100,downSpecial:240,upSpecial:300},
@@ -14,7 +12,7 @@ const WOLF_ABILITIES=CHARACTER_ABILITIES.wolf={
  reset(f){if(f.wolfCounterTarget!=null)clearWolfCounter(f);f.wolfToolSent=false;f.wolfAirThrow=false;f.wolfCounterTarget=null;f.wolfCounterContact=false;},
  special(f){f.wolfToolSent=false;f.wolfAirThrow=!f.grounded;return openAbility(f,'wolfShuriken',f.wolfAirThrow?WOLF.airShurikenFrames:WOLF.shurikenFrames);},
  downSpecial(f){return openAbility(f,'wolfMikiri',WOLF.counterFrames);},
- upSpecial(f){f.wolfToolSent=false;return kitAttack(f,'firecrackers',{startup:WOLF.firecrackerAt,active:2,recovery:WOLF.firecrackerFrames-WOLF.firecrackerAt-2,
+ upSpecial(f){f.wolfToolSent=false;return kitAttack(f,'firecrackers',{startup:WOLF.firecrackerAt,active:5,recovery:WOLF.firecrackerFrames-WOLF.firecrackerAt-5,
   dmg:30,height:'high',hitstun:34,kb:1,hitstop:5,shake:3,blockGuard:6,box:{x:0,y:-175,w:155,h:160}});},
  update(f,opp,g){
   if(g.phase!=='fight')return;
@@ -22,7 +20,7 @@ const WOLF_ABILITIES=CHARACTER_ABILITIES.wolf={
   if(f.state==='wolfMikiriHit'&&f.wolfCounterTarget!=null){
    const victim=fighters[f.wolfCounterTarget];
    if(!victim||victim.state!=='hitstun'||victim.comboAttacker!==f.index||victim.wolfCounterHeldBy!==f.index||victim.koed||victim.invincible)clearWolfCounter(f);
-   else if(f.stateFrame>=16&&!f.wolfCounterContact){
+   else if(f.stateFrame>=WOLF.counterContact&&!f.wolfCounterContact){
     f.wolfCounterContact=true;
     const reply=Object.create(f);reply.move={dmg:75,fixedDamage:75,height:'high',hitstun:36,kb:1,hitstop:8,shake:3};reply.moveName='mikiri';reply.moveMomentum=0;
     landHit(reply,victim,{x:victim.x,y:victim.y-60},g,0,'MIKIRI COUNTER');f.ultimate=reply.ultimate;
@@ -60,14 +58,6 @@ const WOLF_ABILITIES=CHARACTER_ABILITIES.wolf={
   if(!f.cooldowns.special&&distance>150&&distance<700)return 'special';return null;
  },
  cpuDomainOk(f){return f.grounded&&Math.abs(opponentOf(f).x-f.x)<140;},
- moveFor(f,name,base){
-  const key=({low:'light',lowMedium:'medium',air:'airAttack',airMedium:'airAttack',airHeavy:'overhead'})[name]||name;
-  const windows={light:[46,4],medium:[46,4],heavy:[26,8],overhead:[8,8],airAttack:[8,8]};
-  if(!windows[key])return base;
-  const [startup,active]=windows[key],frames=Math.round(WOLF_ATLAS.clips[key].duration*60);
-  return {...base,startup,active,recovery:Math.max(1,frames-startup-active),
-   landingRecovery:base.landingRecovery??base.recovery,hitstun:Math.max(base.hitstun,startup+12,base.launcher?startup+active+20:0)};
- },
  pose(f,t,frame){return wolfJointPose(f,frame);},attackPose(f,frame){return wolfJointPose(f,frame);},
  drawSprite(ctx,f,p,t){drawWolfSprite(ctx,f,p,t);},
 };

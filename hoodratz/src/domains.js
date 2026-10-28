@@ -19,6 +19,7 @@ function activateDomain(f, g, borrowed=false) {
   if (f.kit?.ultimate === 'hudHack') return startSomhackDomain(f, g);
   if (f.kit?.ultimate === 'juriFinisher') return startJuriFinisher(f,g);
   if (f.kit?.ultimate === 'wolfFinisher') return startWolfFinisher(f,g);
+  if (f.kit?.ultimate === 'pantherBast') return startPantherBast(f,g);
   if (f.kit?.grabDomain) return startGoonSu(f, g);
   if (g.domain) {
     g.domainSequence = { kind: 'clash', defender: g.domain.owner, challenger: f.index,

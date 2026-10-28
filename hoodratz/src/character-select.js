@@ -4,12 +4,26 @@
 // In practice mode 1P picks their own fighter, then the dummy's.
 const charSelect = { practice: false, playerCount: 2, cpuLevel: 0, thirdCpuLevel: 0, cursor: [0, 1], locked: [false, false], hits: [], previews: {} };
 const CURSOR_COLORS = ['#ff4a4a', '#4aa8ff', '#ffd24a'];
+function selectedCharacter(slot){const id=ROSTER[charSelect.cursor[slot]];return id==='null'&&charSelect.pantherSkins?.[slot]?'panther':id;}
+function cycleCharacterSkin(slot){
+ if(ROSTER[charSelect.cursor[slot]]!=='null')return;
+ charSelect.pantherSkins??=[];charSelect.pantherSkins[slot]=!charSelect.pantherSkins[slot];
+}
+function drawSkinButtons(ctx,three=false){
+ charSelect.cursor.forEach((i,slot)=>{if(ROSTER[i]!=='null')return;
+  const x=three?40+slot*408:slot===0?40:1030,y=three?426:574,w=210;
+  ctx.fillStyle='#382452';ctx.fillRect(x,y,w,24);ctx.fillStyle='#f0dbff';ctx.textAlign='center';ctx.font='bold 12px sans-serif';
+  ctx.fillText(`${slot+1}P: ${selectedCharacter(slot)==='panther'?'BLACK PANTHER':'NULL'} ↕ SKIN`,x+w/2,y+16);
+  charSelect.hits.push({x,y,w,h:24,skinSlot:slot});
+ });
+}
 
 function openCharacterSelect(practice = false) {
   showTitle();
   charSelect.practice = practice;
   const count = practice ? 2 : charSelect.playerCount;
-  charSelect.cursor = Array.from({length:count}, (_, i) => Math.max(0, ROSTER.indexOf(g.characters[i] || ROSTER[i])));
+  charSelect.pantherSkins=Array.from({length:count},(_,i)=>g.characters[i]==='panther');
+  charSelect.cursor = Array.from({length:count}, (_, i) => Math.max(0, ROSTER.indexOf(g.characters[i]==='panther'?'null':g.characters[i] || ROSTER[i])));
   charSelect.locked = Array(count).fill(false);
   for (const pad of connectedPads()) deviceMenu.previous.set(pad.index, padMenuState(pad));
   g.phase = 'charSelect';
@@ -63,7 +77,7 @@ function unlockPick(slot) {
 
 // Keep both fighters and attach inputs automatically.
 function confirmCharacters() {
-  g.characters = charSelect.cursor.map(i => ROSTER[i]);
+  g.characters = charSelect.cursor.map((_,slot) => selectedCharacter(slot));
   startMatch(charSelect.practice, automaticSources(charSelect.practice ? 0 : charSelect.cpuLevel, charSelect.cursor.length, charSelect.thirdCpuLevel), g.characters);
 }
 
@@ -75,6 +89,7 @@ function characterSelectKey(code) {
   KEYMAPS.forEach((map, slot) => {
     if (map.left.includes(code)) moveCursor(slot, -1);
     else if (map.right.includes(code)) moveCursor(slot, 1);
+    else if (map.up.includes(code)||map.down.includes(code)) cycleCharacterSkin(steeredSide(slot));
     else if (map.attack.includes(code)) lockPick(slot);
     else if (map.parry.includes(code)) unlockPick(slot);
   });
@@ -91,6 +106,7 @@ function characterSelectPad(pad, now, old) {
   }
   if (now.left && !old.left) moveCursor(slot, -1);
   if (now.right && !old.right) moveCursor(slot, 1);
+  if ((now.up&&!old.up)||(now.down&&!old.down)) cycleCharacterSkin(steeredSide(slot));
   if (now.start && !old.start) lockPick(slot);
   if (now.back && !old.back) unlockPick(slot);
 }
@@ -99,6 +115,7 @@ function characterSelectPad(pad, now, old) {
 function characterSelectClick(x, y) {
   const hit = charSelect.hits.find(h => x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h);
   if (!hit) return;
+  if (hit.skinSlot!==undefined) {cycleCharacterSkin(hit.skinSlot);return;}
   if (hit.playerCount) { selectPlayerCount(hit.playerCount); return; }
   if (hit.thirdCpuLevel !== undefined) { selectThirdCpuLevel(hit.thirdCpuLevel); return; }
   if (hit.cpuLevel !== undefined) { selectCpuLevel(hit.cpuLevel); return; }
@@ -155,7 +172,7 @@ function drawWorldMap(ctx) {
   ctx.strokeStyle = '#d8c48a'; ctx.lineWidth = 3; ctx.strokeRect(MAP.x, MAP.y, MAP.w, MAP.h);
 
   // Home pins, a dashed flight path between the two hovered homes.
-  const hovered = charSelect.cursor.map(i => CHARACTERS[ROSTER[i]].home);
+  const hovered = charSelect.cursor.map((_,slot) => CHARACTERS[selectedCharacter(slot)].home);
   const [a, b] = hovered.map(h => mapPoint(h.u, h.v));
   ctx.setLineDash([6, 6]); ctx.strokeStyle = '#ffffff99'; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(...a); ctx.quadraticCurveTo((a[0] + b[0]) / 2, Math.min(a[1], b[1]) - 50, ...b); ctx.stroke();
@@ -178,8 +195,17 @@ function drawWorldMap(ctx) {
 
 // Bust portrait for the grid: head and shoulders in the character's colours.
 function drawPortrait(ctx, id, x, y, size) {
+  if(id==='panther')return drawPantherPortrait(ctx,x,y,size);
   if(id==='juri')return drawJuriPortrait(ctx,x,y,size);
   if(id==='wolf')return drawWolfPortrait(ctx,x,y,size);
+  if(id==='deadpool')return drawDeadpoolPortrait(ctx,x,y,size);
+  if(id==='ella')return drawEllaPortrait(ctx,x,y,size);
+  if(id==='beerus')return drawBeerusPortrait(ctx,x,y,size);
+  if(id==='ichigo')return drawIchigoPortrait(ctx,x,y,size);
+  if(id==='art')return drawArtPortrait(ctx,x,y,size);
+  if(id==='ghostface')return drawGhostfacePortrait(ctx,x,y,size);
+  if(id==='harley')return drawHarleyPortrait(ctx,x,y,size);
+  if(id==='abbacchio')return drawAbbacchioPortrait(ctx,x,y,size);
   const ch = CHARACTERS[id];
   ctx.save();
   const bg = ctx.createLinearGradient(x, y, x, y + size);
@@ -233,7 +259,7 @@ function drawPortrait(ctx, id, x, y, size) {
 
 // Each player's hovered fighter, large and facing the centre, with name and blurb.
 function drawBigFighter(ctx, slot, dt) {
-  const id = ROSTER[charSelect.cursor[slot]], ch = CHARACTERS[id];
+  const id = selectedCharacter(slot), ch = CHARACTERS[id];
   // One preview per slot; 2P shows mirror-match colours when both hover the same fighter.
   const alt = slot === 1 && charSelect.cursor[0] === charSelect.cursor[1], f = previewFighter(`slot${slot}`);
   if (f.previewKey !== id + alt) { f.setCharacter(id, alt); f.previewKey = id + alt; }
@@ -249,7 +275,7 @@ function drawBigFighter(ctx, slot, dt) {
   ctx.font = 'bold 30px Impact, "Arial Black", sans-serif'; ctx.fillStyle = '#ffd24a';
   ctx.fillText(ch.name, x, 546);
   ctx.font = 'bold 13px sans-serif'; ctx.fillStyle = '#c4cbe0'; ctx.fillText(ch.title.toUpperCase(), x, 566);
-  if (locked) { ctx.font = 'bold 20px sans-serif'; ctx.fillStyle = CURSOR_COLORS[slot]; ctx.fillText('READY!', x, 592); }
+  if (locked) { ctx.font = 'bold 20px sans-serif'; ctx.fillStyle = CURSOR_COLORS[slot]; ctx.fillText('READY!', x, ROSTER[charSelect.cursor[slot]]==='null'?622:592); }
 }
 
 function drawCharacterSelect(ctx, dt = 1000 / 60) {
@@ -289,7 +315,7 @@ function drawCharacterSelect(ctx, dt = 1000 / 60) {
 
   // Hovered fighters' details under the grid.
   ctx.textAlign = 'center'; ctx.font = '15px sans-serif'; ctx.fillStyle = '#c4cbe0';
-  const shown = [...new Set(charSelect.cursor)].map(i => CHARACTERS[ROSTER[i]]);
+  const shown = [...new Set(charSelect.cursor.map((_,slot)=>selectedCharacter(slot)))].map(id => CHARACTERS[id]);
   shown.forEach((ch, k) => {
     const y = 506 + k * 54;
     ctx.fillStyle = ch.color; ctx.font = 'bold 15px sans-serif'; ctx.fillText(ch.name, W / 2, y);
@@ -309,6 +335,7 @@ function drawCharacterSelect(ctx, dt = 1000 / 60) {
   ctx.fillStyle = '#ffd24a'; ctx.fillRect(520, 668, 240, 38);
   ctx.fillStyle = '#0d1846'; ctx.font = 'bold 18px sans-serif'; ctx.fillText('START MATCH', W / 2, 693);
   charSelect.hits.push({ x: 520, y: 668, w: 240, h: 38, start: true });
+  drawSkinButtons(ctx);
   ctx.restore();
 }
 
@@ -329,7 +356,7 @@ function drawThreePlayerSelect(ctx, dt) {
   charSelect.hits = []; drawPlayerCountButtons(ctx);
   const sources = automaticSources(charSelect.cpuLevel, 3, charSelect.thirdCpuLevel);
   for (let slot = 0; slot < 3; slot++) {
-    const x = 40 + slot * 408, ch = CHARACTERS[ROSTER[charSelect.cursor[slot]]], color = CURSOR_COLORS[slot];
+    const x = 40 + slot * 408, ch = CHARACTERS[selectedCharacter(slot)], color = CURSOR_COLORS[slot];
     ctx.fillStyle = '#151f3c'; ctx.fillRect(x, 100, 384, 228);
     ctx.strokeStyle = color; ctx.lineWidth = charSelect.locked[slot] ? 4 : 2; ctx.strokeRect(x, 100, 384, 228);
     ctx.textAlign = 'left'; ctx.fillStyle = color; ctx.font = 'bold 16px sans-serif';
@@ -371,5 +398,6 @@ function drawThreePlayerSelect(ctx, dt) {
   ctx.fillText('Last fighter standing wins · first to two rounds · 6 / controller View: switch player count · Esc: home', W / 2, 636);
   ctx.fillStyle = '#ffd24a'; ctx.fillRect(520, 660, 240, 42); ctx.fillStyle = '#0d1846'; ctx.font = 'bold 18px sans-serif';
   ctx.fillText('START MATCH', W / 2, 688); charSelect.hits.push({x:520, y:660, w:240, h:42, start:true});
+  drawSkinButtons(ctx,true);
   ctx.restore();
 }

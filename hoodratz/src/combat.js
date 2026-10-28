@@ -202,7 +202,8 @@ function landHit(att, def, pt, g, extraStun, label) {
   if (m.steal) { gainMeter(realAttacker(att), Math.min(TEO.stealMeter, def.ultimate)); def.ultimate = Math.max(0, def.ultimate - TEO.stealMeter); lootBottle(realAttacker(att), g); }
   const baseDamage = m.exactThrow || m.exactDamage ? m.fixedDamage : (m.fixedDamage ?? m.dmg * att.stats.dmg) * damageScale(att, def, m) * moraleDamageScale(att) * scale * (1 + COMBAT.momentumDamage * att.moveMomentum / MOVE.maxMomentum);
   const dmg = Math.round(baseDamage*takenDamageScale(def));
-  def.hp = Math.max(0, def.hp - dmg);
+  const absorbed = Math.max(0, Math.min(dmg, def.kit?.absorbDamage?.(def, dmg) || 0));
+  def.hp = Math.max(0, def.hp - (dmg - absorbed));
   def.framesSinceHit = 0;
   const cornered = Math.min(def.x - WALL_L, WALL_R - def.x) <= GUARD.cornerDistance;
   if (!m.steal) { if(!m.noMeter)gainMeter(att, METER_GAIN.hit); gainMeter(def, METER_GAIN.takenHit); }

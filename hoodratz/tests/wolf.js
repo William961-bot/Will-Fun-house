@@ -5,7 +5,7 @@ function wolfSuper(gap=70,index=0,facing=1){
 }
 function confirmWolfSuper(f,v){f.stateFrame=f.move.startup;const pt=hitPoint(f,v);assert(pt,'contact');applyHit(f,v,pt,g);assert(g.domainSequence?.kind==='wolfFinisher','cinematic');}
 check('Wolf uses original Sekiro model parts and recovered motions in every slot and direction',()=>{
- assert(ROSTER.length===19&&ROSTER.at(-1)==='wolf','roster');assert(WOLF_ATLAS.frames>500&&WOLF_ATLAS.clips.finisher.source==='a200_510000','source');
+ assert(ROSTER.length>=27&&ROSTER.includes('deadpool'),'roster');assert(WOLF_ATLAS.frames>500&&WOLF_ATLAS.clips.finisher.source==='a200_510000','source');
  for(const index of [0,1])for(const facing of [-1,1]){
   setup();const f=fighters[index];f.setCharacter('wolf',index===1);f.reset(600,facing);assert(f.kit.drawSprite&&f.maxHp===MAX_HP,'sprite');
   for(const name of Object.keys(MOVES)){f.startAttack(name);for(const frame of [0,f.move.startup,40])assert(poseIsFinite(attackAnim(f,frame)),'pose '+name);}
@@ -39,7 +39,7 @@ check('Mikiri rewards a timed frontal grounded strike and loses to early, late, 
   if(scenario==='rear'){att.x=f.x-60;}if(scenario==='air'){att.y-=40;att.move={...att.move,air:true};}
   const proxy=scenario==='projectile'?projectileAttacker({owner:1,x:att.x,y:att.y,facing:-1,move:att.move,name:'test'}):att;
   const guard=f.guard,allowed=['success','heavy'].includes(scenario);assert(f.kit.avoid(f,proxy.move,g,proxy)===allowed,scenario);
-  assert(f.guard===guard&&f.hp===MAX_HP,'no guard drain');if(allowed){assert(att.hp===MAX_HP&&f.state==='wolfMikiriHit','captured, no early damage');f.stateFrame=16;f.kit.update(f,att,g);assert(att.hp===MAX_HP-75,'source contact');}
+  assert(f.guard===guard&&f.hp===MAX_HP,'no guard drain');if(allowed){assert(att.hp===MAX_HP&&f.state==='wolfMikiriHit','captured, no early damage');f.stateFrame=WOLF.counterContact;f.kit.update(f,att,g);assert(att.hp===MAX_HP-75,'source contact');}
  }
  wolfVs();press('KeyS');tap('KeyT');release('KeyS');assert(p1.cooldowns.downSpecial===240,'cooldown');step(WOLF.counterFrames+5);assert(p1.state==='idle','miss recovers');
 });
@@ -95,27 +95,29 @@ check('Wolf receives the real controller chord and Mikiri resolves through share
  wolfVs(65);p1.kit.downSpecial(p1);p1.stateFrame=5;p2.startAttack('heavy');p2.stateFrame=p2.move.startup;
  const pt=hitPoint(p2,p1);assert(pt,'heavy in range');applyHit(p2,p1,pt,g);
  assert(p1.state==='wolfMikiriHit'&&p1.hp===MAX_HP&&p1.guard===GUARD.max&&p2.hp===MAX_HP,'shared counter capture');
- p1.stateFrame=16;p1.kit.update(p1,p2,g);assert(p2.hp===MAX_HP-75,'source counter contact');
+ p1.stateFrame=WOLF.counterContact;p1.kit.update(p1,p2,g);assert(p2.hp===MAX_HP-75,'source counter contact');
 });
-check('Wolf plays verified tool, counter and locomotion clips at source time with native attack markers',()=>{
+check('Wolf uses verified source motions with fast combat timings and aligned contact poses',()=>{
  const expected={walk:'a000_000200',run:'a000_000500',shuriken:'a070_400000',firecrackers:'a071_400000',mikiri:'a200_511100',hit:'a000_100102'};
  for(const [key,id] of Object.entries(expected))assert(WOLF_ATLAS.clips[key].source===id,'source '+key);
- wolfVs(500);p1.kit.special(p1);p1.stateFrame=30;let m=wolfMotion(p1);assert(m.key==='shuriken'&&Math.abs(m.progress-30/114)<.001,'source seconds');
- p1.kit.upSpecial(p1);p1.stateFrame=30;m=wolfMotion(p1);assert(m.key==='firecrackers'&&p1.move.startup===66&&p1.move.startup+p1.move.active+p1.move.recovery===152,'firecracker timeline');
- for(const [name,start,frames] of [['light',46,130],['medium',46,130],['heavy',26,116],['air',8,58]]){
-  p1.startAttack(name);assert(p1.move.startup===start&&p1.move.startup+p1.move.active+p1.move.recovery===frames,'normal '+name);
+ wolfVs(500);p1.kit.special(p1);p1.stateFrame=WOLF.shurikenAt;let m=wolfMotion(p1);assert(m.key==='shuriken'&&Math.abs(m.progress-42/114)<.001,'source release pose');
+ p1.kit.upSpecial(p1);p1.stateFrame=14;m=wolfMotion(p1);assert(m.key==='firecrackers'&&p1.move.startup===14&&p1.move.startup+p1.move.active+p1.move.recovery===49&&Math.abs(m.progress-66/152)<.001,'fast firecracker timeline');
+ for(const [name,start,frames] of [['light',5,18],['medium',9,26],['heavy',28,57],['air',6,17]]){
+  p1.startAttack(name);assert(p1.move===MOVES[name]&&p1.move.startup===start&&p1.move.startup+p1.move.active+p1.move.recovery===frames,'normal '+name);
  }
+ p1.startAttack('light');p1.stateFrame=5;assert(Math.abs(wolfMotion(p1).progress-46/130)<.001,'sword contact');p1.stateFrame=8;assert(Math.abs(wolfMotion(p1).progress-50/130)<.001,'sword active end');
  p1.enter('walk');p1.vx=4;p1.animationFrame=60;m=wolfMotion(p1);assert(m.key==='walk'&&Math.abs(m.progress-.375)<.001,'native walk loop');
 });
-check('Mikiri delays damage to frame 16, hits once, and cleans pending contact on Burst, interruption and reset',()=>{
+check('Mikiri damage matches the retimed source contact, hits once, and cancels safely',()=>{
  for(const cancel of ['none','burst','interrupt','reset']){
   wolfVs(65);p1.kit.downSpecial(p1);p1.stateFrame=5;p2.startAttack('light');p2.stateFrame=p2.move.startup;applyHit(p2,p1,hitPoint(p2,p1),g);
   assert(p2.hp===MAX_HP&&p1.wolfCounterTarget===1,'pending');
   if(cancel==='burst')p2.enter('burst');
   if(cancel==='interrupt'){p1.enter('hitstun');p1.hitstun=20;}
   if(cancel==='reset'){startRound();assert(p1.wolfCounterTarget==null&&p2.wolfCounterHeldBy==null,'reset');continue;}
-  p1.stateFrame=15;p1.kit.update(p1,p2,g);assert(p2.hp===MAX_HP,'before marker');
-  p1.stateFrame=16;p1.kit.update(p1,p2,g);p1.kit.update(p1,p2,g);
+  p1.stateFrame=WOLF.counterContact-1;p1.kit.update(p1,p2,g);assert(p2.hp===MAX_HP,'before marker');
+  p1.stateFrame=WOLF.counterContact;p1.kit.update(p1,p2,g);p1.kit.update(p1,p2,g);
   assert(p2.hp===MAX_HP-(cancel==='none'?75:0),'one marker or cancelled '+cancel);
  }
 });
+

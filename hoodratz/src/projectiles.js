@@ -61,6 +61,14 @@ function drawFootball(ctx, x, y, angle = 0, scale = 1) {
 function drawProjectiles(ctx, g) {
   drawWolfProjectiles(ctx,g);
   drawJuriProjectiles(ctx,g);
+  drawDeadpoolProjectiles(ctx,g);
+  drawEllaProjectiles(ctx,g);
+  drawBeerusProjectiles(ctx,g);
+  drawIchigoProjectiles(ctx,g);
+  drawArtProjectiles(ctx,g);
+  drawGhostfaceProjectiles(ctx,g);
+  drawHarleyProjectiles(ctx,g);
+  drawAbbacchioProjectiles(ctx,g);
   drawNullProjectiles(ctx,g);
   drawRosterProjectiles(ctx, g);
   drawSoccerBalls(ctx, g);

@@ -1,6 +1,6 @@
 function juriVs(gap=250){versus('juri','rip',gap);g.popups=[];}
 check('Juri has the recovered Nostalgia atlas, shared normals, all slots and mirror support',()=>{
-  assert(ROSTER.length===19&&ROSTER.at(-1)==='wolf','roster');
+  assert(ROSTER.length>=27&&ROSTER.includes('deadpool'),'roster');
   assert(JURI_ATLAS.frames===316&&JURI_ATLAS.clips.tensen.source==='JRI_SPA_TENSENRIN_L'&&JURI_ATLAS.clips.finisher.source==='JRI_UCA_FUHAZAN','source clips');
   for(const index of [0,1])for(const facing of [-1,1]){
     setup();const f=fighters[index];f.setCharacter('juri',index===1);f.reset(650,facing);
@@ -60,3 +60,27 @@ check('Siglarp copies Juri stock and kick specials; the actual third player can 
   finishThreePlayerTest();
 });
 
+check('Special + Forward is Senpusha: advancing launcher with its own cooldown, Fuha stays untouched',()=>{
+  juriVs(160);press('KeyD');tap('KeyT');release('KeyD');
+  assert(p1.moveName==='senpusha'&&p1.juriCd.senpusha>JURI.senpushaCooldown-5&&p1.cooldowns.special===0,'input and cooldown');
+  const x=p1.x;step(p1.move.startup);assert(p1.x>x,'advances');
+  stepUntil(()=>p2.hp<MAX_HP,40);assert(p2.hp===MAX_HP-70,'one hit');
+  stepUntil(()=>p1.state==='idle',80);tap('KeyT');assert(p1.moveName==='fuhaStore','Fuha not on senpusha cooldown');
+});
+check('Special + Back is the Kasatsushi counter: catches a frontal strike once, replies with a kick, whiffs punishable',()=>{
+  juriVs(80);press('KeyA');tap('KeyT');release('KeyA');
+  assert(p1.state==='juriCounter'&&p1.juriCd.counter>JURI.counterCooldown-5,'stance');
+  p2.startAttack('light');stepUntil(()=>p1.state==='juriCounterHit',20);
+  assert(p1.state==='juriCounterHit'&&p2.state==='hitstun'&&p2.hp===MAX_HP,'caught without damage');
+  stepUntil(()=>p2.hp<MAX_HP,30);assert(p2.hp===MAX_HP-80,'one reply kick');
+  stepUntil(()=>p1.state==='idle',60);
+  juriVs(400);press('KeyA');tap('KeyT');release('KeyA');step(JURI.counterFrames-1);assert(p1.state==='juriCounter','still committed');
+  step(2);assert(p1.state==='idle'&&p2.hp===MAX_HP,'whiff ends');
+});
+check('Forward + Medium up close is Karen Geri; far away or without Forward it stays the shared medium',()=>{
+  juriVs(70);press('KeyD');step();p1.startAttack('medium');release('KeyD');
+  assert(p1.move.karen&&p1.move.dmg===85&&p1.moveName==='medium','karen geri');
+  assert(juriMotion(p1).key==='karenGeri','karen clip');
+  juriVs(70);p1.startAttack('medium');assert(p1.move===MOVES.medium,'no forward');
+  juriVs(300);press('KeyD');step();p1.startAttack('medium');release('KeyD');assert(p1.move===MOVES.medium,'too far');
+});

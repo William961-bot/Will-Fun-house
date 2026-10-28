@@ -16,7 +16,7 @@ check('Juri replaces the install with a full-meter human chord, grounded gates a
   juriVs();p1.ultimate=100;press('KeyF');tap('KeyT');release('KeyF');
   assert(g.domainSequence?.kind==='juriWindup'&&p1.ultimate===0&&!g.domain,'human chord');
   step(JURI.superWindup);assert(p1.moveName==='fuhazan'&&!p1.invincible,'vulnerable strike');
-  assert(p1.juriFuha===0&&p1.kit.moveFor===undefined&&p1.kit.speedScale===undefined,'no install bonuses');
+  assert(p1.juriFuha===0&&p1.kit.moveFor(p1,'medium',MOVES.medium)===MOVES.medium&&p1.kit.speedScale===undefined,'no install bonuses');
 });
 check('Sakkai Fuhazan holds for its recovered timeline and releases one 350-base-damage scaled hit',()=>{
   for(const index of [0,1])for(const facing of [-1,1]){

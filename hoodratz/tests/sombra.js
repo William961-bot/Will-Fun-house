@@ -36,7 +36,7 @@ check('Somhack selection, mirror colours, eighteen portraits and 900-health roun
   assert(CHARACTERS.sombra.name==='SOMHACK','renamed fighter label');
   pickCharacters(['sombra','sombra']);assert(p1.kit===SOMBRA_ABILITIES&&p2.stats.color===CHARACTERS.sombra.altColor,'mirror');
   near(p1.hp,900);near(p2.hp,900);openCharacterSelect();assert(charSelect.cursor.every(i=>ROSTER[i]==='sombra'),'selected');
-  assert(ROSTER.length===19&&CHARACTERS.sombra.home.label,'roster');
+  assert(ROSTER.length>=27&&CHARACTERS.sombra.home.label,'roster');
   startMatch(true,undefined,['rip','sombra']);g.phase='fight';g.inputLocked=false;p2.hp=1;
   strike('light');assert(p2.hp===900&&!p2.koed&&p2.combo===0,'practice refill uses fighter health');
   p2.hacked=80;p2.beacon={x:900,y:FLOOR,vx:0,vy:0};p2.stealthed=true;startRound();
