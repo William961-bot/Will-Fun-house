@@ -16,7 +16,7 @@ for (const destination of [path.join(root, 'out'), path.join(checkout, 'out')]) 
   fs.copyFileSync(path.join(root, 'index.html'), path.join(destination, 'index.html'));
   fs.cpSync(path.join(root, 'src'), path.join(destination, 'src'), { recursive: true });
   // Publish selected playable sprite atlases, never the private recovery/source folders.
-  for(const fighter of ['juri','wolf','deadpool','panther'])if(fs.existsSync(path.join(root,'assets',fighter)))fs.cpSync(path.join(root,'assets',fighter),path.join(destination,'assets',fighter),{recursive:true});
+  for(const fighter of ['juri','wolf','deadpool','panther','ella','beerus','ichigo','art','ghostface','harley','abbacchio'])if(fs.existsSync(path.join(root,'assets',fighter)))fs.cpSync(path.join(root,'assets',fighter),path.join(destination,'assets',fighter),{recursive:true,filter:source=>fs.statSync(source).isDirectory()||/\.png$/i.test(source)});
 }
 fs.mkdirSync(path.join(checkout, '.openai'), { recursive: true });
 fs.copyFileSync(path.join(root, '.openai', 'hosting.json'), path.join(checkout, '.openai', 'hosting.json'));

@@ -55,7 +55,7 @@ function drawBeerusFrame(ctx, key, progress, x, y, width = BEERUS.spriteWidth, f
   }
   const a = BEERUS_ATLAS, row = a.clips[key] || a.clips.idle;
   const frame = row.start + Math.round(Math.max(0, Math.min(1, progress)) * (row.count - 1));
-  ctx.save(); ctx.translate(x, y); ctx.scale(facing * width / a.size, width / a.size);
+  ctx.save(); ctx.translate(x, y); ctx.scale(facing * width / a.size / (row.fit || 1), width / a.size / (row.fit || 1));
   ctx.drawImage(sheet, frame % a.columns * a.size, Math.floor(frame / a.columns) * a.size, a.size, a.size, -a.anchor[0], -a.anchor[1], a.size, a.size);
   ctx.restore();
 }

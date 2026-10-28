@@ -92,6 +92,8 @@ const PANTHER_ABILITIES=CHARACTER_ABILITIES.panther={
  },
  cpuChoice(f,opp,d){if(!f.cooldowns.upSpecial&&f.nullMark&&d<450)return 'upSpecial';if(!f.cooldowns.downSpecial&&d<220)return 'downSpecial';if(f.pantherSpears>0&&!f.cooldowns.special&&d>180)return 'special';return null;},
  cpuDomainOk(f,opp){return Math.abs(f.x-opp.x)<PANTHER.ultimateReach;},
+ // Shared effects need a valid 2D anchor; the sprite renderer supplies the source-rig body motion.
+ attackPose(){return STAND;},
  drawSprite(ctx,f,p,t){drawPantherSprite(ctx,f,p,t);},
  drawMeter(ctx,f){drawKitMeter(ctx,f,f.nullMark?f.nullMark.left/PANTHER.markFrames*100:f.pantherSpears/PANTHER.spearCharges*100,`SPEARS ${f.pantherSpears}/2${f.nullMark?' · MARK':''}`,f.stats.color);}
 };

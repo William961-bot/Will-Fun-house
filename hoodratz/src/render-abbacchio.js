@@ -56,7 +56,7 @@ function drawAbbacchioFrame(ctx, key, progress, x, y, width = ABBACCHIO.spriteWi
   }
   const a = ABBACCHIO_ATLAS, row = a.clips[key] || a.clips.idle;
   const frame = row.start + Math.round(Math.max(0, Math.min(1, progress)) * (row.count - 1));
-  ctx.save(); ctx.translate(x, y); ctx.scale(facing * width / a.size, width / a.size);
+  ctx.save(); ctx.translate(x, y); ctx.scale(facing * width / a.size / (row.fit || 1), width / a.size / (row.fit || 1));
   ctx.drawImage(sheet, frame % a.columns * a.size, Math.floor(frame / a.columns) * a.size, a.size, a.size, -a.anchor[0], -a.anchor[1], a.size, a.size);
   ctx.restore();
 }
@@ -75,11 +75,9 @@ function drawAbbacchioPortrait(ctx, x, y, size) {
   drawAbbacchioFrame(ctx, 'idle', 0, x + size * .52, y + size * 1.3, size * 1.8, 1); ctx.restore();
 }
 function drawAbbacchioProjectiles(ctx, g) {
-  for (const p of g.projectiles) if (p.kind === 'abbacchioStand') {
-    ctx.save(); ctx.translate(p.x, p.y); ctx.scale(p.facing, 1);
-    ctx.fillStyle = 'rgba(150,130,255,.35)'; ctx.beginPath(); ctx.ellipse(-26, 0, 44, 20, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#8a7ae0'; ctx.beginPath(); ctx.ellipse(-6, 0, 22, 17, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#d8d2ff'; ctx.beginPath(); ctx.arc(12, -2, 12, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#4a3a90'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(12, -2, 12, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+  for (const p of g.projectiles) if (p.kind === 'abbacchioStand') {   // Moody Blues (MUGEN action 3010) rushing forward
+    ctx.save(); ctx.globalAlpha = .9;
+    drawAbbacchioFrame(ctx, 'stand', (p.age % 20) / 20, p.x - 20 * p.facing, p.y + 115, ABBACCHIO.spriteWidth, p.facing, fighters[p.owner]?.stats.color === CHARACTERS.abbacchio.altColor);
+    ctx.restore();
   }
 }

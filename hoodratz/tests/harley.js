@@ -84,3 +84,8 @@ check('Harley and Ghostface show their grab clip while throwing (the shared thro
   harleyVs(); p1.state = 'throw'; p1.throwFrames = 54; assert(harleyMotion(p1).key === 'grab', 'Harley grab clip'); p1.enter('idle');
   setup(); p1.setCharacter('ghostface'); p1.state = 'throw'; p1.throwFrames = 54; assert(ghostfaceMotion(p1).key === 'grab', 'Ghostface grab clip'); p1.enter('idle');
 });
+check('Hyena Call draws her MUGEN hyena sprite from the atlas while it runs', () => {
+  assert(HARLEY_ATLAS.clips.hyenaRun && HARLEY_ATLAS.clips.hyenaRun.count === 8, 'hyenaRun clip');
+  harleyVs('rip', 420); harleySpecial('down'); step(HARLEY.hyenaAt + 2);
+  assert(g.projectiles.some(pr => pr.kind === 'harleyHyena'), 'hyena running'); drawHarleyProjectiles(STUB_CANVAS, g);
+});

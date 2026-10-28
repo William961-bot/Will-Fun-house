@@ -1,4 +1,11 @@
 function pantherVs(){setup();p1.setCharacter('panther');p2.setCharacter('rip');p1.reset(500,1);p2.reset(730,-1);}
+check('BP combat anchors and source animation clocks remain finite throughout every normal and signature attack',()=>{
+ for(const name of ['light','low','medium','lowMedium','overhead','heavy','air','airMedium','airHeavy','grab','special','upSpecial','downSpecial']){
+  pantherVs();if(name.endsWith('Special')||name==='special')PANTHER_ABILITIES[name](p1,p2,g);else p1.startAttack(name);
+  const length=p1.move?p1.move.startup+p1.move.active+p1.move.recovery:PANTHER.spearFrames;
+  for(let frame=0;frame<=length;frame++){p1.stateFrame=frame;assert(poseIsFinite(animatedPose(p1,frame,frame)),`${name}/${frame}`);assert(Number.isFinite(pantherMotion(p1).progress),'source clock');}
+ }
+});
 check('BP is a selectable Null variant without adding a roster slot; skin choices are per player',()=>{
  const count=ROSTER.length;openCharacterSelect(true);charSelect.cursor=[ROSTER.indexOf('null'),ROSTER.indexOf('null')];charSelect.pantherSkins=[false,false];
  cycleCharacterSkin(0);assert(selectedCharacter(0)==='panther'&&selectedCharacter(1)==='null','independent choices');

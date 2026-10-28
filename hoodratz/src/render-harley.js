@@ -55,7 +55,7 @@ function drawHarleyFrame(ctx, key, progress, x, y, width = HARLEY.spriteWidth, f
   }
   const a = HARLEY_ATLAS, row = a.clips[key] || a.clips.idle;
   const frame = row.start + Math.round(Math.max(0, Math.min(1, progress)) * (row.count - 1));
-  ctx.save(); ctx.translate(x, y); ctx.scale(facing * width / a.size, width / a.size);
+  ctx.save(); ctx.translate(x, y); ctx.scale(facing * width / a.size / (row.fit || 1), width / a.size / (row.fit || 1));
   ctx.drawImage(sheet, frame % a.columns * a.size, Math.floor(frame / a.columns) * a.size, a.size, a.size, -a.anchor[0], -a.anchor[1], a.size, a.size);
   ctx.restore();
 }
@@ -79,14 +79,8 @@ function drawHarleyProjectiles(ctx, g) {
       ctx.save(); ctx.translate(p.x, p.y); ctx.scale(p.facing, 1);
       ctx.fillStyle = 'rgba(255,220,120,.45)'; ctx.fillRect(-34, -3, 34, 6);
       ctx.fillStyle = '#fff3c4'; ctx.fillRect(-8, -2.5, 20, 5); ctx.restore();
-    } else if (p.kind === 'harleyHyena') {
-      const bob = Math.sin(p.age * .7) * 3;
-      ctx.save(); ctx.translate(p.x, p.y + bob); ctx.scale(p.facing, 1);
-      ctx.fillStyle = '#9a6b3a'; ctx.beginPath(); ctx.ellipse(0, 0, 30, 13, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(28, -6, 12, 9, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#4aa8ff'; ctx.beginPath(); ctx.moveTo(-18, -10); ctx.lineTo(8, -16); ctx.lineTo(20, -10); ctx.fill();
-      ctx.fillStyle = '#3a2a1a'; ctx.fillRect(-18, 8, 5, 8 + bob); ctx.fillRect(14, 8, 5, 8 - bob);
-      ctx.fillStyle = '#fff'; ctx.fillRect(36, -6, 4, 3); ctx.restore();
+    } else if (p.kind === 'harleyHyena') {   // her MUGEN hyena (action 1809), running along the floor
+      drawHarleyFrame(ctx, 'hyenaRun', (p.age % 16) / 16, p.x, FLOOR, HARLEY.spriteWidth, p.facing, fighters[p.owner]?.stats.color === CHARACTERS.harley.altColor);
     }
   }
 }

@@ -82,3 +82,8 @@ check('CPU Abbacchio picks sensible specials and the mirror match uses the alter
   assert(p2.stats.color === CHARACTERS.abbacchio.altColor && p1.stats.color !== p2.stats.color, 'alt colours in a mirror');
   drawAbbacchioSprite(STUB_CANVAS, p2, animatedPose(p2, 0, 0), 0);
 });
+check('The Stand strike draws Moody Blues from the atlas while it flies', () => {
+  assert(ABBACCHIO_ATLAS.clips.stand && ABBACCHIO_ATLAS.clips.stand.count === 10, 'stand clip');
+  abbacchioVs('rip', 420); abbacchioSpecial(); step(ABBACCHIO.palmAt + 2);
+  assert(g.projectiles.some(pr => pr.kind === 'abbacchioStand'), 'stand flying'); drawAbbacchioProjectiles(STUB_CANVAS, g);
+});
