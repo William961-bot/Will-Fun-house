@@ -4,16 +4,18 @@
 // In practice mode 1P picks their own fighter, then the dummy's.
 const charSelect = { practice: false, playerCount: 2, cpuLevel: 0, thirdCpuLevel: 0, cursor: [0, 1], locked: [false, false], hits: [], previews: {} };
 const CURSOR_COLORS = ['#ff4a4a', '#4aa8ff', '#ffd24a'];
-function selectedCharacter(slot){const id=ROSTER[charSelect.cursor[slot]];return id==='null'&&charSelect.pantherSkins?.[slot]?'panther':id;}
+function selectedCharacter(slot){const id=ROSTER[charSelect.cursor[slot]];return id==='null'&&charSelect.pantherSkins?.[slot]?'panther':id==='curtis'&&charSelect.luffySkins?.[slot]?'luffy':id;}
 function cycleCharacterSkin(slot){
- if(ROSTER[charSelect.cursor[slot]]!=='null')return;
+ const base=ROSTER[charSelect.cursor[slot]];
+ if(base==='curtis'){charSelect.luffySkins??=[];charSelect.luffySkins[slot]=!charSelect.luffySkins[slot];return;}   // Luffy: a skin of Curtis with his own moves
+ if(base!=='null')return;
  charSelect.pantherSkins??=[];charSelect.pantherSkins[slot]=!charSelect.pantherSkins[slot];
 }
 function drawSkinButtons(ctx,three=false){
- charSelect.cursor.forEach((i,slot)=>{if(ROSTER[i]!=='null')return;
+ charSelect.cursor.forEach((i,slot)=>{if(!['null','curtis'].includes(ROSTER[i]))return;
   const x=three?40+slot*408:slot===0?40:1030,y=three?426:574,w=210;
   ctx.fillStyle='#382452';ctx.fillRect(x,y,w,24);ctx.fillStyle='#f0dbff';ctx.textAlign='center';ctx.font='bold 12px sans-serif';
-  ctx.fillText(`${slot+1}P: ${selectedCharacter(slot)==='panther'?'BLACK PANTHER':'NULL'} ↕ SKIN`,x+w/2,y+16);
+  ctx.fillText(`${slot+1}P: ${{panther:'BLACK PANTHER',null:'NULL',luffy:'LUFFY',curtis:'CURTIS'}[selectedCharacter(slot)]} ↕ SKIN`,x+w/2,y+16);
   charSelect.hits.push({x,y,w,h:24,skinSlot:slot});
  });
 }
@@ -23,7 +25,8 @@ function openCharacterSelect(practice = false) {
   charSelect.practice = practice;
   const count = practice ? 2 : charSelect.playerCount;
   charSelect.pantherSkins=Array.from({length:count},(_,i)=>g.characters[i]==='panther');
-  charSelect.cursor = Array.from({length:count}, (_, i) => Math.max(0, ROSTER.indexOf(g.characters[i]==='panther'?'null':g.characters[i] || ROSTER[i])));
+  charSelect.luffySkins=Array.from({length:count},(_,i)=>g.characters[i]==='luffy');
+  charSelect.cursor = Array.from({length:count}, (_, i) => Math.max(0, ROSTER.indexOf(g.characters[i]==='panther'?'null':g.characters[i]==='luffy'?'curtis':g.characters[i] || ROSTER[i])));
   charSelect.locked = Array(count).fill(false);
   for (const pad of connectedPads()) deviceMenu.previous.set(pad.index, padMenuState(pad));
   g.phase = 'charSelect';
@@ -196,6 +199,7 @@ function drawWorldMap(ctx) {
 // Bust portrait for the grid: head and shoulders in the character's colours.
 function drawPortrait(ctx, id, x, y, size) {
   if(id==='panther')return drawPantherPortrait(ctx,x,y,size);
+  if(id==='luffy')return drawLuffyPortrait(ctx,x,y,size);
   if(id==='juri')return drawJuriPortrait(ctx,x,y,size);
   if(id==='wolf')return drawWolfPortrait(ctx,x,y,size);
   if(id==='deadpool')return drawDeadpoolPortrait(ctx,x,y,size);
