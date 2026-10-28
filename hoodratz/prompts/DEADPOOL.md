@@ -1,3 +1,5 @@
+> **Superseded 2026-10-28:** Deadpool now uses the MUGEN character (`Deadpool.rar`, packed by `tools/pack-deadpool-mugen.py`). The 3D-model pipeline described below (Blender retarget, `tools/deadpool/`) is no longer used by the game; it is kept for reference and the kit section still applies.
+
 # Deadpool: build plan
 
 The user asked for Deadpool as a fighter that looks like the real 3D model (like Wolf and Juri), with his

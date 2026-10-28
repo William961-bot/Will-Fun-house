@@ -102,14 +102,14 @@ check('Deadpool talks to the player: a hello at the start, a joke when low, and 
     assert(popups.filter(t => t !== 'THIS IS FINE').length <= 1, 'jokes are rate limited');
   } finally { g.popup = orig; }
 });
-check('Sprite lookup picks the closest rendered pose for the weapons he holds, with no atlas needed for logic', () => {
+check('Deadpool draws the MUGEN sprite clips: every state maps to a clip and the Teleport Belt fades him out', () => {
   deadpoolVs();
-  if (!DEADPOOL_ATLAS.frames.length) return;   // art is local only: a fresh clone has an empty atlas
-  const idle = animatedPose(p1, 0, 0);
-  const i = deadpoolNearest(idle, ''); assert(i >= 0 && DEADPOOL_ATLAS.weapons[i] === '', 'empty-handed idle sprite');
-  p1.startAttack('light'); const swing = animatedPose(p1, p1.move.startup, p1.move.startup);
-  const j = deadpoolNearest(swing, 'S'); assert(j >= 0 && DEADPOOL_ATLAS.weapons[j] === 'S', 'katana strike sprite');
-  p1.enter('deadpoolShoot'); p1.abilityFrames = 38; const aim = animatedPose(p1, 12, 12);
-  const k = deadpoolNearest(aim, 'G'); assert(k >= 0 && DEADPOOL_ATLAS.weapons[k] === 'G', 'pistol sprite');
-  for (const idx of [i, j, k]) { const d = DEADPOOL_ATLAS.frames[idx]; assert(d.length === 22 && d.every(Number.isFinite), 'finite joints'); }
+  for (const clip of ['idle', 'walk', 'shoot', 'belt', 'spin', 'swordz', 'knife', 'grab', 'hit', 'ko']) assert(DEADPOOL_ATLAS.clips[clip]?.count >= 1, 'clip ' + clip);
+  for (const state of ['idle', 'walk', 'run', 'block', 'hitstun', 'ko', 'air', 'deadpoolShoot', 'deadpoolBelt', 'mxShot']) {
+    p1.enter(state); p1.abilityFrames = 30; p1.mxClip = 'knife'; p1.stateFrame = 5;
+    assert(DEADPOOL_ATLAS.clips[deadpoolMotion(p1).key], 'motion ' + state);
+  }
+  p1.enter('deadpoolBelt'); p1.dpGlitch = false; p1.stateFrame = DEADPOOL.beltGoneFrom + 1; assert(deadpoolFrameAlpha(p1) === 0, 'invisible mid-teleport');
+  p1.stateFrame = 0; assert(deadpoolFrameAlpha(p1) === 1, 'visible before the teleport');
+  deadpoolVs(); p1.startAttack('light'); assert(deadpoolMotion(p1).key === 'light', 'normals use their own clips');
 });

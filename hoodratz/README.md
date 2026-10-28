@@ -191,19 +191,21 @@ Original Marvel Rivals model and source-rig clips are rendered into side-view sp
 
 ## Deadpool's abilities
 
-Deadpool is drawn from a 3D model rendered into sprites (the art stays on the owner's computer and is not in the repo, so a fresh clone shows a "DEADPOOL · LOADING" placeholder). The sprites were rendered from Hoodratz's own stickman poses: each sprite is stored with the joint pose it came from, and at draw time the closest one is used, so every move lines up exactly with its frame data and hitboxes. He holds two katanas for normals and two pistols for Double Tap.
+Deadpool is the MUGEN character by The Unlimited, drawn from his original sprites (packed by `tools/pack-deadpool-mugen.py` into `assets/deadpool/`, which stays on the owner's computer and is git-ignored, so a fresh clone shows a "DEADPOOL · LOADING" placeholder; run the packer on the extracted MUGEN folder to rebuild it). His mirror-match palette is the black Joe skin. The kit is unchanged from the earlier 3D-model version, plus two new moves.
 
 | Move | Input | What it does |
 | --- | --- | --- |
 | **Double Tap** (2.5 s cooldown) | Special (**T** / controller **RB**) | Two pistol shots, 10 and 20 frames in. Each is a 22-damage high projectile (blockable, the second is combo-scaled). |
 | **Teleport Belt** (5 s cooldown) | Down + Special | Blinks behind the opponent (or in front if they are pinned at a wall). One time in five (seeded) the belt **glitches**: he only hops 110 px toward them, says "WRITERS ARE LAZY", and stumbles for 22 more frames. |
 | **Chimichanga Spin** (6 s cooldown) | Up + Special | A rising katana spin: 55 damage, launches, with a tall hitbox that catches jumpers. |
-| Normals, grab | shared buttons | Katana poses based on Lancer's sword timelines; the grab is a katana stab into the shared throw. |
+| **Swordz** (2.5 s cooldown) | Special + Forward | A stepping katana slash: 60 damage. |
+| **Knife Throw** (2 s cooldown) | Special + Back | A fast thrown knife on frame 12: 35 damage, blockable. |
+| Normals, grab | shared buttons | His MUGEN normals; the grab is the shared throw. |
 | **Healing factor** (passive) | | After 2 seconds without being hit he slowly regenerates health: 9 per second, up to 150 per round (three times as fast during Maximum Effort). Being hit restarts the delay. |
 | **Fourth-wall jokes** (passive) | | He greets the opponent ("HI, PLAYER 2"), jokes when hit or at low health ("THIS IS FINE"), at most once every 5 seconds. Presentation only. |
 | **Maximum Effort** (domain) | Attack + Special at full meter | Uses the shared domain rules: cutscene, clashes, and your ultimate meter locked while it runs. For 8 seconds his healing is tripled and he fires pistols on his own about every 1.5 seconds. |
 
-Rebuilding the sprites needs Blender 5.2, ffmpeg and the model files; see `prompts/DEADPOOL.md` (the tools are local only).
+The earlier 3D-model sprites and their Blender tools are no longer used; see `prompts/DEADPOOL.md`.
 
 
 ## Ella's abilities

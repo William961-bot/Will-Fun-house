@@ -1,19 +1,19 @@
-// Deadpool: katanas, pistols, a teleport belt, a healing factor and a mouth. The look is a 3D model rendered
-// into sprites (render-deadpool.js); every pose below is a normal stickman pose that the sprites were rendered from.
+// Deadpool: katanas, pistols, a teleport belt, a healing factor and a mouth. The look is the MUGEN Deadpool by The Unlimited
+// (render-deadpool.js); the stickman poses in that file drive the shared guard, throw and hit-spark systems.
 const DEADPOOL = {
   shotDamage: 22, shotSpeed: 20, shotAt: [10, 20], shootFrames: 38, shootCooldown: 150,
   beltFrames: 26, beltGoneFrom: 6, beltAt: 10, beltGoneTo: 14, beltCooldown: 300, behind: 90,
   glitchChance: .2, glitchHop: 110, glitchExtra: 22,
   spinStartup: 8, spinActive: 12, spinRecovery: 26, spinDamage: 55, spinCooldown: 360,
   healDelay: 120, healPerFrame: .15, healCap: 150, healMult: 3,
-  effortFrames: 480, effortShotEvery: 90, jokeCooldown: 300, spriteScale: 1.22,
+  effortFrames: 480, effortShotEvery: 90, jokeCooldown: 300, spriteWidth: 390,
 };
 CHARACTERS.deadpool = { id: 'deadpool', name: 'DEADPOOL', color: '#c8262e', dark: '#4a0b10', altColor: '#2b2b30', altDark: '#101014',
   accent: '#ffffff', altAccent: '#c8262e',
   walk: 4, walkBack: 3.4, runMax: 12.4, dmg: 1, weight: 1, home: { u: .2, v: .24, label: 'REGINA · CANADA' },
   title: 'The merc with a mouth',
   blurb: 'Katana pressure, pistols, a glitchy teleport belt and a healing factor. He knows he is in a game.',
-  moves: ['Special: Double Tap · Down: Teleport Belt', 'Up: Chimichanga Spin', 'Healing factor after 2 s unhit', 'Ultimate: Maximum Effort'] };
+  moves: ['Special: Double Tap · Down: Teleport Belt', 'Up: Chimichanga Spin', 'Special+Forward: Swordz · Special+Back: Knife Throw', 'Healing factor after 2 s unhit', 'Ultimate: Maximum Effort'] };
 ROSTER.push('deadpool'); THROWS.deadpool = { frames: 54, distance: 54 };
 DOMAIN_NAMES.deadpool = 'MAXIMUM EFFORT'; DOMAIN_SUBTITLES.deadpool = 'HEALING FACTOR ×3 · AUTO-PISTOLS';
 
@@ -111,3 +111,13 @@ const DEADPOOL_ABILITIES = CHARACTER_ABILITIES.deadpool = {
   attackPose(f, frame) { return deadpoolAttackPose(f, frame); },
   drawSprite(ctx, f, p, t) { drawDeadpoolSprite(ctx, f, p, t); },
 };
+
+// Special + Forward: Swordz (MUGEN 1300). Special + Back: Knife Throw (MUGEN 1500 family), a fast thrown knife.
+addMugenVariants(DEADPOOL_ABILITIES, {
+  forward: { name: 'swordz', label: 'SWORDZ', cooldown: 150, kind: 'attack', move: { startup: 9, active: 8, recovery: 24, dmg: 60, height: 'high',
+      hitstun: 30, kb: 5, hitstop: 6, shake: 3, step: 12, box: { x: 15, y: -130, w: 140, h: 80 } } },
+  back: { name: 'knifeThrow', label: 'KNIFE', cooldown: 120, kind: 'shot', clip: 'knife', frames: 30, at: 12, sound: 'slash',
+    projectile: f => ({ kind: 'deadpoolKnife', owner: f.index, x: f.x + 60 * f.facing, y: f.y - 115, vx: 18 * f.facing, facing: f.facing, framesLeft: 60,
+      box: { w: 44, h: 18 }, blockGuard: 5, name: 'knifeThrow',
+      move: { dmg: 35, fixedDamage: 35, height: 'high', hitstun: 20, kb: 3, hitstop: 4, shake: 2, startup: 1, active: 1, recovery: 1 } }) },
+});
