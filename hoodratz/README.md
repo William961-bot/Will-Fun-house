@@ -208,6 +208,18 @@ Deadpool is the MUGEN character by The Unlimited, drawn from his original sprite
 The earlier 3D-model sprites and their Blender tools are no longer used; see `prompts/DEADPOOL.md`.
 
 
+## Batman's abilities
+
+Batman is the MUGEN BATMANWL character (a Kung Fu Man edit, SFF v2), drawn from his original sprites (packed by `tools/pack-batman-mugen.py` into `assets/batman/`, which stays on the owner's computer and is git-ignored, so a fresh clone shows a "BATMAN · LOADING" placeholder; run the packer on the extracted MUGEN folder to rebuild it). His moves are adapted from the MUGEN kit onto the three Special inputs.
+
+- **Special: Batarang.** A thrown batarang on frame 12 of a 30-frame throw: 40 damage, fast, blockable, 90-frame cooldown.
+- **Down + Special: Gas Pellet.** A slow gas pellet rolls along the floor: 50 damage, a low hit (block low or jump it), 240-frame cooldown.
+- **Up + Special: Flip Kick.** A leaping flip that launches: 65 damage, 270-frame cooldown, punishable if it whiffs.
+- **Special + Forward: Bat Kick.** A stepping high kick: 65 damage, 150-frame cooldown.
+- **Special + Back: Cape Slide.** A low sliding kick (block low): 55 damage, 180-frame cooldown.
+- **Grab:** the shared 90-damage grab. **Ultimate: Dark Knight.** A domain: +20% damage and +15% speed with his cape spread.
+- Mirror matches use a green-tinted palette.
+
 ## Spawn's abilities
 
 Spawn is the MUGEN CFJ Spawn (revamped by chuchoryu from the work of ArLeQuIn, aa250, bdc, Trexell and Devsman), drawn from his original sprites (packed by `tools/pack-spawn-mugen.py` into `assets/spawn/`, which stays on the owner's computer and is git-ignored, so a fresh clone shows a "SPAWN · LOADING" placeholder; run the packer on the extracted MUGEN folder to rebuild it). His moves are adapted from the MUGEN kit onto the three Special inputs.

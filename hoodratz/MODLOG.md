@@ -6,6 +6,11 @@ can go in their own section below the log.
 
 ## Handoff log
 
+### 2026-10-28 · Claude (new fighter: Batman, from MUGEN)
+- Changed: Batman (`BATMANWL.rar`, SFF v2, own per-sprite palettes) is a new fighter. `tools/pack-batman-mugen.py` packs `assets/batman/mugen.png` + `mugen-alt.png` (green and blue channels swapped, because the sprites carry their own palettes) at 1.5x and writes `src/batman-atlas.js`. `src/characters/batman.js`: Batarang projectile, Gas Pellet (low slow roller drawn with his MUGEN 327 orb), Flip Kick leap launcher, Bat Kick and Cape Slide via `addMugenVariants`, Dark Knight domain (+20% damage, +15% speed, cape spread). `src/render-batman.js`. Registered like the other MUGEN fighters; `assets/batman/` is in the root `.gitignore`. `tests/batman.js` (5 checks) and Batman in `tests/mugen-variants.js`.
+- Tests: `node tests/run.cjs`: 551 pass, 0 fail (with another agent's Jinx work in the tree).
+- Committed / pushed: committed locally with only the Batman hunks; not pushed.
+- Unfinished: his MUGEN supers and the fatality-style states (3333, 7625), the big effect sprites (8000s) and the grapnel gun frames beyond the Batarang pose are not ported. His MUGEN set is small (131 sprites): dash, backdash, crouch and air clips are single poses. Sprite-to-state mapping by eye; grab and grab-miss share one pose.
 ### 2026-10-28 · Claude (new fighter: Spawn, from MUGEN)
 - Changed: Spawn (`CFJ_Spawn.rar`, SFF v1) is a new fighter. `tools/pack-spawn-mugen.py` packs `assets/spawn/mugen.png` + `mugen-alt.png` (purple palette, `002.act`) at 1.5x and writes `src/spawn-atlas.js`. `src/characters/spawn.js`: gun burst (two bullets), Hellfire (a stationary flame pillar projectile), Dark Rise leap launcher, Cape Lash and Chain Hook via `addMugenVariants`, Hellspawn domain (+20% damage, +15% speed, wings pose). `src/render-spawn.js` draws him and uses his real hellfire and chain sprites (MUGEN 1022 and 1201) for the projectiles. Registered like the other MUGEN fighters; `assets/spawn/` is in the root `.gitignore`. `tests/spawn.js` (5 checks) and Spawn in `tests/mugen-variants.js`.
 - Tests: `node tests/run.cjs`: 546 pass, 0 fail (with another agent's Jinx work in the tree). Checked in the browser: he draws in a match, no console errors; the projectile art sizes were checked off-screen.
