@@ -208,6 +208,18 @@ Deadpool is the MUGEN character by The Unlimited, drawn from his original sprite
 The earlier 3D-model sprites and their Blender tools are no longer used; see `prompts/DEADPOOL.md`.
 
 
+## Alucard's abilities
+
+Alucard is the MUGEN Alucard HD (Hellsing; made by Akimoto and edited by jawsmon, VladTurunen and Arethousleepy), drawn from his original sprites (packed by `tools/pack-alucard-mugen.py` into `assets/alucard/`, which stays on the owner's computer and is git-ignored, so a fresh clone shows an "ALUCARD · LOADING" placeholder; run the packer on the extracted MUGEN folder to rebuild it). His moves are adapted from the MUGEN kit onto the three Special inputs.
+
+- **Special: Casull 454.** A heavy bullet on frame 12 of a 30-frame shot: 55 damage, fast, blockable, 100-frame cooldown.
+- **Down + Special: Impaling Shadow.** A spike rises 150 px in front of him on frame 16 (his MUGEN spike sprite): 70 damage, launches, 300-frame cooldown.
+- **Up + Special: Rising Kick.** A leaping high kick that launches: 65 damage, 300-frame cooldown, punishable if it whiffs.
+- **Special + Forward: Baskerville Hound.** A lunging bite: 80 damage, 240-frame cooldown.
+- **Special + Back: Jackal.** A huge shot on frame 16: 70 damage, blockable, 240-frame cooldown.
+- **Grab:** the shared 90-damage grab. **Ultimate: Release.** A domain: +25% damage and +10% speed with both guns out.
+- Mirror matches use the pale Jalucard palette.
+
 ## Issei's abilities
 
 Issei is the MUGEN "DxD Issei" character (High School DxD), drawn from his original sprites (packed by `tools/pack-issei-mugen.py` into `assets/issei/`, which stays on the owner's computer and is git-ignored, so a fresh clone shows an "ISSEI · LOADING" placeholder; run the packer on the extracted MUGEN folder to rebuild it). His moves are adapted from the MUGEN kit onto the three Special inputs.

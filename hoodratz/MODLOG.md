@@ -6,6 +6,11 @@ can go in their own section below the log.
 
 ## Handoff log
 
+### 2026-10-28 · Claude (new fighter: Alucard, from MUGEN)
+- Changed: Alucard (`Alucard_HD.rar`, SFF v1, 1073 sprites) is a new fighter. `tools/pack-alucard-mugen.py` packs `assets/alucard/mugen.png` + `mugen-alt.png` (`Jalucard.act`) at 1.45x and writes `src/alucard-atlas.js`. `src/characters/alucard.js`: Casull bullet, Impaling Shadow (a stationary spike projectile drawn with his MUGEN spike sprite, action 124), Rising Kick leap launcher, Baskerville Hound and Jackal via `addMugenVariants`, Release domain (+25% damage, +10% speed, both guns out). `src/render-alucard.js`. Registered like the other MUGEN fighters; `assets/alucard/` is in the root `.gitignore`. `tests/alucard.js` (5 checks) and Alucard in `tests/mugen-variants.js`.
+- Tests: `node tests/run.cjs`: 569 pass, 0 fail (with another agent's Jinx work in the tree).
+- Committed / pushed: committed locally with only the Alucard hunks; not pushed.
+- Unfinished: his many other MUGEN moves (Vampire Attack heal, Baskerville Shoulder, Vampire Bat, Hellhound tackle, Hell Hand, Demon Wheel, Binding Doom, the Spiral and Shark moves, the supers) are not ported. His idle is a single standing pose because his MUGEN idle starts with a rising animation. Sprite-to-state mapping by eye; grab and grab-miss share one pose.
 ### 2026-10-28 · Claude (new fighter: Issei, from MUGEN)
 - Changed: Issei (`DxD-issei.rar`, MUGEN DxD Issei, SFF v1, 153 sprites) is a new fighter. `tools/pack-issei-mugen.py` packs `assets/issei/mugen.png` + `mugen-alt.png` (green and blue channels swapped, the character has one palette) at 1.7x and writes `src/issei-atlas.js`. `src/characters/issei.js`: Dragon Shot projectile (drawn with shapes), Boost (a self-buff, `isseiBoostLeft`, +20% damage for 420 frames with a small HUD bar through `drawMeter`), Dragon Rise leap launcher, Gauntlet Lance and Kick via `addMugenVariants`, Balance Breaker domain (+25% damage, +15% speed, stacks with Boost). `src/render-issei.js`. Registered like the other MUGEN fighters; `assets/issei/` is in the root `.gitignore`. `tests/issei.js` (5 checks) and Issei in `tests/mugen-variants.js`.
 - Tests: `node tests/run.cjs`: 564 pass, 0 fail (with another agent's Jinx work in the tree).
