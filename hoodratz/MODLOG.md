@@ -6,6 +6,11 @@ can go in their own section below the log.
 
 ## Handoff log
 
+### 2026-10-28 · Claude (new fighter: Issei, from MUGEN)
+- Changed: Issei (`DxD-issei.rar`, MUGEN DxD Issei, SFF v1, 153 sprites) is a new fighter. `tools/pack-issei-mugen.py` packs `assets/issei/mugen.png` + `mugen-alt.png` (green and blue channels swapped, the character has one palette) at 1.7x and writes `src/issei-atlas.js`. `src/characters/issei.js`: Dragon Shot projectile (drawn with shapes), Boost (a self-buff, `isseiBoostLeft`, +20% damage for 420 frames with a small HUD bar through `drawMeter`), Dragon Rise leap launcher, Gauntlet Lance and Kick via `addMugenVariants`, Balance Breaker domain (+25% damage, +15% speed, stacks with Boost). `src/render-issei.js`. Registered like the other MUGEN fighters; `assets/issei/` is in the root `.gitignore`. `tests/issei.js` (5 checks) and Issei in `tests/mugen-variants.js`.
+- Tests: `node tests/run.cjs`: 564 pass, 0 fail (with another agent's Jinx work in the tree).
+- Committed / pushed: committed locally with only the Issei hunks; not pushed.
+- Unfinished: his MUGEN kit has Japanese-named moves (Promotion forms, the Dragon Shot super, the 10-second automatic power-up and the over-boost risk, Explosion, Burst) that are not ported; Boost is a simplified version. Sprite-to-state mapping by eye; no dedicated dash clip.
 ### 2026-10-28 · Claude (new fighter: Homelander, from MUGEN)
 - Changed: Homelander (`Homelander_PPF8UTTP.zip`, SFF v1, 151 sprites and 87 actions, so many states share poses) is a new fighter. `tools/pack-homelander-mugen.py` packs `assets/homelander/mugen.png` + `mugen-alt.png` (`Homelander_2.act`, the white costume) at 1.45x and writes `src/homelander-atlas.js`. `src/characters/homelander.js`: Heat Vision beam projectile (drawn with shapes), Flag Slam overhead, Rising Slash leap launcher, Cape Strike and Fly Kick via `addMugenVariants`, American Hero domain (+25% damage, +10% speed). `src/render-homelander.js`. Registered like the other MUGEN fighters; `assets/homelander/` is in the root `.gitignore`. `tests/homelander.js` (4 checks) and Homelander in `tests/mugen-variants.js`.
 - Tests: `node tests/run.cjs`: 559 pass, 0 fail (with another agent's Jinx work in the tree).

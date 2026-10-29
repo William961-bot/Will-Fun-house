@@ -208,6 +208,18 @@ Deadpool is the MUGEN character by The Unlimited, drawn from his original sprite
 The earlier 3D-model sprites and their Blender tools are no longer used; see `prompts/DEADPOOL.md`.
 
 
+## Issei's abilities
+
+Issei is the MUGEN "DxD Issei" character (High School DxD), drawn from his original sprites (packed by `tools/pack-issei-mugen.py` into `assets/issei/`, which stays on the owner's computer and is git-ignored, so a fresh clone shows an "ISSEI · LOADING" placeholder; run the packer on the extracted MUGEN folder to rebuild it). His moves are adapted from the MUGEN kit onto the three Special inputs.
+
+- **Special: Dragon Shot.** A red dragon-power ball on frame 12 of a 30-frame cast: 50 damage, blockable, 120-frame cooldown.
+- **Down + Special: Boost.** His Boosted Gear powers him up: +20% damage for 7 seconds (a bar and "BOOST" show above him), 10-second cooldown. Interrupting the cast gives nothing.
+- **Up + Special: Dragon Rise.** A leaping uppercut that launches: 65 damage, 300-frame cooldown, punishable if it whiffs.
+- **Special + Forward: Gauntlet Lance.** A very long thrust: 75 damage, 200-frame cooldown.
+- **Special + Back: Kick.** A stepping high kick: 55 damage, 150-frame cooldown.
+- **Grab:** the shared 90-damage grab. **Ultimate: Balance Breaker.** A domain: +25% damage and +15% speed (it stacks with Boost).
+- Mirror matches use a green-tinted palette.
+
 ## Homelander's abilities
 
 Homelander is the MUGEN Homelander PPF8UTTP character (a small kit of 151 sprites), drawn from his original sprites (packed by `tools/pack-homelander-mugen.py` into `assets/homelander/`, which stays on the owner's computer and is git-ignored, so a fresh clone shows a "HOMELANDER · LOADING" placeholder; run the packer on the extracted MUGEN folder to rebuild it). His moves are adapted from the MUGEN kit onto the three Special inputs.
