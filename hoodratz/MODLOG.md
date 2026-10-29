@@ -6,6 +6,11 @@ can go in their own section below the log.
 
 ## Handoff log
 
+### 2026-10-28 · Claude (new fighter: Popeye, from MUGEN)
+- Changed: Popeye (`Popeye jengra505.zip`, MUGEN Popeye 1.15, SFF v1, 1767 sprites) is a new fighter; only the sprite, animation, palette and readme files were taken from the zip (songs, intro and ending files are not used). `tools/pack-popeye-mugen.py` packs `assets/popeye/mugen.png` + `mugen-alt.png` (`popeye3.act`) at 2x and writes `src/popeye-atlas.js`. `src/characters/popeye.js`: Cannon flying punch, Shovel low sweep, Anchor Uppercut leap launcher, Shovel Swing and Anchor Toss (drawn with his MUGEN anchor, action 902) via `addMugenVariants`, Spinach domain (+30% damage, +10% speed, flexing pose). `src/render-popeye.js`. Registered like the other MUGEN fighters; `assets/popeye/` is in the root `.gitignore`. `tests/popeye.js` (5 checks) and Popeye in `tests/mugen-variants.js`.
+- Tests: `node tests/run.cjs`: 555 pass, 0 fail (with another agent's Jinx work in the tree).
+- Committed / pushed: committed locally with only the Popeye hunks; not pushed.
+- Unfinished: his many other MUGEN moves (Toot Toot, Roll Me Down, Pappy and Nephew summons, All American Football Tackle, Pummel Super, Cannon Bomb variants) are not ported. His MUGEN action numbering is non-standard, so the sprite-to-state mapping is by eye; some clips (heavy punch, shovel, grab) are packed at about 0.55x and look softer. Grab and grab-miss share one pose.
 ### 2026-10-28 · Claude (new fighter: Batman, from MUGEN)
 - Changed: Batman (`BATMANWL.rar`, SFF v2, own per-sprite palettes) is a new fighter. `tools/pack-batman-mugen.py` packs `assets/batman/mugen.png` + `mugen-alt.png` (green and blue channels swapped, because the sprites carry their own palettes) at 1.5x and writes `src/batman-atlas.js`. `src/characters/batman.js`: Batarang projectile, Gas Pellet (low slow roller drawn with his MUGEN 327 orb), Flip Kick leap launcher, Bat Kick and Cape Slide via `addMugenVariants`, Dark Knight domain (+20% damage, +15% speed, cape spread). `src/render-batman.js`. Registered like the other MUGEN fighters; `assets/batman/` is in the root `.gitignore`. `tests/batman.js` (5 checks) and Batman in `tests/mugen-variants.js`.
 - Tests: `node tests/run.cjs`: 551 pass, 0 fail (with another agent's Jinx work in the tree).

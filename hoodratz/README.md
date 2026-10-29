@@ -208,6 +208,18 @@ Deadpool is the MUGEN character by The Unlimited, drawn from his original sprite
 The earlier 3D-model sprites and their Blender tools are no longer used; see `prompts/DEADPOOL.md`.
 
 
+## Popeye's abilities
+
+Popeye is the MUGEN Popeye 1.15 by Derrick Rowell (DDR) and Jenngra505, drawn from his original sprites (packed by `tools/pack-popeye-mugen.py` into `assets/popeye/`, which stays on the owner's computer and is git-ignored, so a fresh clone shows a "POPEYE · LOADING" placeholder; run the packer on the extracted MUGEN folder to rebuild it). His moves are adapted from the MUGEN kit onto the three Special inputs.
+
+- **Special: Cannon.** A flying punch that steps forward: 70 damage, 150-frame cooldown.
+- **Down + Special: Shovel.** A long low sweep (block low): 60 damage, 180-frame cooldown.
+- **Up + Special: Anchor Uppercut.** A leaping flexed uppercut that launches: 65 damage, 300-frame cooldown, punishable if it whiffs.
+- **Special + Forward: Shovel Swing.** A heavy overhead: 80 damage, 210-frame cooldown.
+- **Special + Back: Anchor Toss.** A thrown anchor on frame 12: 55 damage, blockable, 240-frame cooldown.
+- **Grab:** the shared 90-damage grab. **Ultimate: Spinach.** A domain: +30% damage and +10% speed while he flexes.
+- Mirror matches use the orange palette.
+
 ## Batman's abilities
 
 Batman is the MUGEN BATMANWL character (a Kung Fu Man edit, SFF v2), drawn from his original sprites (packed by `tools/pack-batman-mugen.py` into `assets/batman/`, which stays on the owner's computer and is git-ignored, so a fresh clone shows a "BATMAN · LOADING" placeholder; run the packer on the extracted MUGEN folder to rebuild it). His moves are adapted from the MUGEN kit onto the three Special inputs.
