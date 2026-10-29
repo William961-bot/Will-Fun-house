@@ -208,6 +208,18 @@ Deadpool is the MUGEN character by The Unlimited, drawn from his original sprite
 The earlier 3D-model sprites and their Blender tools are no longer used; see `prompts/DEADPOOL.md`.
 
 
+## Spawn's abilities
+
+Spawn is the MUGEN CFJ Spawn (revamped by chuchoryu from the work of ArLeQuIn, aa250, bdc, Trexell and Devsman), drawn from his original sprites (packed by `tools/pack-spawn-mugen.py` into `assets/spawn/`, which stays on the owner's computer and is git-ignored, so a fresh clone shows a "SPAWN · LOADING" placeholder; run the packer on the extracted MUGEN folder to rebuild it). His moves are adapted from the MUGEN kit onto the three Special inputs.
+
+- **Special: Gun burst.** Two bullets on frames 12 and 22 of a 36-frame burst: 25 damage each, blockable, 120-frame cooldown.
+- **Down + Special: Hellfire.** A tall flame pillar rises 150 px in front of him on frame 16: 70 damage, launches, 300-frame cooldown.
+- **Up + Special: Dark Rise.** A leaping slash that launches: 65 damage, 300-frame cooldown, punishable if it whiffs.
+- **Special + Forward: Cape Lash.** A stepping cape strike: 65 damage, 150-frame cooldown.
+- **Special + Back: Chain Hook.** A fast chain: 50 damage, 180-frame cooldown.
+- **Grab:** the shared 90-damage grab. **Ultimate: Hellspawn.** A domain: +20% damage and +15% speed, with his wings out.
+- Mirror matches use his purple palette.
+
 ## Luffy (a Curtis skin)
 
 On the character select screen Curtis has a **skin button** (click it, or press Up / Down while Curtis is highlighted), like Null's Black Panther skin. Choosing **Luffy** swaps Curtis for the MUGEN Great Luffy (Dr.T, sprites by Ploaj): new look and **new abilities**, his own set from the MUGEN character. He is not a separate roster slot. The sprites are packed by `tools/pack-luffy-mugen.py` into `assets/luffy/` (git-ignored, so a fresh clone shows a "LUFFY · LOADING" placeholder). The overlong stretched-arm poses are shortened in the middle of the arm so the body and fist stay whole.

@@ -200,6 +200,7 @@ function drawWorldMap(ctx) {
 function drawPortrait(ctx, id, x, y, size) {
   if(id==='panther')return drawPantherPortrait(ctx,x,y,size);
   if(id==='luffy')return drawLuffyPortrait(ctx,x,y,size);
+  if(id==='spawn')return drawSpawnPortrait(ctx,x,y,size);
   if(id==='juri')return drawJuriPortrait(ctx,x,y,size);
   if(id==='wolf')return drawWolfPortrait(ctx,x,y,size);
   if(id==='deadpool')return drawDeadpoolPortrait(ctx,x,y,size);
