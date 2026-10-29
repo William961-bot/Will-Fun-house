@@ -1,5 +1,5 @@
 // Special + Forward and Special + Back: two extra moves for each MUGEN fighter (src/characters/mugen-variants.js).
-const MX_FIGHTERS = ['deadpool', 'luffy', 'spawn', 'batman', 'popeye', 'homelander', 'issei', 'alucard', 'ella', 'beerus', 'ichigo', 'art', 'ghostface', 'harley', 'abbacchio'];
+const MX_FIGHTERS = ['deadpool', 'luffy', 'spawn', 'batman', 'popeye', 'homelander', 'issei', 'alucard', 'ghostrider', 'ella', 'beerus', 'ichigo', 'art', 'ghostface', 'harley', 'abbacchio'];
 function mxVs(id, gap = 90) {
   setup(); p1.setCharacter(id); p2.setCharacter('rip'); p1.reset(400, 1); p2.reset(400 + gap, -1);
   for (const f of [p1, p2]) { f.cooldowns.special = f.cooldowns.downSpecial = f.cooldowns.upSpecial = 0; }

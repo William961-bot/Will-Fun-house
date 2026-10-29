@@ -208,6 +208,18 @@ Deadpool is the MUGEN character by The Unlimited, drawn from his original sprite
 The earlier 3D-model sprites and their Blender tools are no longer used; see `prompts/DEADPOOL.md`.
 
 
+## Ghost Rider's abilities
+
+Ghost Rider is the MUGEN Ghost Rider AI character (Dark Rider's character with an AI patch), drawn from his original sprites (packed by `tools/pack-ghostrider-mugen.py` into `assets/ghostrider/`, which stays on the owner's computer and is git-ignored, so a fresh clone shows a "GHOST RIDER · LOADING" placeholder; run the packer on the extracted MUGEN folder to rebuild it). His moves are adapted from the MUGEN kit onto the three Special inputs.
+
+- **Special: Hellfire skull.** A flaming skull ball (his MUGEN sprite) on frame 12 of a 30-frame cast: 60 damage, blockable, 120-frame cooldown.
+- **Down + Special: Fire Pillar.** A pillar of fire rises 150 px in front of him on frame 16: 70 damage, launches, 300-frame cooldown.
+- **Up + Special: Flame Uppercut.** A leaping flaming uppercut that launches: 65 damage, 300-frame cooldown, punishable if it whiffs.
+- **Special + Forward: Chain Lash.** A long chain swing: 75 damage, 210-frame cooldown.
+- **Special + Back: Chain Sweep.** A low sweep (block low): 55 damage, 180-frame cooldown.
+- **Grab:** the shared 90-damage grab. **Ultimate: Penance Stare.** A domain: +25% damage and +10% speed.
+- Mirror matches use his blue-flame palette.
+
 ## Alucard's abilities
 
 Alucard is the MUGEN Alucard HD (Hellsing; made by Akimoto and edited by jawsmon, VladTurunen and Arethousleepy), drawn from his original sprites (packed by `tools/pack-alucard-mugen.py` into `assets/alucard/`, which stays on the owner's computer and is git-ignored, so a fresh clone shows an "ALUCARD · LOADING" placeholder; run the packer on the extracted MUGEN folder to rebuild it). His moves are adapted from the MUGEN kit onto the three Special inputs.

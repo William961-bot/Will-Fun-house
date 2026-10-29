@@ -206,6 +206,7 @@ function drawPortrait(ctx, id, x, y, size) {
   if(id==='homelander')return drawHomelanderPortrait(ctx,x,y,size);
   if(id==='issei')return drawIsseiPortrait(ctx,x,y,size);
   if(id==='alucard')return drawAlucardPortrait(ctx,x,y,size);
+  if(id==='ghostrider')return drawGhostriderPortrait(ctx,x,y,size);
   if(id==='juri')return drawJuriPortrait(ctx,x,y,size);
   if(id==='wolf')return drawWolfPortrait(ctx,x,y,size);
   if(id==='deadpool')return drawDeadpoolPortrait(ctx,x,y,size);
