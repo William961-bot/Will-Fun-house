@@ -67,6 +67,7 @@ function drawProjectiles(ctx, g) {
   drawSpawnProjectiles(ctx,g);
   drawBatmanProjectiles(ctx,g);
   drawPopeyeProjectiles(ctx,g);
+  drawHomelanderProjectiles(ctx,g);
   drawBeerusProjectiles(ctx,g);
   drawIchigoProjectiles(ctx,g);
   drawArtProjectiles(ctx,g);

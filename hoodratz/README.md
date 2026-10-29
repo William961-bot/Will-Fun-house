@@ -208,6 +208,18 @@ Deadpool is the MUGEN character by The Unlimited, drawn from his original sprite
 The earlier 3D-model sprites and their Blender tools are no longer used; see `prompts/DEADPOOL.md`.
 
 
+## Homelander's abilities
+
+Homelander is the MUGEN Homelander PPF8UTTP character (a small kit of 151 sprites), drawn from his original sprites (packed by `tools/pack-homelander-mugen.py` into `assets/homelander/`, which stays on the owner's computer and is git-ignored, so a fresh clone shows a "HOMELANDER · LOADING" placeholder; run the packer on the extracted MUGEN folder to rebuild it). His moves are adapted from the MUGEN kit onto the three Special inputs.
+
+- **Special: Heat Vision.** A fast red beam on frame 10 of a 26-frame cast: 45 damage, blockable, 120-frame cooldown.
+- **Down + Special: Flag Slam.** An overhead slam with the flag cape (must be blocked standing): 75 damage, 210-frame cooldown.
+- **Up + Special: Rising Slash.** A leaping slash that launches: 65 damage, 300-frame cooldown, punishable if it whiffs.
+- **Special + Forward: Cape Strike.** A stepping cape strike: 65 damage, 150-frame cooldown.
+- **Special + Back: Fly Kick.** A stepping flying kick: 55 damage, 150-frame cooldown.
+- **Grab:** the shared 90-damage grab. **Ultimate: American Hero.** A domain: +25% damage and +10% speed.
+- Mirror matches use his white costume.
+
 ## Popeye's abilities
 
 Popeye is the MUGEN Popeye 1.15 by Derrick Rowell (DDR) and Jenngra505, drawn from his original sprites (packed by `tools/pack-popeye-mugen.py` into `assets/popeye/`, which stays on the owner's computer and is git-ignored, so a fresh clone shows a "POPEYE · LOADING" placeholder; run the packer on the extracted MUGEN folder to rebuild it). His moves are adapted from the MUGEN kit onto the three Special inputs.

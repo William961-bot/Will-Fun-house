@@ -6,6 +6,11 @@ can go in their own section below the log.
 
 ## Handoff log
 
+### 2026-10-28 · Claude (new fighter: Homelander, from MUGEN)
+- Changed: Homelander (`Homelander_PPF8UTTP.zip`, SFF v1, 151 sprites and 87 actions, so many states share poses) is a new fighter. `tools/pack-homelander-mugen.py` packs `assets/homelander/mugen.png` + `mugen-alt.png` (`Homelander_2.act`, the white costume) at 1.45x and writes `src/homelander-atlas.js`. `src/characters/homelander.js`: Heat Vision beam projectile (drawn with shapes), Flag Slam overhead, Rising Slash leap launcher, Cape Strike and Fly Kick via `addMugenVariants`, American Hero domain (+25% damage, +10% speed). `src/render-homelander.js`. Registered like the other MUGEN fighters; `assets/homelander/` is in the root `.gitignore`. `tests/homelander.js` (4 checks) and Homelander in `tests/mugen-variants.js`.
+- Tests: `node tests/run.cjs`: 559 pass, 0 fail (with another agent's Jinx work in the tree).
+- Committed / pushed: committed locally with only the Homelander hunks; not pushed.
+- Unfinished: his MUGEN set is tiny, so the idle, walk, air and several attack clips are only two or three poses; there are no dedicated ground-throw or taunt-based moves. The Heat Vision beam and its cast pose (MUGEN 400) are a guess; the cyan 4600 sprite was not used. Sprite-to-state mapping by eye; grab and grab-miss share one pose.
 ### 2026-10-28 · Claude (new fighter: Popeye, from MUGEN)
 - Changed: Popeye (`Popeye jengra505.zip`, MUGEN Popeye 1.15, SFF v1, 1767 sprites) is a new fighter; only the sprite, animation, palette and readme files were taken from the zip (songs, intro and ending files are not used). `tools/pack-popeye-mugen.py` packs `assets/popeye/mugen.png` + `mugen-alt.png` (`popeye3.act`) at 2x and writes `src/popeye-atlas.js`. `src/characters/popeye.js`: Cannon flying punch, Shovel low sweep, Anchor Uppercut leap launcher, Shovel Swing and Anchor Toss (drawn with his MUGEN anchor, action 902) via `addMugenVariants`, Spinach domain (+30% damage, +10% speed, flexing pose). `src/render-popeye.js`. Registered like the other MUGEN fighters; `assets/popeye/` is in the root `.gitignore`. `tests/popeye.js` (5 checks) and Popeye in `tests/mugen-variants.js`.
 - Tests: `node tests/run.cjs`: 555 pass, 0 fail (with another agent's Jinx work in the tree).
